@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "TechLearn - Aprenda Tecnologia"
+version = "1.0.0"
+id = "artifacts/techlearn"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18131
+
+[services.development]
+run = "pnpm --filter @workspace/techlearn run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/techlearn", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/techlearn", "run", "serve" ]
+
+[services.env]
+PORT = "18131"
+BASE_PATH = "/"
