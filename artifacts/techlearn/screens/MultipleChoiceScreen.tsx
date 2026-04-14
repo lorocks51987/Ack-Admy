@@ -18,24 +18,26 @@ interface Props {
 export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
+  const [checked, setChecked] = useState(false);
 
   function handleSelect(idx: number) {
-    if (selected !== null) return;
+    if (checked) return;
     setSelected(idx);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 
   function handleCheck() {
     if (selected === null) return;
+    setChecked(true);
     onAnswer(selected === exercise.correct);
   }
 
   function getOptionStyle(idx: number) {
-    if (selected === null) {
-      return {
-        backgroundColor: colors.card,
-        borderColor: colors.border,
-      };
+    if (!checked) {
+      if (idx === selected) {
+        return { backgroundColor: "#F0EBF8", borderColor: colors.primary };
+      }
+      return { backgroundColor: colors.card, borderColor: colors.border };
     }
     if (idx === exercise.correct) {
       return { backgroundColor: "#E6F9ED", borderColor: "#16A349" };
@@ -47,9 +49,28 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
   }
 
   function getOptionTextColor(idx: number) {
-    if (selected === null) return colors.foreground;
+    if (!checked) {
+      return idx === selected ? colors.primary : colors.foreground;
+    }
     if (idx === exercise.correct) return "#16A349";
     if (idx === selected && selected !== exercise.correct) return "#D93025";
+    return colors.mutedForeground;
+  }
+
+  function getLetterBg(idx: number) {
+    if (!checked) {
+      return idx === selected ? colors.primary : colors.muted;
+    }
+    if (idx === exercise.correct) return "#16A349";
+    if (idx === selected) return "#D93025";
+    return colors.muted;
+  }
+
+  function getLetterColor(idx: number) {
+    if (!checked) {
+      return idx === selected ? "#FFFFFF" : colors.mutedForeground;
+    }
+    if (idx === exercise.correct || idx === selected) return "#FFFFFF";
     return colors.mutedForeground;
   }
 
@@ -80,39 +101,17 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
               <View
                 style={[
                   styles.optionLetter,
-                  {
-                    backgroundColor:
-                      selected === null
-                        ? colors.muted
-                        : idx === exercise.correct
-                        ? "#16A349"
-                        : idx === selected
-                        ? "#D93025"
-                        : colors.muted,
-                  },
+                  { backgroundColor: getLetterBg(idx) },
                 ]}
               >
                 <Text
-                  style={[
-                    styles.letterText,
-                    {
-                      color:
-                        selected === null
-                          ? colors.mutedForeground
-                          : idx === exercise.correct || idx === selected
-                          ? "#FFFFFF"
-                          : colors.mutedForeground,
-                    },
-                  ]}
+                  style={[styles.letterText, { color: getLetterColor(idx) }]}
                 >
                   {["A", "B", "C", "D"][idx]}
                 </Text>
               </View>
               <Text
-                style={[
-                  styles.optionText,
-                  { color: getOptionTextColor(idx) },
-                ]}
+                style={[styles.optionText, { color: getOptionTextColor(idx) }]}
               >
                 {opt}
               </Text>
@@ -132,7 +131,7 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
           ]}
           onPress={handleCheck}
           activeOpacity={0.85}
-          disabled={selected === null}
+          disabled={selected === null || checked}
         >
           <Text
             style={[
