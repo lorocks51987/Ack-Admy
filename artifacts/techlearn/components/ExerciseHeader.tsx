@@ -35,8 +35,8 @@ export function ExerciseHeader({ current, total, lives, onClose }: ExerciseHeade
       <ProgressBar progress={current} total={total} />
 
       <View style={styles.livesContainer}>
-        <Feather name="heart" size={18} color="#D93025" />
-        <Text style={[styles.livesText, { color: "#D93025" }]}>{lives}</Text>
+        <Feather name="heart" size={18} color="#FF4444" />
+        <Text style={[styles.livesText, { color: "#FF4444" }]}>{lives}</Text>
       </View>
     </View>
   );

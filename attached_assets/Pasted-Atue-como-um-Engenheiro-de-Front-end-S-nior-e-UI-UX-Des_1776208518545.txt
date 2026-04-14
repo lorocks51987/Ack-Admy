@@ -1,0 +1,29 @@
+Atue como um Engenheiro de Front-end Sênior e UI/UX Designer. Preciso que você refatore o design e o CSS atual da nossa aplicação educacional focada em Cibersegurança e AppSec, chamada "ACK-ADMY". 
+
+A aplicação deve abandonar qualquer estilo visual genérico e adotar uma estética estritamente "Dark and Clean", focada em desenvolvedores e profissionais de TI. O design deve ser minimalista, altamente legível e com alto contraste para longas horas de estudo.
+
+Por favor, atualize os estilos globais e os componentes da interface aplicando as seguintes diretrizes:
+
+1. PALETA DE CORES:
+- Background Principal: #121212 (Cinza muito escuro, quase preto).
+- Background de Superfícies/Cards: #252526 (Cinza escuro para destacar elementos sobrepostos ao fundo).
+- Cor de Destaque (Accent): #00E5FF (Ciano Tech) ou #00FF66 (Verde Neon). Use EXCLUSIVAMENTE para botões primários (CTAs), barras de progresso, links ativos e ícones de conquista.
+- Texto Principal: #E0E0E0 (Cinza claro para reduzir o cansaço visual, não use branco puro).
+- Texto Secundário: #9E9E9E.
+- Background de Blocos de Código: #000000 ou #0D0D0D com texto em cores de sintaxe adequadas para dark mode.
+
+2. TIPOGRAFIA:
+- Fonte Primária (UI, Títulos e Textos longos): 'Inter', 'Roboto' ou 'Poppins' (sans-serif geométricas).
+- Fonte Secundária (Exclusiva para trechos de código, scripts e inputs de terminal): 'Fira Code' ou 'JetBrains Mono' (monospace).
+
+3. ESTILO DE COMPONENTES E UI:
+- Cards e Containers: Utilize bordas levemente arredondadas (border-radius: 8px a 12px). Remova sombras pesadas (box-shadow) e substitua por bordas sutis (1px solid #333333) ou elevação suave.
+- Botões Primários: Fundo na cor de destaque (Ciano/Verde), texto escuro (#121212) e leve efeito de hover (brilho ou mudança sutil de opacidade).
+- Inputs e Formulários: Fundo #1A1A1A, borda #333333, com a cor de destaque (Accent) ativada no estado :focus.
+- Ícones: Estilo "outline" (apenas contornos finos, espessura 1.5px ou 2px).
+
+4. LAYOUT:
+- Priorize o padrão "Mobile-First", garantindo que botões e áreas de clique sejam confortáveis para toque (mínimo de 44x44px).
+- Adicione espaçamento generoso (padding/margin) entre as seções (microtópicos, desafios, quizzes) para evitar poluição visual.
+
+Por favor, me mostre o código CSS/Tailwind (ou o framework de estilização atual do projeto) atualizado para refletir essas mudanças, começando pelas variáveis globais de cor e tipografia, e depois aplique em um componente principal (como um Card de Módulo de Aula ou um Bloco de Quiz).

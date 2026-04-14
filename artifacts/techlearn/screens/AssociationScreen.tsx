@@ -44,7 +44,6 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
       const rightIdx = shuffledItem.originalIdx;
       const alreadyMatched = Object.values(matched).includes(rightIdx);
       if (alreadyMatched) return;
-
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setMatched((prev) => ({ ...prev, [selectedLeft]: rightIdx }));
       setSelectedLeft(null);
@@ -60,22 +59,21 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
   };
 
   const isMatchedLeft = (idx: number) => matched[idx] !== undefined;
-  const isMatchedRight = (origIdx: number) =>
-    Object.values(matched).includes(origIdx);
+  const isMatchedRight = (origIdx: number) => Object.values(matched).includes(origIdx);
 
   const getLeftStyle = (idx: number) => {
     if (checked && matched[idx] !== undefined) {
       const correct = matched[idx] === idx;
       return {
-        backgroundColor: correct ? "#E6F9ED" : "#FDECEA",
-        borderColor: correct ? "#16A349" : "#D93025",
+        backgroundColor: correct ? "#0D2010" : "#2D0A0A",
+        borderColor: correct ? "#00FF66" : "#FF4444",
       };
     }
     if (selectedLeft === idx) {
-      return { backgroundColor: "#F0EBF8", borderColor: colors.primary };
+      return { backgroundColor: "#1A2A2A", borderColor: colors.primary };
     }
     if (isMatchedLeft(idx)) {
-      return { backgroundColor: "#F0EBF8", borderColor: colors.secondary };
+      return { backgroundColor: "#1A1E2A", borderColor: "#444" };
     }
     return { backgroundColor: colors.card, borderColor: colors.border };
   };
@@ -88,16 +86,16 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
       if (leftKey !== undefined) {
         const correct = parseInt(leftKey) === origIdx;
         return {
-          backgroundColor: correct ? "#E6F9ED" : "#FDECEA",
-          borderColor: correct ? "#16A349" : "#D93025",
+          backgroundColor: correct ? "#0D2010" : "#2D0A0A",
+          borderColor: correct ? "#00FF66" : "#FF4444",
         };
       }
     }
     if (isMatchedRight(origIdx)) {
-      return { backgroundColor: "#F0EBF8", borderColor: colors.secondary };
+      return { backgroundColor: "#1A1E2A", borderColor: "#444" };
     }
     if (selectedLeft !== null && !isMatchedRight(origIdx)) {
-      return { backgroundColor: colors.card, borderColor: colors.primary };
+      return { backgroundColor: "#1A2A2A", borderColor: colors.primary };
     }
     return { backgroundColor: colors.card, borderColor: colors.border };
   };
@@ -105,21 +103,14 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
   const allMatched = Object.keys(matched).length === exercise.pairs.length;
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.typeTag}>
-          <Text style={[styles.typeText, { color: colors.primary }]}>
-            Associar
-          </Text>
+          <Text style={[styles.typeText, { color: colors.primary }]}>Associar</Text>
         </View>
-
         <Text style={[styles.instruction, { color: colors.foreground }]}>
           {exercise.instruction}
         </Text>
-
         <View style={styles.columns}>
           <View style={styles.column}>
             {exercise.pairs.map((pair, idx) => (
@@ -129,13 +120,10 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
                 onPress={() => handleLeft(idx)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, { color: colors.foreground }]}>
-                  {pair.left}
-                </Text>
+                <Text style={[styles.chipText, { color: colors.foreground }]}>{pair.left}</Text>
               </TouchableOpacity>
             ))}
           </View>
-
           <View style={styles.column}>
             {shuffledRight.map((item) => (
               <TouchableOpacity
@@ -144,39 +132,26 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
                 onPress={() => handleRight(item)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, { color: colors.foreground }]}>
-                  {item.right}
-                </Text>
+                <Text style={[styles.chipText, { color: colors.foreground }]}>{item.right}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
-
         <Text style={[styles.hint, { color: colors.mutedForeground }]}>
           {selectedLeft !== null
-            ? `Toque na coluna direita para associar com "${exercise.pairs[selectedLeft].left}"`
-            : "Toque em um item da esquerda para comecar"}
+            ? `Associe com "${exercise.pairs[selectedLeft].left}"`
+            : "Toque em um item da esquerda para começar"}
         </Text>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.checkBtn,
-            {
-              backgroundColor: allMatched ? colors.primary : colors.muted,
-            },
-          ]}
+          style={[styles.checkBtn, { backgroundColor: allMatched ? colors.primary : colors.muted }]}
           onPress={handleCheck}
           activeOpacity={0.85}
           disabled={!allMatched}
         >
-          <Text
-            style={[
-              styles.checkText,
-              { color: allMatched ? "#FFFFFF" : colors.mutedForeground },
-            ]}
-          >
+          <Text style={[styles.checkText, { color: allMatched ? "#121212" : colors.mutedForeground }]}>
             Verificar
           </Text>
         </TouchableOpacity>
@@ -187,68 +162,23 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: {
-    padding: 20,
-    paddingBottom: 120,
-    gap: 16,
-  },
+  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
   typeTag: { marginBottom: 4 },
-  typeText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  instruction: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 30,
-    marginBottom: 8,
-  },
-  columns: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  column: {
-    flex: 1,
-    gap: 10,
-  },
+  typeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
+  instruction: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28, marginBottom: 8 },
+  columns: { flexDirection: "row", gap: 10 },
+  column: { flex: 1, gap: 10 },
   chip: {
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 10,
+    borderWidth: 1,
     padding: 14,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 60,
   },
-  chipText: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  hint: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: "#FFFFFFEE",
-  },
-  checkBtn: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  chipText: { fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", lineHeight: 20 },
+  hint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", fontStyle: "italic" },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  checkBtn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  checkText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

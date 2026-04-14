@@ -78,7 +78,7 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
               styles.blank,
               {
                 borderColor: filled[i] ? colors.primary : colors.border,
-                backgroundColor: filled[i] ? "#F0EBF8" : colors.muted,
+                backgroundColor: filled[i] ? "#0A1A1A" : colors.muted,
                 minWidth: 80,
               },
             ]}
@@ -87,9 +87,7 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
             <Text
               style={[
                 styles.blankText,
-                {
-                  color: filled[i] ? colors.primary : colors.mutedForeground,
-                },
+                { color: filled[i] ? colors.primary : colors.mutedForeground },
               ]}
             >
               {filled[i] || "      "}
@@ -102,27 +100,16 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.typeTag}>
-          <Text style={[styles.typeText, { color: colors.primary }]}>
-            Completar
-          </Text>
+          <Text style={[styles.typeText, { color: colors.primary }]}>Completar</Text>
         </View>
-
         <Text style={[styles.instruction, { color: colors.foreground }]}>
           {exercise.instruction}
         </Text>
 
-        <View
-          style={[
-            styles.sentenceBox,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
+        <View style={[styles.sentenceBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sentenceWrap}>{renderSentence()}</View>
         </View>
 
@@ -141,20 +128,13 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
                   {
                     backgroundColor: used ? colors.muted : colors.card,
                     borderColor: used ? colors.border : colors.primary,
-                    opacity: used ? 0.5 : 1,
+                    opacity: used ? 0.4 : 1,
                   },
                 ]}
                 onPress={() => handleWordPress(word)}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.wordText,
-                    {
-                      color: used ? colors.mutedForeground : colors.primary,
-                    },
-                  ]}
-                >
+                <Text style={[styles.wordText, { color: used ? colors.mutedForeground : colors.primary }]}>
                   {word}
                 </Text>
               </TouchableOpacity>
@@ -163,22 +143,14 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.checkBtn,
-            { backgroundColor: canCheck ? colors.primary : colors.muted },
-          ]}
+          style={[styles.checkBtn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
           onPress={handleCheck}
           activeOpacity={0.85}
           disabled={!canCheck}
         >
-          <Text
-            style={[
-              styles.checkText,
-              { color: canCheck ? "#FFFFFF" : colors.mutedForeground },
-            ]}
-          >
+          <Text style={[styles.checkText, { color: canCheck ? "#121212" : colors.mutedForeground }]}>
             Verificar
           </Text>
         </TouchableOpacity>
@@ -189,90 +161,28 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: {
-    padding: 20,
-    paddingBottom: 120,
-    gap: 16,
-  },
+  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
   typeTag: { marginBottom: 4 },
-  typeText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  instruction: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 30,
-    marginBottom: 4,
-  },
-  sentenceBox: {
-    borderRadius: 14,
-    borderWidth: 2,
-    padding: 16,
-  },
-  sentenceWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 4,
-  },
-  sentenceText: {
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-    lineHeight: 28,
-  },
+  typeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
+  instruction: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28, marginBottom: 4 },
+  sentenceBox: { borderRadius: 10, borderWidth: 1, padding: 16 },
+  sentenceWrap: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 4 },
+  sentenceText: { fontSize: 15, fontFamily: "Inter_500Medium", lineHeight: 28 },
   blank: {
-    borderRadius: 8,
-    borderWidth: 2,
+    borderRadius: 6,
+    borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginHorizontal: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  blankText: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-  },
-  wordsLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  wordsPool: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  wordChip: {
-    borderRadius: 10,
-    borderWidth: 2,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  wordText: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: "#FFFFFFEE",
-  },
-  checkBtn: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  blankText: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  wordsLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
+  wordsPool: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  wordChip: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10 },
+  wordText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  checkBtn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  checkText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

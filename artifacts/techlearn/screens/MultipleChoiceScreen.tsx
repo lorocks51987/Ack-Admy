@@ -35,15 +35,15 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
   function getOptionStyle(idx: number) {
     if (!checked) {
       if (idx === selected) {
-        return { backgroundColor: "#F0EBF8", borderColor: colors.primary };
+        return { backgroundColor: "#1A2A2A", borderColor: colors.primary };
       }
       return { backgroundColor: colors.card, borderColor: colors.border };
     }
     if (idx === exercise.correct) {
-      return { backgroundColor: "#E6F9ED", borderColor: "#16A349" };
+      return { backgroundColor: "#0D2010", borderColor: "#00FF66" };
     }
     if (idx === selected && selected !== exercise.correct) {
-      return { backgroundColor: "#FDECEA", borderColor: "#D93025" };
+      return { backgroundColor: "#2D0A0A", borderColor: "#FF4444" };
     }
     return { backgroundColor: colors.card, borderColor: colors.border };
   }
@@ -52,8 +52,8 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
     if (!checked) {
       return idx === selected ? colors.primary : colors.foreground;
     }
-    if (idx === exercise.correct) return "#16A349";
-    if (idx === selected && selected !== exercise.correct) return "#D93025";
+    if (idx === exercise.correct) return "#00FF66";
+    if (idx === selected && selected !== exercise.correct) return "#FF4444";
     return colors.mutedForeground;
   }
 
@@ -61,21 +61,21 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
     if (!checked) {
       return idx === selected ? colors.primary : colors.muted;
     }
-    if (idx === exercise.correct) return "#16A349";
-    if (idx === selected) return "#D93025";
+    if (idx === exercise.correct) return "#00FF66";
+    if (idx === selected) return "#FF4444";
     return colors.muted;
   }
 
   function getLetterColor(idx: number) {
     if (!checked) {
-      return idx === selected ? "#FFFFFF" : colors.mutedForeground;
+      return idx === selected ? "#121212" : colors.mutedForeground;
     }
-    if (idx === exercise.correct || idx === selected) return "#FFFFFF";
+    if (idx === exercise.correct || idx === selected) return "#121212";
     return colors.mutedForeground;
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -120,13 +120,12 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.checkBtn,
             {
-              backgroundColor:
-                selected !== null ? colors.primary : colors.muted,
+              backgroundColor: selected !== null ? colors.primary : colors.muted,
             },
           ]}
           onPress={handleCheck}
@@ -136,10 +135,7 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
           <Text
             style={[
               styles.checkText,
-              {
-                color:
-                  selected !== null ? "#FFFFFF" : colors.mutedForeground,
-              },
+              { color: selected !== null ? "#121212" : colors.mutedForeground },
             ]}
           >
             Verificar
@@ -159,23 +155,23 @@ const styles = StyleSheet.create({
   },
   typeTag: { marginBottom: 4 },
   typeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   question: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
-    lineHeight: 32,
+    lineHeight: 30,
     marginBottom: 8,
   },
-  options: { gap: 12 },
+  options: { gap: 10 },
   option: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 2,
+    borderRadius: 10,
+    borderWidth: 1,
     padding: 14,
     gap: 14,
   },
@@ -188,7 +184,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   letterText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
   optionText: {
@@ -203,10 +199,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    backgroundColor: "#FFFFFFEE",
+    borderTopWidth: 1,
   },
   checkBtn: {
-    borderRadius: 14,
+    borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
   },

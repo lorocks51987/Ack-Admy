@@ -25,7 +25,7 @@ const MODULES = [
   },
   {
     id: 2,
-    title: "Controle de Versao",
+    title: "Controle de Versão",
     subtitle: "Git e GitHub",
     lessons: 4,
     completed: 0,
@@ -64,39 +64,35 @@ export default function HomeScreen() {
           styles.header,
           {
             paddingTop: topPad + 8,
-            backgroundColor: colors.primary,
+            backgroundColor: colors.card,
+            borderBottomColor: colors.border,
           },
         ]}
       >
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>Bem-vindo!</Text>
-            <Text style={styles.name}>Dev Aprendiz</Text>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Bem-vindo!</Text>
+            <Text style={[styles.name, { color: colors.foreground }]}>Dev Aprendiz</Text>
           </View>
           <View style={styles.headerActions}>
-            <View style={styles.streakBadge}>
-              <Feather name="zap" size={16} color="#F5C842" />
-              <Text style={styles.streakText}>5</Text>
+            <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="zap" size={14} color="#FFB300" />
+              <Text style={[styles.badgeText, { color: "#FFB300" }]}>5</Text>
             </View>
-            <View style={styles.xpBadge}>
-              <Feather name="star" size={16} color="#FFFFFF" />
-              <Text style={styles.xpText}>230 XP</Text>
+            <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="star" size={14} color={colors.primary} />
+              <Text style={[styles.badgeText, { color: colors.primary }]}>230 XP</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.dailyGoal}>
           <View style={styles.dailyGoalText}>
-            <Text style={styles.goalLabel}>Meta diária</Text>
-            <Text style={styles.goalValue}>2/3 licoes</Text>
+            <Text style={[styles.goalLabel, { color: colors.mutedForeground }]}>Meta diária</Text>
+            <Text style={[styles.goalValue, { color: colors.foreground }]}>2/3 lições</Text>
           </View>
-          <View style={[styles.goalTrack, { backgroundColor: "#FFFFFF30" }]}>
-            <View
-              style={[
-                styles.goalFill,
-                { backgroundColor: "#F5C842", width: "67%" },
-              ]}
-            />
+          <View style={[styles.goalTrack, { backgroundColor: colors.muted }]}>
+            <View style={[styles.goalFill, { backgroundColor: colors.primary, width: "67%" }]} />
           </View>
         </View>
       </View>
@@ -104,15 +100,12 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          {
-            paddingBottom:
-              (Platform.OS === "web" ? 34 : insets.bottom) + 100,
-          },
+          { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Sua jornada
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          SUA JORNADA
         </Text>
 
         {MODULES.map((mod, index) => (
@@ -121,10 +114,7 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.connector,
-                  {
-                    backgroundColor: mod.active ? colors.primary : colors.border,
-                    marginLeft: 36,
-                  },
+                  { backgroundColor: mod.active ? colors.primary : colors.border },
                 ]}
               />
             )}
@@ -133,9 +123,9 @@ export default function HomeScreen() {
               style={[
                 styles.moduleCard,
                 {
-                  backgroundColor: mod.active ? colors.card : colors.muted,
-                  borderColor: mod.active ? colors.primary : colors.border,
-                  opacity: mod.active ? 1 : 0.65,
+                  backgroundColor: colors.card,
+                  borderColor: mod.active ? colors.border : colors.border,
+                  opacity: mod.active ? 1 : 0.5,
                 },
               ]}
               onPress={() => {
@@ -148,37 +138,25 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.moduleIcon,
-                  {
-                    backgroundColor: mod.active
-                      ? colors.primary
-                      : colors.border,
-                  },
+                  { backgroundColor: mod.active ? "#0A1A1A" : colors.muted, borderColor: mod.active ? colors.primary : colors.border },
                 ]}
               >
-                <Feather name={mod.icon} size={24} color="#FFFFFF" />
+                <Feather
+                  name={mod.icon}
+                  size={22}
+                  color={mod.active ? colors.primary : colors.mutedForeground}
+                />
               </View>
 
               <View style={styles.moduleInfo}>
-                <Text
-                  style={[
-                    styles.moduleTitle,
-                    { color: mod.active ? colors.foreground : colors.mutedForeground },
-                  ]}
-                >
+                <Text style={[styles.moduleTitle, { color: colors.foreground }]}>
                   {mod.title}
                 </Text>
-                <Text
-                  style={[styles.moduleSubtitle, { color: colors.mutedForeground }]}
-                >
+                <Text style={[styles.moduleSubtitle, { color: colors.mutedForeground }]}>
                   {mod.subtitle}
                 </Text>
                 <View style={styles.moduleProgress}>
-                  <View
-                    style={[
-                      styles.progressTrack,
-                      { backgroundColor: colors.border },
-                    ]}
-                  >
+                  <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
                     <View
                       style={[
                         styles.progressFill,
@@ -189,39 +167,31 @@ export default function HomeScreen() {
                       ]}
                     />
                   </View>
-                  <Text
-                    style={[
-                      styles.progressText,
-                      { color: colors.mutedForeground },
-                    ]}
-                  >
+                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>
                     {mod.completed}/{mod.lessons}
                   </Text>
                 </View>
               </View>
 
               {mod.active ? (
-                <Feather name="chevron-right" size={20} color={colors.primary} />
+                <Feather name="chevron-right" size={18} color={colors.primary} />
               ) : (
-                <Feather name="lock" size={18} color={colors.mutedForeground} />
+                <Feather name="lock" size={16} color={colors.mutedForeground} />
               )}
             </TouchableOpacity>
           </View>
         ))}
 
         <TouchableOpacity
-          style={[
-            styles.startBtn,
-            { backgroundColor: colors.primary },
-          ]}
+          style={[styles.startBtn, { backgroundColor: colors.primary }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push("/lesson");
           }}
           activeOpacity={0.85}
         >
-          <Feather name="play" size={20} color="#FFFFFF" />
-          <Text style={styles.startBtnText}>Iniciar Proxima Licao</Text>
+          <Feather name="play" size={18} color="#121212" />
+          <Text style={[styles.startBtnText, { color: "#121212" }]}>Iniciar Próxima Lição</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -233,8 +203,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomWidth: 1,
     gap: 16,
   },
   headerTop: {
@@ -242,154 +211,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  greeting: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: "#FFFFFF99",
-  },
-  name: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  streakBadge: {
+  greeting: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  name: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
+  badge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF20",
     borderRadius: 20,
+    borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 6,
     gap: 4,
   },
-  streakText: {
-    color: "#F5C842",
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-  },
-  xpBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF20",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
-  },
-  xpText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-  },
-  dailyGoal: {
-    gap: 8,
-  },
-  dailyGoalText: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  goalLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: "#FFFFFF99",
-  },
-  goalValue: {
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-  },
-  goalTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  goalFill: {
-    height: 8,
-    borderRadius: 4,
-  },
-  scroll: {
-    padding: 20,
-    gap: 0,
-  },
+  badgeText: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  dailyGoal: { gap: 8 },
+  dailyGoalText: { flexDirection: "row", justifyContent: "space-between" },
+  goalLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  goalValue: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  goalTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
+  goalFill: { height: 6, borderRadius: 3 },
+  scroll: { padding: 20, gap: 0 },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 1.5,
     marginBottom: 16,
   },
-  moduleRow: {
-    gap: 0,
-  },
-  connector: {
-    width: 3,
-    height: 20,
-    marginBottom: 0,
-  },
+  moduleRow: { gap: 0 },
+  connector: { width: 2, height: 16, marginLeft: 34, marginBottom: 0 },
   moduleCard: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 2,
-    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 14,
     gap: 14,
     marginBottom: 4,
   },
   moduleIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  moduleInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  moduleTitle: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-  },
-  moduleSubtitle: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-  },
-  moduleProgress: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  progressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
+  moduleInfo: { flex: 1, gap: 3 },
+  moduleTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  moduleSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  moduleProgress: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  progressTrack: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
+  progressFill: { height: 4, borderRadius: 2 },
+  progressText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   startBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 16,
+    borderRadius: 10,
     paddingVertical: 16,
     gap: 10,
     marginTop: 24,
   },
-  startBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  startBtnText: { fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

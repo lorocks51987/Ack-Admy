@@ -27,8 +27,7 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
 
   const handleCheck = () => {
     if (!value.trim()) return;
-    const correct =
-      value.trim().toLowerCase() === exercise.answer.toLowerCase();
+    const correct = value.trim().toLowerCase() === exercise.answer.toLowerCase();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAnswer(correct);
   };
@@ -39,9 +38,8 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "web" ? 0 : 0}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -62,7 +60,7 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
               styles.inputWrapper,
               {
                 borderColor: value.length > 0 ? colors.primary : colors.border,
-                backgroundColor: colors.card,
+                backgroundColor: colors.input,
               },
             ]}
           >
@@ -84,11 +82,7 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
                 onPress={() => setValue("")}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Feather
-                  name="x-circle"
-                  size={18}
-                  color={colors.mutedForeground}
-                />
+                <Feather name="x-circle" size={18} color={colors.mutedForeground} />
               </TouchableOpacity>
             )}
           </View>
@@ -97,8 +91,8 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
             style={styles.hintBtn}
             onPress={() => setShowHint(!showHint)}
           >
-            <Feather name="help-circle" size={16} color={colors.secondary} />
-            <Text style={[styles.hintLabel, { color: colors.secondary }]}>
+            <Feather name="help-circle" size={16} color={colors.primary} />
+            <Text style={[styles.hintLabel, { color: colors.primary }]}>
               {showHint ? "Ocultar dica" : "Ver dica"}
             </Text>
           </TouchableOpacity>
@@ -107,31 +101,21 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
             <View
               style={[
                 styles.hintBox,
-                {
-                  backgroundColor: "#F5EEFF",
-                  borderColor: colors.secondary,
-                },
+                { backgroundColor: "#0A1A1A", borderColor: colors.primary },
               ]}
             >
-              <Text
-                style={[
-                  styles.hintText,
-                  { color: colors.secondary },
-                ]}
-              >
+              <Text style={[styles.hintText, { color: colors.primary }]}>
                 {exercise.hint}
               </Text>
             </View>
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           <TouchableOpacity
             style={[
               styles.checkBtn,
-              {
-                backgroundColor: canCheck ? colors.primary : colors.muted,
-              },
+              { backgroundColor: canCheck ? colors.primary : colors.muted },
             ]}
             onPress={handleCheck}
             activeOpacity={0.85}
@@ -140,9 +124,7 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
             <Text
               style={[
                 styles.checkText,
-                {
-                  color: canCheck ? "#FFFFFF" : colors.mutedForeground,
-                },
+                { color: canCheck ? "#121212" : colors.mutedForeground },
               ]}
             >
               Verificar
@@ -157,73 +139,25 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1 },
-  scroll: {
-    padding: 20,
-    paddingBottom: 120,
-    gap: 16,
-  },
+  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
   typeTag: { marginBottom: 4 },
-  typeText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  question: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 30,
-    marginBottom: 8,
-  },
+  typeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
+  question: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 30, marginBottom: 8 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 2,
+    borderRadius: 10,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 10,
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-  },
-  hintBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  hintLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-  },
-  hintBox: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 14,
-  },
-  hintText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 2,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: "#FFFFFFEE",
-  },
-  checkBtn: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  input: { flex: 1, fontSize: 16, fontFamily: "Inter_500Medium" },
+  hintBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
+  hintLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  hintBox: { borderRadius: 10, borderWidth: 1, padding: 14 },
+  hintText: { fontSize: 15, fontFamily: "Inter_500Medium", letterSpacing: 2 },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  checkBtn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  checkText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

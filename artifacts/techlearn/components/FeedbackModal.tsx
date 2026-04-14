@@ -19,8 +19,8 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Fee
 
   if (!visible) return null;
 
-  const bgColor = correct ? "#E6F9ED" : "#FDECEA";
-  const textColor = correct ? "#16A349" : "#D93025";
+  const bgColor = correct ? "#0D2010" : "#2D0A0A";
+  const accentColor = correct ? "#00FF66" : "#FF4444";
   const iconName = correct ? "check-circle" : "x-circle";
 
   return (
@@ -30,28 +30,28 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Fee
         {
           backgroundColor: bgColor,
           paddingBottom: bottomPad + 16,
-          borderTopColor: correct ? "#16A349" : "#D93025",
+          borderTopColor: accentColor,
         },
       ]}
     >
       <View style={styles.header}>
-        <Feather name={iconName as "check-circle" | "x-circle"} size={28} color={textColor} />
-        <Text style={[styles.title, { color: textColor }]}>
+        <Feather name={iconName as "check-circle" | "x-circle"} size={26} color={accentColor} />
+        <Text style={[styles.title, { color: accentColor }]}>
           {correct ? "Correto!" : "Incorreto!"}
         </Text>
       </View>
       {explanation ? (
-        <Text style={[styles.explanation, { color: textColor }]}>{explanation}</Text>
+        <Text style={[styles.explanation, { color: colors.mutedForeground }]}>{explanation}</Text>
       ) : null}
       <TouchableOpacity
-        style={[styles.btn, { backgroundColor: correct ? "#16A349" : "#D93025" }]}
+        style={[styles.btn, { backgroundColor: accentColor }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onContinue();
         }}
         activeOpacity={0.85}
       >
-        <Text style={styles.btnText}>Continuar</Text>
+        <Text style={[styles.btnText, { color: "#121212" }]}>Continuar</Text>
       </TouchableOpacity>
     </View>
   );
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 20,
     paddingTop: 20,
-    borderTopWidth: 2,
+    borderTopWidth: 1,
     gap: 12,
   },
   header: {
@@ -83,13 +83,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   btn: {
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 4,
   },
   btnText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.3,
