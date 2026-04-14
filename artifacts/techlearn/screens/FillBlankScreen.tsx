@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import type { FillBlankExercise } from "@/constants/lessons";
@@ -17,9 +11,7 @@ interface Props {
 
 export function FillBlankScreen({ exercise, onAnswer }: Props) {
   const colors = useColors();
-  const [filled, setFilled] = useState<(string | null)[]>(
-    exercise.blanks.map(() => null)
-  );
+  const [filled, setFilled] = useState<(string | null)[]>(exercise.blanks.map(() => null));
   const [usedWords, setUsedWords] = useState<string[]>([]);
 
   const nextBlankIdx = filled.findIndex((f) => f === null);
@@ -29,34 +21,27 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
       const idx = filled.findIndex((f) => f === word);
       if (idx === -1) return;
       Haptics.selectionAsync();
-      const newFilled = [...filled];
-      newFilled[idx] = null;
-      setFilled(newFilled);
+      const nf = [...filled]; nf[idx] = null; setFilled(nf);
       setUsedWords((u) => u.filter((w) => w !== word));
       return;
     }
     if (nextBlankIdx === -1) return;
     Haptics.selectionAsync();
-    const newFilled = [...filled];
-    newFilled[nextBlankIdx] = word;
-    setFilled(newFilled);
+    const nf = [...filled]; nf[nextBlankIdx] = word; setFilled(nf);
     setUsedWords((u) => [...u, word]);
   };
 
   const handleBlankPress = (idx: number) => {
-    if (filled[idx] === null) return;
+    if (!filled[idx]) return;
     Haptics.selectionAsync();
     const word = filled[idx]!;
-    const newFilled = [...filled];
-    newFilled[idx] = null;
-    setFilled(newFilled);
+    const nf = [...filled]; nf[idx] = null; setFilled(nf);
     setUsedWords((u) => u.filter((w) => w !== word));
   };
 
   const handleCheck = () => {
     if (filled.includes(null)) return;
-    const correct = filled.every((f, i) => f === exercise.blanks[i]);
-    onAnswer(correct);
+    onAnswer(filled.every((f, i) => f === exercise.blanks[i]));
   };
 
   const canCheck = !filled.includes(null);
@@ -66,30 +51,16 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
     const result: React.ReactNode[] = [];
     parts.forEach((part, i) => {
       result.push(
-        <Text key={`text-${i}`} style={[styles.sentenceText, { color: colors.foreground }]}>
-          {part}
-        </Text>
+        <Text key={`t-${i}`} style={[styles.sentenceText, { color: colors.foreground }]}>{part}</Text>
       );
       if (i < exercise.blanks.length) {
         result.push(
           <TouchableOpacity
-            key={`blank-${i}`}
-            style={[
-              styles.blank,
-              {
-                borderColor: filled[i] ? colors.primary : colors.border,
-                backgroundColor: filled[i] ? "#0A1A1A" : colors.muted,
-                minWidth: 80,
-              },
-            ]}
+            key={`b-${i}`}
+            style={[styles.blank, { borderColor: filled[i] ? colors.primary : colors.border, backgroundColor: filled[i] ? "#1E1A2E" : colors.muted, minWidth: 80 }]}
             onPress={() => handleBlankPress(i)}
           >
-            <Text
-              style={[
-                styles.blankText,
-                { color: filled[i] ? colors.primary : colors.mutedForeground },
-              ]}
-            >
+            <Text style={[styles.blankText, { color: filled[i] ? colors.primary : colors.mutedForeground }]}>
               {filled[i] || "      "}
             </Text>
           </TouchableOpacity>
@@ -102,20 +73,14 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.typeTag}>
-          <Text style={[styles.typeText, { color: colors.primary }]}>Completar</Text>
-        </View>
-        <Text style={[styles.instruction, { color: colors.foreground }]}>
-          {exercise.instruction}
-        </Text>
+        <Text style={[styles.tag, { color: colors.primary }]}>COMPLETAR</Text>
+        <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
 
         <View style={[styles.sentenceBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sentenceWrap}>{renderSentence()}</View>
         </View>
 
-        <Text style={[styles.wordsLabel, { color: colors.mutedForeground }]}>
-          Palavras disponíveis
-        </Text>
+        <Text style={[styles.wordsLabel, { color: colors.mutedForeground }]}>PALAVRAS DISPONÍVEIS</Text>
 
         <View style={styles.wordsPool}>
           {exercise.words.map((word) => {
@@ -123,20 +88,11 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
             return (
               <TouchableOpacity
                 key={word}
-                style={[
-                  styles.wordChip,
-                  {
-                    backgroundColor: used ? colors.muted : colors.card,
-                    borderColor: used ? colors.border : colors.primary,
-                    opacity: used ? 0.4 : 1,
-                  },
-                ]}
+                style={[styles.wordChip, { backgroundColor: used ? colors.muted : colors.card, borderColor: used ? colors.border : colors.primary, opacity: used ? 0.4 : 1 }]}
                 onPress={() => handleWordPress(word)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.wordText, { color: used ? colors.mutedForeground : colors.primary }]}>
-                  {word}
-                </Text>
+                <Text style={[styles.wordText, { color: used ? colors.mutedForeground : colors.primary }]}>{word}</Text>
               </TouchableOpacity>
             );
           })}
@@ -145,14 +101,12 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.checkBtn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
+          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
           onPress={handleCheck}
           activeOpacity={0.85}
           disabled={!canCheck}
         >
-          <Text style={[styles.checkText, { color: canCheck ? "#121212" : colors.mutedForeground }]}>
-            Verificar
-          </Text>
+          <Text style={[styles.btnText, { color: canCheck ? "#0A0E1A" : colors.mutedForeground }]}>Verificar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -162,27 +116,18 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 20, paddingBottom: 120, gap: 16 },
-  typeTag: { marginBottom: 4 },
-  typeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
-  instruction: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28, marginBottom: 4 },
+  tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
+  instruction: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28 },
   sentenceBox: { borderRadius: 10, borderWidth: 1, padding: 16 },
   sentenceWrap: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 4 },
   sentenceText: { fontSize: 15, fontFamily: "Inter_500Medium", lineHeight: 28 },
-  blank: {
-    borderRadius: 6,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginHorizontal: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  blank: { borderRadius: 6, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, marginHorizontal: 2, alignItems: "center", justifyContent: "center" },
   blankText: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  wordsLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1 },
+  wordsLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
   wordsPool: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   wordChip: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10 },
   wordText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
-  checkBtn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
-  checkText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

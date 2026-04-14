@@ -23,20 +23,24 @@ export function ExerciseHeader({ current, total, lives, onClose }: ExerciseHeade
         styles.container,
         {
           paddingTop: topPad + 8,
-          backgroundColor: colors.background,
+          backgroundColor: colors.card,
           borderBottomColor: colors.border,
         },
       ]}
     >
-      <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Feather name="x" size={22} color={colors.mutedForeground} />
+      <TouchableOpacity
+        onPress={onClose}
+        style={styles.closeBtn}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Feather name="x" size={20} color={colors.mutedForeground} />
       </TouchableOpacity>
 
       <ProgressBar progress={current} total={total} />
 
       <View style={styles.livesContainer}>
-        <Feather name="heart" size={18} color="#FF4444" />
-        <Text style={[styles.livesText, { color: "#FF4444" }]}>{lives}</Text>
+        <Feather name="heart" size={16} color="#F85149" />
+        <Text style={[styles.livesText, { color: "#F85149" }]}>{lives}</Text>
       </View>
     </View>
   );
@@ -51,16 +55,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     gap: 12,
   },
-  closeBtn: {
-    padding: 2,
-  },
-  livesContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  livesText: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-  },
+  closeBtn: { padding: 4 },
+  livesContainer: { flexDirection: "row", alignItems: "center", gap: 4 },
+  livesText: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });

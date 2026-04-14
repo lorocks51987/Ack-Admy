@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,42 +7,10 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 
 const MODULES = [
-  {
-    id: 1,
-    title: "Fundamentos da Web",
-    subtitle: "HTML, CSS e JavaScript",
-    lessons: 5,
-    completed: 2,
-    icon: "globe" as const,
-    active: true,
-  },
-  {
-    id: 2,
-    title: "Controle de Versão",
-    subtitle: "Git e GitHub",
-    lessons: 4,
-    completed: 0,
-    icon: "git-branch" as const,
-    active: false,
-  },
-  {
-    id: 3,
-    title: "Banco de Dados",
-    subtitle: "SQL e NoSQL",
-    lessons: 6,
-    completed: 0,
-    icon: "database" as const,
-    active: false,
-  },
-  {
-    id: 4,
-    title: "Redes e Protocolo",
-    subtitle: "HTTP, TCP/IP e DNS",
-    lessons: 5,
-    completed: 0,
-    icon: "wifi" as const,
-    active: false,
-  },
+  { id: 1, title: "Fundamentos da Web", subtitle: "HTML, CSS e JavaScript", lessons: 5, completed: 2, icon: "globe" as const, active: true },
+  { id: 2, title: "Controle de Versão", subtitle: "Git e GitHub", lessons: 4, completed: 0, icon: "git-branch" as const, active: false },
+  { id: 3, title: "Banco de Dados", subtitle: "SQL e NoSQL", lessons: 6, completed: 0, icon: "database" as const, active: false },
+  { id: 4, title: "Redes e Protocolos", subtitle: "HTTP, TCP/IP e DNS", lessons: 5, completed: 0, icon: "wifi" as const, active: false },
 ];
 
 export default function HomeScreen() {
@@ -59,37 +20,28 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: topPad + 8,
-            backgroundColor: colors.card,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
+      <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Bem-vindo!</Text>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Bem-vindo de volta</Text>
             <Text style={[styles.name, { color: colors.foreground }]}>Dev Aprendiz</Text>
           </View>
-          <View style={styles.headerActions}>
+          <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="zap" size={14} color="#FFB300" />
-              <Text style={[styles.badgeText, { color: "#FFB300" }]}>5</Text>
+              <Feather name="zap" size={13} color={colors.primary} />
+              <Text style={[styles.badgeText, { color: colors.primary }]}>5</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="star" size={14} color={colors.primary} />
+              <Feather name="star" size={13} color={colors.primary} />
               <Text style={[styles.badgeText, { color: colors.primary }]}>230 XP</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.dailyGoal}>
-          <View style={styles.dailyGoalText}>
+        <View style={styles.goalArea}>
+          <View style={styles.goalRow}>
             <Text style={[styles.goalLabel, { color: colors.mutedForeground }]}>Meta diária</Text>
-            <Text style={[styles.goalValue, { color: colors.foreground }]}>2/3 lições</Text>
+            <Text style={[styles.goalValue, { color: colors.foreground }]}>2 / 3 lições</Text>
           </View>
           <View style={[styles.goalTrack, { backgroundColor: colors.muted }]}>
             <View style={[styles.goalFill, { backgroundColor: colors.primary, width: "67%" }]} />
@@ -98,36 +50,18 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 100 },
-        ]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
-          SUA JORNADA
-        </Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUA JORNADA</Text>
 
         {MODULES.map((mod, index) => (
-          <View key={mod.id} style={styles.moduleRow}>
+          <View key={mod.id}>
             {index > 0 && (
-              <View
-                style={[
-                  styles.connector,
-                  { backgroundColor: mod.active ? colors.primary : colors.border },
-                ]}
-              />
+              <View style={[styles.connector, { backgroundColor: colors.border, marginLeft: 37 }]} />
             )}
-
             <TouchableOpacity
-              style={[
-                styles.moduleCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: mod.active ? colors.border : colors.border,
-                  opacity: mod.active ? 1 : 0.5,
-                },
-              ]}
+              style={[styles.card, { backgroundColor: colors.card, borderColor: mod.active ? colors.border : colors.border, opacity: mod.active ? 1 : 0.45 }]}
               onPress={() => {
                 if (!mod.active) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -135,49 +69,24 @@ export default function HomeScreen() {
               }}
               activeOpacity={mod.active ? 0.8 : 1}
             >
-              <View
-                style={[
-                  styles.moduleIcon,
-                  { backgroundColor: mod.active ? "#0A1A1A" : colors.muted, borderColor: mod.active ? colors.primary : colors.border },
-                ]}
-              >
-                <Feather
-                  name={mod.icon}
-                  size={22}
-                  color={mod.active ? colors.primary : colors.mutedForeground}
-                />
+              <View style={[styles.iconWrap, { backgroundColor: colors.muted, borderColor: mod.active ? colors.primary : colors.border }]}>
+                <Feather name={mod.icon} size={20} color={mod.active ? colors.primary : colors.mutedForeground} />
               </View>
-
-              <View style={styles.moduleInfo}>
-                <Text style={[styles.moduleTitle, { color: colors.foreground }]}>
-                  {mod.title}
-                </Text>
-                <Text style={[styles.moduleSubtitle, { color: colors.mutedForeground }]}>
-                  {mod.subtitle}
-                </Text>
-                <View style={styles.moduleProgress}>
+              <View style={styles.cardInfo}>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]}>{mod.title}</Text>
+                <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>{mod.subtitle}</Text>
+                <View style={styles.progressRow}>
                   <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          backgroundColor: colors.primary,
-                          width: `${(mod.completed / mod.lessons) * 100}%`,
-                        },
-                      ]}
-                    />
+                    <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${(mod.completed / mod.lessons) * 100}%` }]} />
                   </View>
-                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>
-                    {mod.completed}/{mod.lessons}
-                  </Text>
+                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{mod.completed}/{mod.lessons}</Text>
                 </View>
               </View>
-
-              {mod.active ? (
-                <Feather name="chevron-right" size={18} color={colors.primary} />
-              ) : (
-                <Feather name="lock" size={16} color={colors.mutedForeground} />
-              )}
+              <Feather
+                name={mod.active ? "chevron-right" : "lock"}
+                size={16}
+                color={mod.active ? colors.primary : colors.mutedForeground}
+              />
             </TouchableOpacity>
           </View>
         ))}
@@ -190,8 +99,8 @@ export default function HomeScreen() {
           }}
           activeOpacity={0.85}
         >
-          <Feather name="play" size={18} color="#121212" />
-          <Text style={[styles.startBtnText, { color: "#121212" }]}>Iniciar Próxima Lição</Text>
+          <Feather name="play" size={16} color="#0A0E1A" />
+          <Text style={[styles.startBtnText, { color: "#0A0E1A" }]}>Iniciar Próxima Lição</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -200,78 +109,31 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    gap: 16,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  greeting: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  name: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
-  },
-  badgeText: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  dailyGoal: { gap: 8 },
-  dailyGoalText: { flexDirection: "row", justifyContent: "space-between" },
-  goalLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  goalValue: { fontSize: 12, fontFamily: "Inter_700Bold" },
-  goalTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
-  goalFill: { height: 6, borderRadius: 3 },
+  header: { paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1, gap: 16 },
+  headerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  greeting: { fontSize: 11, fontFamily: "Inter_400Regular", letterSpacing: 0.5 },
+  name: { fontSize: 20, fontFamily: "Inter_700Bold", marginTop: 2 },
+  badges: { flexDirection: "row", gap: 8 },
+  badge: { flexDirection: "row", alignItems: "center", borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, gap: 4 },
+  badgeText: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  goalArea: { gap: 8 },
+  goalRow: { flexDirection: "row", justifyContent: "space-between" },
+  goalLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  goalValue: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  goalTrack: { height: 5, borderRadius: 3, overflow: "hidden" },
+  goalFill: { height: 5, borderRadius: 3 },
   scroll: { padding: 20, gap: 0 },
-  sectionTitle: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 1.5,
-    marginBottom: 16,
-  },
-  moduleRow: { gap: 0 },
-  connector: { width: 2, height: 16, marginLeft: 34, marginBottom: 0 },
-  moduleCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 14,
-    gap: 14,
-    marginBottom: 4,
-  },
-  moduleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  moduleInfo: { flex: 1, gap: 3 },
-  moduleTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  moduleSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  moduleProgress: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
-  progressTrack: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
-  progressFill: { height: 4, borderRadius: 2 },
-  progressText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  startBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10,
-    paddingVertical: 16,
-    gap: 10,
-    marginTop: 24,
-  },
+  sectionLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 2, marginBottom: 16 },
+  connector: { width: 2, height: 14 },
+  card: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 14, gap: 14, marginBottom: 4 },
+  iconWrap: { width: 46, height: 46, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  cardInfo: { flex: 1, gap: 3 },
+  cardTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  cardSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  progressRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  progressTrack: { flex: 1, height: 3, borderRadius: 2, overflow: "hidden" },
+  progressFill: { height: 3, borderRadius: 2 },
+  progressText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  startBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 10, paddingVertical: 16, gap: 8, marginTop: 24 },
   startBtnText: { fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

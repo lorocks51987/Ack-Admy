@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import type { MultipleChoiceExercise } from "@/constants/lessons";
@@ -34,62 +28,39 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
 
   function getOptionStyle(idx: number) {
     if (!checked) {
-      if (idx === selected) {
-        return { backgroundColor: "#1A2A2A", borderColor: colors.primary };
-      }
+      if (idx === selected) return { backgroundColor: "#1E1A2E", borderColor: colors.primary };
       return { backgroundColor: colors.card, borderColor: colors.border };
     }
-    if (idx === exercise.correct) {
-      return { backgroundColor: "#0D2010", borderColor: "#00FF66" };
-    }
-    if (idx === selected && selected !== exercise.correct) {
-      return { backgroundColor: "#2D0A0A", borderColor: "#FF4444" };
-    }
+    if (idx === exercise.correct) return { backgroundColor: "#0D1F0D", borderColor: "#3FB950" };
+    if (idx === selected) return { backgroundColor: "#1F0A0A", borderColor: "#F85149" };
     return { backgroundColor: colors.card, borderColor: colors.border };
   }
 
-  function getOptionTextColor(idx: number) {
-    if (!checked) {
-      return idx === selected ? colors.primary : colors.foreground;
-    }
-    if (idx === exercise.correct) return "#00FF66";
-    if (idx === selected && selected !== exercise.correct) return "#FF4444";
+  function getTextColor(idx: number) {
+    if (!checked) return idx === selected ? colors.primary : colors.foreground;
+    if (idx === exercise.correct) return "#3FB950";
+    if (idx === selected) return "#F85149";
     return colors.mutedForeground;
   }
 
   function getLetterBg(idx: number) {
-    if (!checked) {
-      return idx === selected ? colors.primary : colors.muted;
-    }
-    if (idx === exercise.correct) return "#00FF66";
-    if (idx === selected) return "#FF4444";
+    if (!checked) return idx === selected ? colors.primary : colors.muted;
+    if (idx === exercise.correct) return "#3FB950";
+    if (idx === selected) return "#F85149";
     return colors.muted;
   }
 
   function getLetterColor(idx: number) {
-    if (!checked) {
-      return idx === selected ? "#121212" : colors.mutedForeground;
-    }
-    if (idx === exercise.correct || idx === selected) return "#121212";
+    if (!checked) return idx === selected ? "#0A0E1A" : colors.mutedForeground;
+    if (idx === exercise.correct || idx === selected) return "#0A0E1A";
     return colors.mutedForeground;
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.typeTag}>
-          <Text style={[styles.typeText, { color: colors.primary }]}>
-            Escolha a resposta correta
-          </Text>
-        </View>
-
-        <Text style={[styles.question, { color: colors.foreground }]}>
-          {exercise.question}
-        </Text>
-
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.tag, { color: colors.primary }]}>MÚLTIPLA ESCOLHA</Text>
+        <Text style={[styles.question, { color: colors.foreground }]}>{exercise.question}</Text>
         <View style={styles.options}>
           {exercise.options.map((opt, idx) => (
             <TouchableOpacity
@@ -98,23 +69,12 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
               onPress={() => handleSelect(idx)}
               activeOpacity={0.8}
             >
-              <View
-                style={[
-                  styles.optionLetter,
-                  { backgroundColor: getLetterBg(idx) },
-                ]}
-              >
-                <Text
-                  style={[styles.letterText, { color: getLetterColor(idx) }]}
-                >
+              <View style={[styles.letter, { backgroundColor: getLetterBg(idx) }]}>
+                <Text style={[styles.letterText, { color: getLetterColor(idx) }]}>
                   {["A", "B", "C", "D"][idx]}
                 </Text>
               </View>
-              <Text
-                style={[styles.optionText, { color: getOptionTextColor(idx) }]}
-              >
-                {opt}
-              </Text>
+              <Text style={[styles.optionText, { color: getTextColor(idx) }]}>{opt}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -122,22 +82,12 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.checkBtn,
-            {
-              backgroundColor: selected !== null ? colors.primary : colors.muted,
-            },
-          ]}
+          style={[styles.btn, { backgroundColor: selected !== null ? colors.primary : colors.muted }]}
           onPress={handleCheck}
           activeOpacity={0.85}
           disabled={selected === null || checked}
         >
-          <Text
-            style={[
-              styles.checkText,
-              { color: selected !== null ? "#121212" : colors.mutedForeground },
-            ]}
-          >
+          <Text style={[styles.btnText, { color: selected !== null ? "#0A0E1A" : colors.mutedForeground }]}>
             Verificar
           </Text>
         </TouchableOpacity>
@@ -148,24 +98,9 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: {
-    padding: 20,
-    paddingBottom: 120,
-    gap: 16,
-  },
-  typeTag: { marginBottom: 4 },
-  typeText: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  question: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 30,
-    marginBottom: 8,
-  },
+  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
+  tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
+  question: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 30 },
   options: { gap: 10 },
   option: {
     flexDirection: "row",
@@ -173,42 +108,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     padding: 14,
-    gap: 14,
+    gap: 12,
   },
-  optionLetter: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  letterText: {
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-  },
-  optionText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    flex: 1,
-    lineHeight: 22,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    borderTopWidth: 1,
-  },
-  checkBtn: {
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  letter: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  letterText: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  optionText: { fontSize: 15, fontFamily: "Inter_500Medium", flex: 1, lineHeight: 22 },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

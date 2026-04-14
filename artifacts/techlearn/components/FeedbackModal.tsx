@@ -19,8 +19,8 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Fee
 
   if (!visible) return null;
 
-  const bgColor = correct ? "#0D2010" : "#2D0A0A";
-  const accentColor = correct ? "#00FF66" : "#FF4444";
+  const bgColor = correct ? "#0D1F0D" : "#1F0A0A";
+  const accentColor = correct ? "#3FB950" : "#F85149";
   const iconName = correct ? "check-circle" : "x-circle";
 
   return (
@@ -35,7 +35,7 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Fee
       ]}
     >
       <View style={styles.header}>
-        <Feather name={iconName as "check-circle" | "x-circle"} size={26} color={accentColor} />
+        <Feather name={iconName as "check-circle" | "x-circle"} size={24} color={accentColor} />
         <Text style={[styles.title, { color: accentColor }]}>
           {correct ? "Correto!" : "Incorreto!"}
         </Text>
@@ -51,7 +51,7 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Fee
         }}
         activeOpacity={0.85}
       >
-        <Text style={[styles.btnText, { color: "#121212" }]}>Continuar</Text>
+        <Text style={[styles.btnText, { color: "#0A0E1A" }]}>Continuar</Text>
       </TouchableOpacity>
     </View>
   );
@@ -68,29 +68,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 12,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-  },
-  explanation: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 20,
-  },
-  btn: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  btnText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
+  header: { flexDirection: "row", alignItems: "center", gap: 10 },
+  title: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  explanation: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  btn: { borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  btnText: { fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });
