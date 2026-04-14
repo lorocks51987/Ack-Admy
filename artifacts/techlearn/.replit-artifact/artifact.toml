@@ -1,6 +1,6 @@
 kind = "mobile"
 previewPath = "/"
-title = "TechLearn - Aprenda Tecnologia"
+title = "Ack-admy"
 version = "1.0.0"
 id = "artifacts/techlearn"
 router = "expo-domain"
