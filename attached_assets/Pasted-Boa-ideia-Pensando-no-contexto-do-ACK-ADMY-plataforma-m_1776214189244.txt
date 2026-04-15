@@ -1,0 +1,86 @@
+Boa ideia! Pensando no contexto do ACK-ADMY — plataforma mobile gamificada, exercícios progressivos, público que vai de iniciante a profissional — aqui está uma proposta:
+
+---
+
+## 🎯 Modelo: **Incident Simulation Exercise (ISE)**
+
+A ideia central é que cada exercício simula um **incidente real de segurança** em etapas, onde o usuário age tanto como Blue Team (defender, investigar, remediar) quanto Red Team (entender o ataque, identificar o vetor), dependendo do nível da trilha.
+
+---
+
+### Como funciona na prática
+
+O exercício tem **3 fases sequenciais**, como um mini-CTF narrativo:
+
+**Fase 1 — Briefing (contexto)**
+O usuário recebe um cenário real, por exemplo:
+> *"Você é analista de segurança da FinTech Pague+. Às 02:14 o sistema de alertas disparou: 47 tentativas de login no painel admin em 3 minutos, todas de IPs diferentes."*
+
+**Fase 2 — Investigação (exercício interativo)**
+O usuário responde perguntas progressivas baseadas em evidências apresentadas — logs, headers HTTP, trechos de código vulnerável, outputs de ferramentas. Os tipos de questão já existem no app (múltipla escolha, associação, ordenação) mas com conteúdo técnico real:
+- Identificar o tipo de ataque no log
+- Ordenar os passos corretos de resposta a incidente
+- Associar CVEs às vulnerabilidades encontradas
+- Preencher o comando correto de mitigação
+
+**Fase 3 — Remediação (desafio prático)**
+O usuário recebe um trecho de código vulnerável e precisa identificar/corrigir o problema. Ou recebe um checklist de ações e precisa ordenar a resposta correta ao incidente.
+
+---
+
+### Exemplo concreto — Nível Iniciante (Blue Team)
+
+**Cenário:** *Sistema de login de uma loja virtual está sendo atacado.*
+
+```
+Log apresentado ao usuário:
+[02:14:01] POST /login | IP: 189.45.12.3  | user: admin | status: 401
+[02:14:02] POST /login | IP: 201.17.88.1  | user: admin | status: 401
+[02:14:03] POST /login | IP: 177.32.45.9  | user: admin | status: 401
+[02:14:04] POST /login | IP: 190.22.11.5  | user: admin | status: 200 ✓
+```
+
+Pergunta 1 (múltipla escolha): *Qual tipo de ataque está sendo executado?*
+→ Credential Stuffing ✅ / Brute Force / SQL Injection / DDoS
+
+Pergunta 2 (ordenação): *Ordene as ações de resposta imediata:*
+→ Bloquear IPs / Resetar senha do admin / Ativar MFA / Notificar equipe / Analisar sessão aberta
+
+Pergunta 3 (fill blank): *Complete a regra de rate limiting:*
+→ `"Bloquear após ___ tentativas em ___ segundos por IP"`
+
+---
+
+### Exemplo concreto — Nível Avançado (Red Team)
+
+**Cenário:** *Você é pentester contratado. Encontrou esse endpoint:*
+
+```
+GET /api/user?id=1
+Response: {"id":1,"name":"João","email":"joao@empresa.com"}
+
+GET /api/user?id=1 OR 1=1--
+Response: {"id":1,"name":"João","email":"joao@empresa.com"} 
+```
+
+Pergunta 1: *O endpoint é vulnerável a SQL Injection?* → Sim / Não / Não é possível determinar
+
+Pergunta 2 (text input): *Qual payload você usaria para extrair todos os usuários?*
+
+Pergunta 3 (múltipla escolha): *Qual a causa raiz da vulnerabilidade?*
+→ Falta de prepared statements ✅ / Senha fraca / Falta de HTTPS / Rate limiting ausente
+
+---
+
+### Por que isso responde ao feedback dos avaliadores
+
+O feedback criticou a falta de **labs práticos reais** e diferencial frente ao TryHackMe/HackTheBox. O ISE se diferencia porque:
+
+- **Não exige infraestrutura pesada** — tudo roda dentro do app mobile, sem VMs ou VPNs, o que é tecnicamente viável no MVP
+- **É narrativo e contextualizado** — diferente do CTF puro, o usuário aprende *por que* aquele ataque acontece, não só *como* explorar
+- **Cobre Blue e Red Team no mesmo exercício** — o iniciante vê pelo lado defensivo, o avançado pelo ofensivo, usando o mesmo cenário
+- **É em português** — nenhum concorrente direto faz isso com essa qualidade
+
+---
+
+Quer que eu já estruture isso no formato do `lessons.ts` do projeto para você plugar direto no app?
