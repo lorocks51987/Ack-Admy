@@ -12,6 +12,7 @@ import { TextInputScreen } from "@/screens/TextInputScreen";
 import { OrderingScreen } from "@/screens/OrderingScreen";
 import { FillBlankScreen } from "@/screens/FillBlankScreen";
 import { BriefingScreen } from "@/screens/BriefingScreen";
+import { PhishingSimulatorScreen } from "@/screens/PhishingSimulatorScreen";
 
 export default function LessonScreen() {
   const colors = useColors();
@@ -53,7 +54,9 @@ export default function LessonScreen() {
   const handleClose = () => router.back();
 
   const explanation =
-    exercise.type === "multiple_choice" ? exercise.explanation : undefined;
+    exercise.type === "multiple_choice" ? exercise.explanation
+    : exercise.type === "phishing_email" ? exercise.explanation
+    : undefined;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -84,6 +87,9 @@ export default function LessonScreen() {
         )}
         {exercise.type === "fill_blank" && (
           <FillBlankScreen exercise={exercise} onAnswer={handleAnswer} />
+        )}
+        {exercise.type === "phishing_email" && (
+          <PhishingSimulatorScreen exercise={exercise} onAnswer={handleAnswer} />
         )}
       </View>
 

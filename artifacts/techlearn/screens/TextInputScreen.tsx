@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Feather } from "@expo/vector-icons";
+import { XCircle, HelpCircle } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { TextInputExercise } from "@/constants/lessons";
 
@@ -47,31 +47,26 @@ export function TextInputScreen({ exercise, onAnswer }: Props) {
             />
             {value.length > 0 && (
               <TouchableOpacity onPress={() => setValue("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Feather name="x-circle" size={18} color={colors.mutedForeground} />
+                <XCircle size={18} color={colors.mutedForeground} strokeWidth={2} />
               </TouchableOpacity>
             )}
           </View>
 
           <TouchableOpacity style={styles.hintBtn} onPress={() => setShowHint(!showHint)}>
-            <Feather name="help-circle" size={15} color={colors.primary} />
+            <HelpCircle size={15} color={colors.primary} strokeWidth={2} />
             <Text style={[styles.hintLabel, { color: colors.primary }]}>{showHint ? "Ocultar dica" : "Ver dica"}</Text>
           </TouchableOpacity>
 
           {showHint && (
-            <View style={[styles.hintBox, { backgroundColor: "#10131E", borderColor: colors.border }]}>
+            <View style={[styles.hintBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.hintText, { color: colors.primary }]}>{exercise.hint}</Text>
             </View>
           )}
         </ScrollView>
 
         <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
-            onPress={handleCheck}
-            activeOpacity={0.85}
-            disabled={!canCheck}
-          >
-            <Text style={[styles.btnText, { color: canCheck ? "#0A0E1A" : colors.mutedForeground }]}>Verificar</Text>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]} onPress={handleCheck} activeOpacity={0.85} disabled={!canCheck}>
+            <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
           </TouchableOpacity>
         </View>
       </View>

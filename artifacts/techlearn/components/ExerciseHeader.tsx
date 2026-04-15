@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { X, Heart, AlertCircle } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ProgressBar } from "./ProgressBar";
@@ -23,7 +23,7 @@ export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBr
   return (
     <View style={[styles.container, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Feather name="x" size={20} color={colors.mutedForeground} />
+        <X size={20} color={colors.mutedForeground} strokeWidth={2} />
       </TouchableOpacity>
 
       <View style={styles.center}>
@@ -54,11 +54,11 @@ export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBr
 
       <View style={styles.livesContainer}>
         {isBriefing ? (
-          <Feather name="alert-circle" size={18} color={colors.primary} />
+          <AlertCircle size={18} color={colors.primary} strokeWidth={2} />
         ) : (
           <>
-            <Feather name="heart" size={16} color="#F85149" />
-            <Text style={[styles.livesText, { color: "#F85149" }]}>{lives}</Text>
+            <Heart size={16} color={colors.error} strokeWidth={2} />
+            <Text style={[styles.livesText, { color: colors.error }]}>{lives}</Text>
           </>
         )}
       </View>

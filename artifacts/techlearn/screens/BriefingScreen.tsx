@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Platform } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Shield, Zap, BookOpen, Layers, AlertCircle } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -12,14 +12,16 @@ interface Props {
 }
 
 const CATEGORY_META = {
-  blue_team: { label: "BLUE TEAM", icon: "shield" as const, color: "#3B82F6" },
-  red_team: { label: "RED TEAM", icon: "zap" as const, color: "#F85149" },
+  blue_team: { label: "BLUE TEAM", Icon: Shield, color: "#3B82F6" },
+  red_team: { label: "RED TEAM", Icon: Zap, color: "#EF4444" },
+  lgpd: { label: "LGPD", Icon: BookOpen, color: "#8B5CF6" },
+  awareness: { label: "AWARENESS", Icon: AlertCircle, color: "#F59E0B" },
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  Iniciante: "#3FB950",
-  Intermediário: "#F0A500",
-  Avançado: "#F85149",
+  Iniciante: "#22C55E",
+  Intermediário: "#F59E0B",
+  Avançado: "#EF4444",
 };
 
 export function BriefingScreen({ exercise, onStart }: Props) {
@@ -30,13 +32,14 @@ export function BriefingScreen({ exercise, onStart }: Props) {
 
   const meta = CATEGORY_META[exercise.category];
   const diffColor = DIFFICULTY_COLOR[exercise.difficulty];
+  const { Icon } = meta;
 
   React.useEffect(() => {
     const native = Platform.OS !== "web";
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.04, duration: 900, useNativeDriver: native }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: native }),
+        Animated.timing(pulseAnim, { toValue: 1.03, duration: 1000, useNativeDriver: native }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: native }),
       ])
     );
     pulse.start();
@@ -49,14 +52,14 @@ export function BriefingScreen({ exercise, onStart }: Props) {
 
         <View style={styles.badgeRow}>
           <View style={[styles.badge, { backgroundColor: meta.color + "20", borderColor: meta.color }]}>
-            <Feather name={meta.icon} size={11} color={meta.color} />
+            <Icon size={11} color={meta.color} strokeWidth={2} />
             <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: diffColor + "20", borderColor: diffColor }]}>
             <Text style={[styles.badgeText, { color: diffColor }]}>{exercise.difficulty}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Feather name="layers" size={11} color={colors.mutedForeground} />
+            <Layers size={11} color={colors.mutedForeground} strokeWidth={2} />
             <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{exercise.totalPhases} FASES</Text>
           </View>
         </View>
@@ -65,23 +68,23 @@ export function BriefingScreen({ exercise, onStart }: Props) {
 
         <View style={[styles.narrativeBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.narrativeHeader}>
-            <Feather name="file-text" size={13} color={colors.primary} />
+            <BookOpen size={13} color={colors.primary} strokeWidth={2} />
             <Text style={[styles.narrativeLabel, { color: colors.primary }]}>BRIEFING</Text>
           </View>
           <Text style={[styles.narrativeText, { color: colors.foreground }]}>{exercise.narrative}</Text>
         </View>
 
         {exercise.evidence ? (
-          <View style={[styles.evidenceBox, { backgroundColor: "#0A0D12", borderColor: colors.primary + "40" }]}>
+          <View style={[styles.evidenceBox, { backgroundColor: "#0A0A0F", borderColor: colors.primary + "40" }]}>
             <View style={styles.evidenceHeader}>
               <View style={styles.termDots}>
-                <View style={[styles.dot, { backgroundColor: "#F85149" }]} />
-                <View style={[styles.dot, { backgroundColor: "#F0A500" }]} />
-                <View style={[styles.dot, { backgroundColor: "#3FB950" }]} />
+                <View style={[styles.dot, { backgroundColor: "#EF4444" }]} />
+                <View style={[styles.dot, { backgroundColor: "#F59E0B" }]} />
+                <View style={[styles.dot, { backgroundColor: "#22C55E" }]} />
               </View>
               <Text style={[styles.termLabel, { color: colors.mutedForeground }]}>terminal — evidência</Text>
             </View>
-            <Text style={[styles.evidenceText, { color: "#00E5FF" }]}>{exercise.evidence}</Text>
+            <Text style={[styles.evidenceText, { color: colors.primary }]}>{exercise.evidence}</Text>
           </View>
         ) : null}
 
@@ -109,8 +112,8 @@ export function BriefingScreen({ exercise, onStart }: Props) {
             }}
             activeOpacity={0.85}
           >
-            <Feather name="shield" size={17} color="#0A0E1A" />
-            <Text style={[styles.startBtnText, { color: "#0A0E1A" }]}>Iniciar Investigação</Text>
+            <Shield size={17} color="#FFFFFF" strokeWidth={2} />
+            <Text style={[styles.startBtnText]}>Iniciar Módulo</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -130,7 +133,7 @@ const styles = StyleSheet.create({
   narrativeLabel: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
   narrativeText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
   evidenceBox: { borderRadius: 10, borderWidth: 1, overflow: "hidden" },
-  evidenceHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1A2035" },
+  evidenceHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#1E1E2E" },
   termDots: { flexDirection: "row", gap: 5 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   termLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
@@ -142,5 +145,5 @@ const styles = StyleSheet.create({
   phaseLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1 },
   startBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 10, paddingVertical: 16, gap: 8 },
-  startBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  startBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3, color: "#FFFFFF" },
 });

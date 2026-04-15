@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Feather } from "@expo/vector-icons";
+import { X } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { OrderingExercise } from "@/constants/lessons";
 
@@ -51,15 +51,10 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
           ) : (
             <View style={styles.chips}>
               {arranged.map((entry, i) => (
-                <TouchableOpacity
-                  key={entry.origIdx}
-                  style={[styles.chip, { backgroundColor: "#1E1A2E", borderColor: colors.primary }]}
-                  onPress={() => removeFromArranged(entry)}
-                  activeOpacity={0.8}
-                >
+                <TouchableOpacity key={entry.origIdx} style={[styles.chip, { backgroundColor: "rgba(99,102,241,0.1)", borderColor: colors.primary }]} onPress={() => removeFromArranged(entry)} activeOpacity={0.8}>
                   <Text style={[styles.chipNum, { color: colors.mutedForeground }]}>{i + 1}</Text>
                   <Text style={[styles.chipText, { color: colors.primary }]}>{entry.item}</Text>
-                  <Feather name="x" size={13} color={colors.mutedForeground} />
+                  <X size={13} color={colors.mutedForeground} strokeWidth={2} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -70,12 +65,7 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
 
         <View style={styles.pool}>
           {pool.map((entry) => (
-            <TouchableOpacity
-              key={entry.origIdx}
-              style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => addToArranged(entry)}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity key={entry.origIdx} style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => addToArranged(entry)} activeOpacity={0.8}>
               <Text style={[styles.chipText, { color: colors.foreground }]}>{entry.item}</Text>
             </TouchableOpacity>
           ))}
@@ -83,13 +73,8 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
-          onPress={handleCheck}
-          activeOpacity={0.85}
-          disabled={!canCheck}
-        >
-          <Text style={[styles.btnText, { color: canCheck ? "#0A0E1A" : colors.mutedForeground }]}>Verificar</Text>
+        <TouchableOpacity style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]} onPress={handleCheck} activeOpacity={0.85} disabled={!canCheck}>
+          <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
         </TouchableOpacity>
       </View>
     </View>

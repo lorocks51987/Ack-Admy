@@ -50,19 +50,11 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
     const parts = exercise.sentence.split("___");
     const result: React.ReactNode[] = [];
     parts.forEach((part, i) => {
-      result.push(
-        <Text key={`t-${i}`} style={[styles.sentenceText, { color: colors.foreground }]}>{part}</Text>
-      );
+      result.push(<Text key={`t-${i}`} style={[styles.sentenceText, { color: colors.foreground }]}>{part}</Text>);
       if (i < exercise.blanks.length) {
         result.push(
-          <TouchableOpacity
-            key={`b-${i}`}
-            style={[styles.blank, { borderColor: filled[i] ? colors.primary : colors.border, backgroundColor: filled[i] ? "#1E1A2E" : colors.muted, minWidth: 80 }]}
-            onPress={() => handleBlankPress(i)}
-          >
-            <Text style={[styles.blankText, { color: filled[i] ? colors.primary : colors.mutedForeground }]}>
-              {filled[i] || "      "}
-            </Text>
+          <TouchableOpacity key={`b-${i}`} style={[styles.blank, { borderColor: filled[i] ? colors.primary : colors.border, backgroundColor: filled[i] ? "rgba(99,102,241,0.1)" : colors.muted, minWidth: 80 }]} onPress={() => handleBlankPress(i)}>
+            <Text style={[styles.blankText, { color: filled[i] ? colors.primary : colors.mutedForeground }]}>{filled[i] || "      "}</Text>
           </TouchableOpacity>
         );
       }
@@ -86,12 +78,7 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
           {exercise.words.map((word) => {
             const used = usedWords.includes(word);
             return (
-              <TouchableOpacity
-                key={word}
-                style={[styles.wordChip, { backgroundColor: used ? colors.muted : colors.card, borderColor: used ? colors.border : colors.primary, opacity: used ? 0.4 : 1 }]}
-                onPress={() => handleWordPress(word)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity key={word} style={[styles.wordChip, { backgroundColor: used ? colors.muted : colors.card, borderColor: used ? colors.border : colors.primary, opacity: used ? 0.4 : 1 }]} onPress={() => handleWordPress(word)} activeOpacity={0.8}>
                 <Text style={[styles.wordText, { color: used ? colors.mutedForeground : colors.primary }]}>{word}</Text>
               </TouchableOpacity>
             );
@@ -100,13 +87,8 @@ export function FillBlankScreen({ exercise, onAnswer }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
-          onPress={handleCheck}
-          activeOpacity={0.85}
-          disabled={!canCheck}
-        >
-          <Text style={[styles.btnText, { color: canCheck ? "#0A0E1A" : colors.mutedForeground }]}>Verificar</Text>
+        <TouchableOpacity style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]} onPress={handleCheck} activeOpacity={0.85} disabled={!canCheck}>
+          <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
         </TouchableOpacity>
       </View>
     </View>

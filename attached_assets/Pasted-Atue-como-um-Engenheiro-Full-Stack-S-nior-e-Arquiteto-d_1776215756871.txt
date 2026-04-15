@@ -1,0 +1,28 @@
+Atue como um Engenheiro Full-Stack Sênior e Arquiteto de Produto SaaS. Estamos realizando um pivô estratégico no projeto "ACK-ADMY". Vamos deixar de ser uma plataforma B2C de AppSec para desenvolvedores e passar a ser uma plataforma B2B de Conscientização de Segurança (Security Awareness) e LGPD para funcionários corporativos não-técnicos.
+
+O projeto é um monorepo pnpm com:
+- `artifacts/techlearn`: App mobile (React Native + Expo Router)
+- `artifacts/api-server`: API (Express 5 + TypeScript)
+- `lib/db`: Schema do banco (Drizzle ORM + PostgreSQL)
+
+A estética visual "Ultra Modern Dark" (Zinc 950 de fundo, Indigo #6366F1 de destaque, Lucide Icons) deve ser mantida, pois transmite a seriedade de uma ferramenta corporativa premium.
+
+Por favor, execute as seguintes tarefas em ordem:
+
+1. ATUALIZAÇÃO DO SCHEMA DO BANCO DE DADOS (lib/db):
+- Crie ou atualize o schema do Drizzle para suportar a hierarquia B2B. Precisamos das tabelas/relacionamentos para: `Company` (Empresa cliente), `Department` (ex: Financeiro, RH, Marketing) e `User` (vinculado a um departamento).
+- Crie uma tabela `ComplianceRecord` para registrar quando um funcionário conclui módulos obrigatórios (para auditoria de LGPD).
+
+2. REFATORAÇÃO DO CONTEÚDO NO APP MOBILE (artifacts/techlearn):
+- Localize o arquivo de dados das lições (ex: `constants/lessons.ts` ou onde o mock state estiver) e substitua os temas técnicos por Módulos Corporativos. 
+- Crie 3 módulos base: 1. "Fundamentos da LGPD", 2. "Engenharia Social e Phishing", 3. "Higiene de Senhas e Mesa Limpa".
+
+3. CRIAÇÃO DO COMPONENTE ISE (Incident Simulation Exercise) - CENÁRIO DE PHISHING:
+- Crie um novo tipo de exercício no app mobile chamado `PhishingSimulator`.
+- A UI deve simular a tela de um e-mail corporativo recebido (ex: um e-mail falso do CEO pedindo transferência urgente).
+- O usuário deve conseguir tocar em partes da tela (Remetente, Link, Anexo) para "sinalizar" os indicadores de fraude.
+
+4. REFATORAÇÃO DA GAMIFICAÇÃO (App Mobile):
+- Altere a tela de "Ranking/Leaderboard" para focar em "Ranking de Departamentos" em vez de apenas indivíduos. A UI deve mostrar qual setor da empresa está mais seguro no mês (ex: Marketing com 98% de conclusão vs. Vendas com 85%).
+
+Mostre o plano de execução e, após minha aprovação, comece implementando o Schema do Drizzle e o mock de dados das novas lições.
