@@ -11,6 +11,7 @@ import { AssociationScreen } from "@/screens/AssociationScreen";
 import { TextInputScreen } from "@/screens/TextInputScreen";
 import { OrderingScreen } from "@/screens/OrderingScreen";
 import { FillBlankScreen } from "@/screens/FillBlankScreen";
+import { BriefingScreen } from "@/screens/BriefingScreen";
 
 export default function LessonScreen() {
   const colors = useColors();
@@ -24,32 +25,32 @@ export default function LessonScreen() {
   const [xp, setXp] = useState(0);
 
   const exercise = LESSONS[currentIdx];
+  const isBriefing = exercise.type === "briefing";
+  const phaseInfo = !isBriefing && "phaseInfo" in exercise ? exercise.phaseInfo : undefined;
 
-  const handleAnswer = (correct: boolean) => {
-    setLastCorrect(correct);
-    if (!correct) {
-      setLives((l) => Math.max(0, l - 1));
-    } else {
-      setXp((x) => x + 10);
-    }
-    setShowFeedback(true);
-  };
-
-  const handleContinue = () => {
-    setShowFeedback(false);
+  const advance = () => {
     if (currentIdx + 1 >= LESSONS.length) {
-      router.replace({
-        pathname: "/complete",
-        params: { xp: xp + (lastCorrect ? 10 : 0) },
-      });
+      router.replace({ pathname: "/complete", params: { xp: xp + (lastCorrect ? 10 : 0) } });
     } else {
       setCurrentIdx((i) => i + 1);
     }
   };
 
-  const handleClose = () => {
-    router.back();
+  const handleBriefingStart = () => advance();
+
+  const handleAnswer = (correct: boolean) => {
+    setLastCorrect(correct);
+    if (!correct) setLives((l) => Math.max(0, l - 1));
+    else setXp((x) => x + 10);
+    setShowFeedback(true);
   };
+
+  const handleContinue = () => {
+    setShowFeedback(false);
+    advance();
+  };
+
+  const handleClose = () => router.back();
 
   const explanation =
     exercise.type === "multiple_choice" ? exercise.explanation : undefined;
@@ -61,14 +62,16 @@ export default function LessonScreen() {
         total={LESSONS.length}
         lives={lives}
         onClose={handleClose}
+        phaseInfo={phaseInfo}
+        isBriefing={isBriefing}
       />
 
       <View style={[styles.body, { paddingBottom: bottomPad }]}>
+        {isBriefing && exercise.type === "briefing" && (
+          <BriefingScreen exercise={exercise} onStart={handleBriefingStart} />
+        )}
         {exercise.type === "multiple_choice" && (
-          <MultipleChoiceScreen
-            exercise={exercise}
-            onAnswer={handleAnswer}
-          />
+          <MultipleChoiceScreen exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "association" && (
           <AssociationScreen exercise={exercise} onAnswer={handleAnswer} />
@@ -84,12 +87,14 @@ export default function LessonScreen() {
         )}
       </View>
 
-      <FeedbackModal
-        visible={showFeedback}
-        correct={lastCorrect}
-        explanation={explanation}
-        onContinue={handleContinue}
-      />
+      {!isBriefing && (
+        <FeedbackModal
+          visible={showFeedback}
+          correct={lastCorrect}
+          explanation={explanation}
+          onContinue={handleContinue}
+        />
+      )}
     </View>
   );
 }
