@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
+import { Link2 } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { AssociationExercise } from "@/constants/lessons";
 
@@ -15,6 +16,7 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
   const [matched, setMatched] = useState<Record<number, number>>({});
   const [checked, setChecked] = useState(false);
 
+  // Shuffle right side once on mount
   const shuffledRight = useMemo(
     () =>
       exercise.pairs
@@ -24,9 +26,21 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
     []
   );
 
+  // ---------- handlers ----------
   const handleLeft = useCallback(
     (idx: number) => {
-      if (checked || matched[idx] !== undefined) return;
+      if (checked) return;
+      if (matched[idx] !== undefined) {
+        // Tap a paired left item → unlink it
+        Haptics.selectionAsync();
+        setMatched((prev) => {
+          const next = { ...prev };
+          delete next[idx];
+          return next;
+        });
+        setSelectedLeft(null);
+        return;
+      }
       Haptics.selectionAsync();
       setSelectedLeft((prev) => (prev === idx ? null : idx));
     },
@@ -36,7 +50,11 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
   const handleRight = useCallback(
     (origIdx: number) => {
       if (checked || selectedLeft === null) return;
-      if (Object.values(matched).includes(origIdx)) return;
+      // Tap an already-paired right item that belongs to selectedLeft → unlink
+      const existingLeft = Object.keys(matched).find(
+        (k) => matched[+k] === origIdx
+      );
+      if (existingLeft !== undefined) return; // belongs to another left, ignore
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setMatched((prev) => ({ ...prev, [selectedLeft]: origIdx }));
       setSelectedLeft(null);
@@ -50,41 +68,35 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
     onAnswer(exercise.pairs.every((_, i) => matched[i] === i));
   };
 
-  const getLeftBg = (idx: number) => {
-    if (checked && matched[idx] !== undefined) {
-      return matched[idx] === idx ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)";
+  // ---------- style helpers ----------
+  // Returns { bg, border } based on state — only left items are ever "selected"
+  const leftStyle = (idx: number) => {
+    if (checked) {
+      if (matched[idx] !== undefined) {
+        const ok = matched[idx] === idx;
+        return { bg: ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", border: ok ? colors.success : colors.error };
+      }
+      return { bg: colors.card, border: colors.border };
     }
-    if (selectedLeft === idx) return "rgba(99,102,241,0.15)";
-    return colors.card;
+    if (selectedLeft === idx) return { bg: "rgba(99,102,241,0.18)", border: colors.primary };
+    if (matched[idx] !== undefined) return { bg: "rgba(99,102,241,0.07)", border: colors.primary + "70" };
+    return { bg: colors.card, border: colors.border };
   };
 
-  const getLeftBorder = (idx: number) => {
-    if (checked && matched[idx] !== undefined) {
-      return matched[idx] === idx ? colors.success : colors.error;
+  const rightStyle = (origIdx: number) => {
+    const isPaired = Object.values(matched).includes(origIdx);
+    if (checked) {
+      const lKey = Object.keys(matched).find((k) => matched[+k] === origIdx);
+      if (lKey !== undefined) {
+        const ok = +lKey === origIdx;
+        return { bg: ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", border: ok ? colors.success : colors.error };
+      }
+      return { bg: colors.card, border: colors.border };
     }
-    if (selectedLeft === idx) return colors.primary;
-    if (matched[idx] !== undefined) return colors.primary + "60";
-    return colors.border;
-  };
-
-  const getRightBg = (origIdx: number) => {
-    const leftKey = Number(Object.keys(matched).find((k) => matched[+k] === origIdx));
-    if (checked && !isNaN(leftKey)) {
-      return leftKey === origIdx ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)";
-    }
-    if (Object.values(matched).includes(origIdx)) return colors.muted;
-    if (selectedLeft !== null) return "rgba(99,102,241,0.06)";
-    return colors.card;
-  };
-
-  const getRightBorder = (origIdx: number) => {
-    const leftKey = Number(Object.keys(matched).find((k) => matched[+k] === origIdx));
-    if (checked && !isNaN(leftKey)) {
-      return leftKey === origIdx ? colors.success : colors.error;
-    }
-    if (Object.values(matched).includes(origIdx)) return colors.primary + "60";
-    if (selectedLeft !== null) return colors.primary;
-    return colors.border;
+    if (isPaired) return { bg: "rgba(99,102,241,0.07)", border: colors.primary + "70" };
+    // Only highlight available right items when a left is selected
+    if (selectedLeft !== null) return { bg: "rgba(99,102,241,0.06)", border: colors.primary };
+    return { bg: colors.card, border: colors.border };
   };
 
   const allMatched = Object.keys(matched).length === exercise.pairs.length;
@@ -101,74 +113,69 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
           {exercise.instruction}
         </Text>
 
-        {selectedLeft !== null && (
-          <View style={[styles.hint, { backgroundColor: colors.card, borderColor: colors.primary }]}>
-            <Text style={[styles.hintText, { color: colors.primary }]}>
-              Conectando: "{exercise.pairs[selectedLeft].left}"
-            </Text>
-          </View>
-        )}
+        {/* Active selection hint */}
+        <View style={[styles.hintBar, { backgroundColor: colors.card, borderColor: selectedLeft !== null ? colors.primary : colors.border }]}>
+          <Link2 size={13} color={selectedLeft !== null ? colors.primary : colors.mutedForeground} strokeWidth={2} />
+          <Text style={[styles.hintText, { color: selectedLeft !== null ? colors.primary : colors.mutedForeground }]}>
+            {selectedLeft !== null
+              ? `"${exercise.pairs[selectedLeft].left}" — agora selecione à direita`
+              : allMatched
+              ? "Todos os pares conectados!"
+              : "Selecione um item à esquerda para começar"}
+          </Text>
+        </View>
 
+        {/* Two columns */}
         <View style={styles.columns}>
           {/* LEFT column */}
           <View style={styles.column}>
-            {exercise.pairs.map((pair, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: getLeftBg(idx),
-                    borderColor: getLeftBorder(idx),
-                    opacity: checked || matched[idx] !== undefined ? 0.9 : 1,
-                  },
-                ]}
-                onPress={() => handleLeft(idx)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipText, { color: colors.foreground }]}>{pair.left}</Text>
-                {matched[idx] !== undefined && (
-                  <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                )}
-              </TouchableOpacity>
-            ))}
+            <Text style={[styles.colLabel, { color: colors.mutedForeground }]}>CONCEITO</Text>
+            {exercise.pairs.map((pair, idx) => {
+              const s = leftStyle(idx);
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.chip, { backgroundColor: s.bg, borderColor: s.border }]}
+                  onPress={() => handleLeft(idx)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.chipText, { color: colors.foreground }]}>{pair.left}</Text>
+                  {matched[idx] !== undefined && (
+                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* RIGHT column */}
           <View style={styles.column}>
+            <Text style={[styles.colLabel, { color: colors.mutedForeground }]}>CATEGORIA</Text>
             {shuffledRight.map((item) => {
-              const isUsed = Object.values(matched).includes(item.originalIdx);
+              const isPaired = Object.values(matched).includes(item.originalIdx);
+              const s = rightStyle(item.originalIdx);
+              // Right items are ONLY tappable when a left is selected and this right isn't paired to another left
+              const disabled = checked || selectedLeft === null || isPaired;
               return (
                 <TouchableOpacity
                   key={item.originalIdx}
                   style={[
                     styles.chip,
-                    {
-                      backgroundColor: getRightBg(item.originalIdx),
-                      borderColor: getRightBorder(item.originalIdx),
-                      opacity: isUsed ? 0.7 : 1,
-                    },
+                    { backgroundColor: s.bg, borderColor: s.border, opacity: isPaired && selectedLeft !== null ? 0.5 : 1 },
                   ]}
                   onPress={() => handleRight(item.originalIdx)}
-                  activeOpacity={0.75}
-                  disabled={isUsed && !checked}
+                  activeOpacity={disabled ? 1 : 0.75}
+                  disabled={disabled}
                 >
                   <Text style={[styles.chipText, { color: colors.foreground }]}>{item.label}</Text>
+                  {isPaired && !checked && (
+                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
-
-        <Text style={[styles.statusHint, { color: colors.mutedForeground }]}>
-          {checked
-            ? ""
-            : allMatched
-            ? "Tudo conectado! Clique em Verificar."
-            : selectedLeft !== null
-            ? "Agora selecione um item à direita"
-            : "Selecione um item à esquerda para começar"}
-        </Text>
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
@@ -188,44 +195,43 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  scroll: { flex: 1 },
+  root:          { flex: 1 },
+  scroll:        { flex: 1 },
   scrollContent: { padding: 20, gap: 14, paddingBottom: 24 },
-  tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
-  instruction: { fontSize: 15, fontFamily: "Inter_700Bold", lineHeight: 24 },
-  hint: {
+  tag:           { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
+  instruction:   { fontSize: 15, fontFamily: "Inter_700Bold", lineHeight: 24 },
+  hintBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
-  hintText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  columns: { flexDirection: "row", gap: 10 },
-  column: { flex: 1, gap: 10 },
+  hintText: { flex: 1, fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  columns:   { flexDirection: "row", gap: 10 },
+  column:    { flex: 1, gap: 8 },
+  colLabel:  { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5, textAlign: "center" },
   chip: {
     borderRadius: 10,
     borderWidth: 1.5,
     padding: 12,
-    minHeight: 56,
+    minHeight: 58,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
   },
   chipText: {
+    flex: 1,
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     textAlign: "center",
-    lineHeight: 18,
-    flex: 1,
+    lineHeight: 17,
   },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  statusHint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", fontStyle: "italic" },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-  },
-  btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
-  btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  dot:    { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
+  footer: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
+  btn:    { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
+  btnText:{ fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });
