@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import { router } from "expo-router";
+import React, { useState, useRef, useCallback } from "react";
+import { View, StyleSheet, Animated, Platform } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import { LESSONS } from "@/constants/lessons";
+import { LESSONS, MODULE_DEFINITIONS } from "@/constants/lessons";
+import { useProgress } from "@/contexts/ProgressContext";
 import { ExerciseHeader } from "@/components/ExerciseHeader";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { MultipleChoiceScreen } from "@/screens/MultipleChoiceScreen";
@@ -13,38 +14,71 @@ import { FillBlankScreen } from "@/screens/FillBlankScreen";
 import { BriefingScreen } from "@/screens/BriefingScreen";
 import { PhishingSimulatorScreen } from "@/screens/PhishingSimulatorScreen";
 
+const NATIVE = Platform.OS !== "web";
+
 export default function LessonScreen() {
   const colors = useColors();
+  const { moduleId: moduleIdParam } = useLocalSearchParams<{ moduleId?: string }>();
+  const { completeModule, recordAnswer } = useProgress();
 
-  const [currentIdx, setCurrentIdx]     = useState(0);
+  // Resolve module
+  const moduleId = parseInt(moduleIdParam ?? "1", 10);
+  const moduleDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId) ?? MODULE_DEFINITIONS[0];
+  const moduleSlice = LESSONS.slice(moduleDef.startIdx, moduleDef.startIdx + moduleDef.length);
+
+  const [localIdx, setLocalIdx]         = useState(0);
   const [lives, setLives]               = useState(3);
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastCorrect, setLastCorrect]   = useState(false);
   const [xp, setXp]                     = useState(0);
 
-  const exercise   = LESSONS[currentIdx];
-  const isBriefing = exercise.type === "briefing";
-  const phaseInfo  = !isBriefing && "phaseInfo" in exercise ? exercise.phaseInfo : undefined;
+  // Slide animation
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const advance = () => {
-    if (currentIdx + 1 >= LESSONS.length) {
-      router.replace({ pathname: "/complete", params: { xp: xp + (lastCorrect ? 10 : 0) } });
+  const animateNext = useCallback((cb: () => void) => {
+    Animated.timing(slideAnim, {
+      toValue: -360,
+      duration: 180,
+      useNativeDriver: NATIVE,
+    }).start(() => {
+      cb();
+      slideAnim.setValue(360);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 9,
+        tension: 80,
+        useNativeDriver: NATIVE,
+      }).start();
+    });
+  }, [slideAnim]);
+
+  const exercise   = moduleSlice[localIdx];
+  const isBriefing = exercise?.type === "briefing";
+  const phaseInfo  = !isBriefing && exercise && "phaseInfo" in exercise ? exercise.phaseInfo : undefined;
+
+  const advance = useCallback(() => {
+    if (localIdx + 1 >= moduleSlice.length) {
+      completeModule(moduleId, xp + (lastCorrect ? 10 : 0));
+      router.replace({ pathname: "/complete", params: { xp: xp + (lastCorrect ? 10 : 0), moduleId } });
     } else {
-      setCurrentIdx((i) => i + 1);
+      animateNext(() => setLocalIdx((i) => i + 1));
     }
-  };
+  }, [localIdx, moduleSlice.length, xp, lastCorrect, moduleId, animateNext, completeModule]);
 
-  const handleAnswer = (correct: boolean) => {
+  const handleAnswer = useCallback((correct: boolean) => {
     setLastCorrect(correct);
+    recordAnswer(correct);
     if (!correct) setLives((l) => Math.max(0, l - 1));
     else setXp((x) => x + 10);
     setShowFeedback(true);
-  };
+  }, [recordAnswer]);
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     setShowFeedback(false);
     advance();
-  };
+  }, [advance]);
+
+  if (!exercise) return null;
 
   const explanation =
     exercise.type === "multiple_choice" ? exercise.explanation
@@ -53,42 +87,40 @@ export default function LessonScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Top progress bar + lives */}
       <ExerciseHeader
-        current={currentIdx}
-        total={LESSONS.length}
+        current={localIdx}
+        total={moduleSlice.length}
         lives={lives}
         onClose={() => router.back()}
         phaseInfo={phaseInfo}
         isBriefing={isBriefing}
+        moduleName={moduleDef.title}
       />
 
-      {/* Exercise body — fills remaining space, each screen manages its own scroll + footer */}
-      <View style={styles.body}>
+      <Animated.View style={[styles.body, { transform: [{ translateX: slideAnim }] }]}>
         {exercise.type === "briefing" && (
           <BriefingScreen exercise={exercise} onStart={advance} />
         )}
         {exercise.type === "multiple_choice" && (
-          <MultipleChoiceScreen exercise={exercise} onAnswer={handleAnswer} />
+          <MultipleChoiceScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "association" && (
-          <AssociationScreen exercise={exercise} onAnswer={handleAnswer} />
+          <AssociationScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "text_input" && (
-          <TextInputScreen exercise={exercise} onAnswer={handleAnswer} />
+          <TextInputScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "ordering" && (
-          <OrderingScreen exercise={exercise} onAnswer={handleAnswer} />
+          <OrderingScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "fill_blank" && (
-          <FillBlankScreen exercise={exercise} onAnswer={handleAnswer} />
+          <FillBlankScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
         {exercise.type === "phishing_email" && (
-          <PhishingSimulatorScreen exercise={exercise} onAnswer={handleAnswer} />
+          <PhishingSimulatorScreen key={localIdx} exercise={exercise} onAnswer={handleAnswer} />
         )}
-      </View>
+      </Animated.View>
 
-      {/* Feedback modal renders above everything as a true Modal overlay */}
       {!isBriefing && (
         <FeedbackModal
           visible={showFeedback}

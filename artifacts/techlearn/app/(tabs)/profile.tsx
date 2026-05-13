@@ -1,0 +1,226 @@
+import React, { useState } from "react";
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Zap, Star, Target, BookOpen, CheckCircle2,
+  AlertTriangle, FileText, Shield, Key, Mail, RotateCcw, TrendingUp,
+} from "lucide-react-native";
+import * as Haptics from "expo-haptics";
+import { useColors } from "@/hooks/useColors";
+import { useProgress } from "@/contexts/ProgressContext";
+import { MODULE_DEFINITIONS } from "@/constants/lessons";
+
+const ICON_MAP = { Shield, Key, AlertTriangle, FileText, Mail } as const;
+const TAB_HEIGHT = Platform.OS === "ios" ? 88 : 64;
+
+const XP_PER_LEVEL = 50;
+
+export default function ProfileScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const { progress, resetProgress } = useProgress();
+
+  const level = Math.floor(progress.xp / XP_PER_LEVEL) + 1;
+  const xpIntoLevel = progress.xp % XP_PER_LEVEL;
+  const levelPct = xpIntoLevel / XP_PER_LEVEL;
+  const accuracy = progress.totalExercises > 0
+    ? Math.round((progress.correctAnswers / progress.totalExercises) * 100)
+    : 0;
+  const initials = "CA";
+
+  const handleReset = () => {
+    if (Platform.OS === "web") {
+      if (confirm("Resetar todo o progresso? Essa ação não pode ser desfeita.")) {
+        resetProgress();
+      }
+    } else {
+      Alert.alert(
+        "Resetar Progresso",
+        "Todo seu XP, módulos e histórico serão apagados. Deseja continuar?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Resetar", style: "destructive", onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); resetProgress(); } },
+        ]
+      );
+    }
+  };
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={styles.avatarRow}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary + "25", borderColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>{initials}</Text>
+          </View>
+          <View style={styles.avatarInfo}>
+            <Text style={[styles.userName, { color: colors.foreground }]}>Colaborador ACK-ADMY</Text>
+            <Text style={[styles.userRole, { color: colors.mutedForeground }]}>Nível {level} — Analista de Segurança</Text>
+          </View>
+          <View style={[styles.levelBadge, { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}>
+            <Text style={[styles.levelText, { color: colors.primary }]}>Nv {level}</Text>
+          </View>
+        </View>
+
+        {/* XP progress to next level */}
+        <View style={styles.xpArea}>
+          <View style={styles.xpRow}>
+            <Text style={[styles.xpLabel, { color: colors.mutedForeground }]}>XP para Nível {level + 1}</Text>
+            <Text style={[styles.xpValue, { color: colors.primary }]}>{xpIntoLevel}/{XP_PER_LEVEL} XP</Text>
+          </View>
+          <View style={[styles.xpTrack, { backgroundColor: colors.muted }]}>
+            <View style={[styles.xpFill, { backgroundColor: colors.primary, width: `${levelPct * 100}%` }]} />
+          </View>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_HEIGHT + insets.bottom + 20 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Stats grid */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ESTATÍSTICAS</Text>
+        <View style={styles.statsGrid}>
+          {[
+            { Icon: Star,       value: `${progress.xp}`,           label: "XP Total",       color: colors.primary },
+            { Icon: Zap,        value: `${progress.streak}d`,      label: "Sequência",      color: "#F59E0B" },
+            { Icon: Target,     value: `${accuracy}%`,             label: "Precisão",       color: colors.success },
+            { Icon: BookOpen,   value: `${progress.totalExercises}`,label: "Exercícios",    color: "#3B82F6" },
+            { Icon: CheckCircle2,value:`${progress.completedModules.length}`,label:"Módulos", color: colors.success },
+            { Icon: TrendingUp, value: `${progress.correctAnswers}`,label: "Acertos",       color: "#8B5CF6" },
+          ].map((s) => (
+            <View key={s.label} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <s.Icon size={20} color={s.color} strokeWidth={2} />
+              <Text style={[styles.statValue, { color: colors.foreground }]}>{s.value}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Module badges */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONQUISTAS DE MÓDULO</Text>
+        <View style={styles.badgesGrid}>
+          {MODULE_DEFINITIONS.map((mod) => {
+            const done = progress.completedModules.includes(mod.id);
+            const IconComp = ICON_MAP[mod.iconName];
+            return (
+              <View
+                key={mod.id}
+                style={[
+                  styles.modBadge,
+                  {
+                    backgroundColor: done ? mod.accentColor + "18" : colors.card,
+                    borderColor: done ? mod.accentColor + "60" : colors.border,
+                    opacity: done ? 1 : 0.4,
+                  },
+                ]}
+              >
+                <IconComp size={24} color={done ? mod.accentColor : colors.mutedForeground} strokeWidth={2} />
+                <Text style={[styles.modBadgeTitle, { color: done ? colors.foreground : colors.mutedForeground }]} numberOfLines={2}>
+                  {mod.title}
+                </Text>
+                {done && (
+                  <View style={[styles.donePill, { backgroundColor: colors.success + "20" }]}>
+                    <Text style={[styles.doneText, { color: colors.success }]}>Concluído</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Accuracy breakdown */}
+        {progress.totalExercises > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DESEMPENHO</Text>
+            <View style={[styles.perfCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.perfRow}>
+                <View style={[styles.perfDot, { backgroundColor: colors.success }]} />
+                <Text style={[styles.perfLabel, { color: colors.foreground }]}>Respostas corretas</Text>
+                <Text style={[styles.perfValue, { color: colors.success }]}>{progress.correctAnswers}</Text>
+              </View>
+              <View style={styles.perfRow}>
+                <View style={[styles.perfDot, { backgroundColor: colors.error }]} />
+                <Text style={[styles.perfLabel, { color: colors.foreground }]}>Respostas incorretas</Text>
+                <Text style={[styles.perfValue, { color: colors.error }]}>{progress.totalExercises - progress.correctAnswers}</Text>
+              </View>
+              <View style={[styles.accBar, { backgroundColor: colors.muted }]}>
+                <View style={[styles.accFill, { backgroundColor: colors.success, width: `${accuracy}%` }]} />
+              </View>
+              <Text style={[styles.accPct, { color: colors.mutedForeground }]}>{accuracy}% de aproveitamento</Text>
+            </View>
+          </>
+        )}
+
+        {/* Reset */}
+        <TouchableOpacity
+          style={[styles.resetBtn, { borderColor: colors.error + "50" }]}
+          onPress={handleReset}
+          activeOpacity={0.75}
+        >
+          <RotateCcw size={14} color={colors.error} strokeWidth={2} />
+          <Text style={[styles.resetText, { color: colors.error }]}>Resetar progresso</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, gap: 14 },
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  avatar: {
+    width: 56, height: 56, borderRadius: 28, borderWidth: 2,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarText: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  avatarInfo: { flex: 1 },
+  userName: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  userRole: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  levelBadge: {
+    borderRadius: 8, borderWidth: 1,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  levelText: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  xpArea: { gap: 6 },
+  xpRow: { flexDirection: "row", justifyContent: "space-between" },
+  xpLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  xpValue: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  xpTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
+  xpFill: { height: 6, borderRadius: 3 },
+  scroll: { padding: 16, gap: 0 },
+  sectionLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 2, marginBottom: 10, marginTop: 20 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  statCard: {
+    width: "30.5%", borderRadius: 10, borderWidth: 1,
+    padding: 12, alignItems: "center", gap: 6,
+  },
+  statValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  statLabel: { fontSize: 9, fontFamily: "Inter_500Medium", textAlign: "center" },
+  badgesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  modBadge: {
+    width: "47%", borderRadius: 12, borderWidth: 1,
+    padding: 14, alignItems: "center", gap: 8,
+  },
+  modBadgeTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  donePill: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  doneText: { fontSize: 9, fontFamily: "Inter_700Bold" },
+  perfCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 10 },
+  perfRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  perfDot: { width: 8, height: 8, borderRadius: 4 },
+  perfLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium" },
+  perfValue: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  accBar: { height: 6, borderRadius: 3, overflow: "hidden", marginTop: 4 },
+  accFill: { height: 6, borderRadius: 3 },
+  accPct: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
+  resetBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderRadius: 10, borderWidth: 1,
+    paddingVertical: 14, marginTop: 24,
+  },
+  resetText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+});

@@ -13,26 +13,31 @@ interface ExerciseHeaderProps {
   onClose: () => void;
   phaseInfo?: PhaseInfo;
   isBriefing?: boolean;
+  moduleName?: string;
 }
 
-export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBriefing }: ExerciseHeaderProps) {
+export function ExerciseHeader({
+  current, total, lives, onClose, phaseInfo, isBriefing, moduleName,
+}: ExerciseHeaderProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
     <View style={[styles.container, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <X size={20} color={colors.mutedForeground} strokeWidth={2} />
       </TouchableOpacity>
 
       <View style={styles.center}>
         {phaseInfo && !isBriefing ? (
-          <View style={styles.phaseRow}>
-            <Text style={[styles.phaseText, { color: colors.primary }]}>
-              Fase {phaseInfo.phase} de {phaseInfo.total}
-            </Text>
-            <View style={styles.phaseDots}>
+          <View style={styles.phaseCol}>
+            {moduleName && (
+              <Text style={[styles.moduleLabel, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {moduleName}
+              </Text>
+            )}
+            <View style={styles.dotsRow}>
               {Array.from({ length: phaseInfo.total }).map((_, i) => (
                 <View
                   key={i}
@@ -46,9 +51,19 @@ export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBr
                 />
               ))}
             </View>
+            <Text style={[styles.phaseText, { color: colors.primary }]}>
+              Fase {phaseInfo.phase} de {phaseInfo.total}
+            </Text>
           </View>
         ) : (
-          <ProgressBar progress={current} total={total} />
+          <View style={styles.phaseCol}>
+            {moduleName && (
+              <Text style={[styles.moduleLabel, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {moduleName}
+              </Text>
+            )}
+            <ProgressBar progress={current} total={total} />
+          </View>
         )}
       </View>
 
@@ -57,7 +72,7 @@ export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBr
           <AlertCircle size={18} color={colors.primary} strokeWidth={2} />
         ) : (
           <>
-            <Heart size={16} color={colors.error} strokeWidth={2} />
+            <Heart size={16} color={colors.error} strokeWidth={2} fill={colors.error} />
             <Text style={[styles.livesText, { color: colors.error }]}>{lives}</Text>
           </>
         )}
@@ -67,13 +82,21 @@ export function ExerciseHeader({ current, total, lives, onClose, phaseInfo, isBr
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
   closeBtn: { padding: 4 },
   center: { flex: 1 },
-  phaseRow: { alignItems: "center", gap: 5 },
-  phaseText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1 },
-  phaseDots: { flexDirection: "row", gap: 4, alignItems: "center" },
+  phaseCol: { gap: 4 },
+  moduleLabel: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 0.5 },
+  dotsRow: { flexDirection: "row", gap: 4, alignItems: "center" },
   phaseDot: { height: 4, borderRadius: 2 },
+  phaseText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   livesContainer: { flexDirection: "row", alignItems: "center", gap: 4 },
   livesText: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });
