@@ -91,166 +91,218 @@ export type Exercise =
   | PhishingEmailExercise;
 
 export const LESSONS: Exercise[] = [
-  // ═══════════════════════════════════════════════════
-  // MÓDULO 1 — Fundamentos da LGPD
-  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
+  // MÓDULO 1 — Tríade CID e Fundamentos da Segurança da Informação
+  // ═══════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "Fundamentos da LGPD",
-    category: "lgpd",
+    scenarioTitle: "Tríade CID e Fundamentos de Segurança",
+    category: "awareness",
     difficulty: "Iniciante",
     narrative:
-      "A Lei Geral de Proteção de Dados (LGPD) entrou em vigor em 2020 e se aplica a TODOS os funcionários que tratam dados pessoais — não só à área de TI.\n\nComo colaborador, você é responsável por proteger os dados dos clientes, fornecedores e colegas com quem trabalha diariamente.",
+      "A Segurança da Informação é sustentada por três pilares fundamentais da ISO 27000: Confidencialidade, Integridade e Disponibilidade — a chamada Tríade CID.\n\nMas segurança vai além da tecnologia. Ela exige equilíbrio entre Tecnologia, Pessoas e Processos. O elo mais fraco de um sistema quase sempre é o humano — não a máquina.",
     evidence:
-      "Lei nº 13.709/2020 — LGPD\n\nArt. 6º: O tratamento de dados pessoais deve\nobservar a boa-fé e os princípios de:\n- Finalidade\n- Adequação\n- Necessidade\n- Transparência\n- Segurança",
-    totalPhases: 3,
+      "ISO/IEC 27000 — Pilares da Segurança:\n\n  Confidencialidade → Acesso somente por autorizados\n  Integridade       → Dados não alterados sem permissão\n  Disponibilidade   → Sistemas acessíveis quando necessário\n\nFato: 95% dos incidentes têm causa raiz humana (IBM, 2023).",
+    totalPhases: 4,
   },
-  {
-    type: "multiple_choice",
-    question: "Qual destes é considerado um dado pessoal segundo a LGPD?",
-    options: [
-      "CPF de um cliente",
-      "Temperatura do ar condicionado",
-      "Nome do produto vendido",
-      "Cor da parede do escritório",
-    ],
-    correct: 0,
-    explanation:
-      "Dado pessoal é qualquer informação que identifique ou possa identificar uma pessoa natural — CPF, nome, e-mail, telefone, endereço, entre outros.",
-    phaseInfo: { scenario: "Fundamentos da LGPD", phase: 1, total: 3 },
-  },
+
+  // Fase 1 — Associação: incidentes → pilar CID
   {
     type: "association",
-    instruction: "Associe cada direito do titular ao seu significado:",
+    instruction: "Associe cada incidente ao pilar da Tríade CID que foi violado:",
     pairs: [
-      { left: "Acesso", right: "Ver quais dados foram coletados" },
-      { left: "Correção", right: "Atualizar dados incorretos" },
-      { left: "Eliminação", right: "Pedir exclusão dos dados" },
-      { left: "Portabilidade", right: "Transferir dados para outro serviço" },
+      { left: "Hacker visualiza dados médicos sem autorização", right: "Confidencialidade" },
+      { left: "Vírus altera os valores de uma planilha financeira", right: "Integridade" },
+      { left: "Ataque DDoS deixa site de banco fora do ar", right: "Disponibilidade" },
     ],
-    phaseInfo: { scenario: "Fundamentos da LGPD", phase: 2, total: 3 },
-  },
-  {
-    type: "fill_blank",
-    instruction: "Complete a definição de dado sensível conforme a LGPD:",
-    sentence:
-      "Dados sobre ___, raça, ___, saúde, ___ política ou ___ criminal são considerados dados sensíveis e têm proteção reforçada.",
-    blanks: ["religião", "etnia", "opinião", "antecedente"],
-    words: [
-      "religião", "etnia", "opinião", "antecedente",
-      "financeiro", "cargo", "endereço", "telefone",
-    ],
-    phaseInfo: { scenario: "Fundamentos da LGPD", phase: 3, total: 3 },
+    phaseInfo: { scenario: "Tríade CID", phase: 1, total: 4 },
   },
 
-  // ═══════════════════════════════════════════════════
-  // MÓDULO 2 — Engenharia Social e Phishing
-  // ═══════════════════════════════════════════════════
+  // Fase 2 — Múltipla escolha: Caso Fleury
+  {
+    type: "multiple_choice",
+    question: "No ataque de Ransomware ao Grupo Fleury, os sistemas de agendamento e entrega de resultados ficaram paralisados por vários dias. Qual pilar da Tríade CID foi mais severamente impactado?",
+    options: [
+      "Integridade",
+      "Confidencialidade",
+      "Disponibilidade",
+      "Autenticidade",
+    ],
+    correct: 2,
+    explanation:
+      "Embora o ransomware possa afetar outros pilares, a paralisação operacional total é uma violação direta da Disponibilidade — impede o acesso oportuno às informações quando necessário.",
+    phaseInfo: { scenario: "Tríade CID", phase: 2, total: 4 },
+  },
+
+  // Fase 3 — Completar: os três pilares CID
+  {
+    type: "fill_blank",
+    instruction: "Complete os três pilares da Tríade CID conforme a ISO 27000:",
+    sentence:
+      "A ___ garante que a informação não seja vista por pessoas não autorizadas. A ___ assegura que o dado não foi modificado indevidamente. A ___ garante que o sistema esteja acessível quando necessário.",
+    blanks: ["Confidencialidade", "Integridade", "Disponibilidade"],
+    words: [
+      "Confidencialidade", "Integridade", "Disponibilidade",
+      "Autenticidade", "Privacidade", "Não Repúdio",
+    ],
+    phaseInfo: { scenario: "Tríade CID", phase: 3, total: 4 },
+  },
+
+  // Fase 4 — Múltipla escolha: Tecnologia, Pessoas e Processos
+  {
+    type: "multiple_choice",
+    question: "Uma empresa investe nos melhores firewalls do mercado, mas não treina seus funcionários sobre senhas seguras. Por que essa estratégia de segurança é incompleta?",
+    options: [
+      "Porque a segurança depende apenas de software atualizado",
+      "Porque a segurança da informação exige equilíbrio entre Tecnologia, Pessoas e Processos",
+      "Porque processos são irrelevantes se a tecnologia for de ponta",
+      "Porque firewalls não protegem redes corporativas modernas",
+    ],
+    correct: 1,
+    explanation:
+      "Segurança não é só tecnologia. Ela depende de pessoas treinadas e processos bem definidos. Um colaborador sem treinamento pode comprometer todo o investimento em infraestrutura — o fator humano é o elo mais crítico.",
+    phaseInfo: { scenario: "Tríade CID", phase: 4, total: 4 },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // MÓDULO 2 — IAM: Gestão de Identidade e Controle de Acesso
+  // ═══════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "Engenharia Social e Phishing",
-    category: "awareness",
+    scenarioTitle: "IAM — Gestão de Identidade e Acesso",
+    category: "blue_team",
     difficulty: "Intermediário",
     narrative:
-      "95% dos ataques cibernéticos bem-sucedidos começam com um e-mail. Atacantes se passam por colegas, CEOs, bancos ou fornecedores para manipular funcionários a clicar em links, fornecer senhas ou transferir dinheiro.\n\nEsse tipo de ataque se chama Business Email Compromise (BEC) e gerou mais de US$ 2,9 bilhões em perdas globais em 2023.",
+      "A Gestão de Identidade e Acesso (IAM) controla quem pode acessar o quê dentro de um sistema. O fluxo obrigatório tem três etapas em sequência: Identificação, Autenticação e Autorização.\n\nAutenticar com múltiplos fatores (MFA) é a medida mais eficaz para proteger identidades digitais — combina algo que você SABE, TEM ou É.",
     evidence:
-      "Fonte: FBI Internet Crime Report 2023\n\nTop 3 vetores de ataque:\n1. Phishing por e-mail        → 36%\n2. Credenciais roubadas      → 19%\n3. Vulnerabilidade de software → 16%",
-    totalPhases: 3,
-  },
-  {
-    type: "phishing_email",
-    fromDisplay: "Carlos Mendes — CEO",
-    fromEmail: "carlos.mendes@empresa-corp.xyz",
-    to: "voce@suaempresa.com.br",
-    subject: "URGENTE: Transferência Autorizada",
-    body: "Preciso que você realize uma transferência urgente de R$ 47.500 para finalizar a aquisição que estamos negociando. Trata-se de um assunto confidencial — não mencione para ninguém do financeiro ainda.\n\nAcesse o sistema pelo link abaixo para confirmar os dados bancários:\n\nEssa operação precisa ser concluída hoje antes das 17h.",
-    linkText: "Acessar Sistema Financeiro",
-    linkRealUrl: "http://empresa-corp.xyz.malware.ru/login",
-    attachmentName: "CONTRATO_URGENTE_2024.exe",
-    fraudIndicators: ["sender", "link", "attachment"],
-    explanation:
-      "Este é um ataque clássico de BEC (Business Email Compromise). Três red flags: (1) domínio do remetente diferente do oficial (.xyz em vez de .com.br), (2) link aponta para um servidor russo, (3) anexo .exe é um executável malicioso. Nunca transfira valores por solicitação de e-mail sem confirmar por telefone.",
-    phaseInfo: { scenario: "Engenharia Social e Phishing", phase: 1, total: 3 },
-  },
-  {
-    type: "ordering",
-    instruction: "Ordene os passos corretos ao receber um e-mail suspeito:",
-    items: [
-      "Clicar no link para verificar",
-      "NÃO clicar em nenhum link ou anexo",
-      "Encaminhar para o time de segurança",
-      "Confirmar com o remetente por telefone",
-      "Marcar como phishing no cliente de e-mail",
-    ],
-    correctOrder: [1, 3, 4, 2, 0],
-    phaseInfo: { scenario: "Engenharia Social e Phishing", phase: 2, total: 3 },
-  },
-  {
-    type: "multiple_choice",
-    question: "Qual destes NÃO é um sinal de alerta em um e-mail corporativo?",
-    options: [
-      "Urgência extrema e sigilo obrigatório",
-      "Domínio do remetente diferente do oficial",
-      "E-mail assinado com nome completo e ramal",
-      "Pedido de transferência sem aprovação formal",
-    ],
-    correct: 2,
-    explanation:
-      "E-mail com nome completo e ramal é um sinal de autenticidade, não de fraude. Os outros três são red flags clássicos de engenharia social: urgência artificial, domínio falso e bypass de processos internos.",
-    phaseInfo: { scenario: "Engenharia Social e Phishing", phase: 3, total: 3 },
+      "Fluxo IAM obrigatório:\n\n  1. Identificação  → Quem é você? (usuário/login)\n  2. Autenticação   → Prove que é você (senha + token)\n  3. Autorização    → O que você pode fazer? (permissões)\n\nFatores MFA:\n  Saber → Senha, PIN\n  Ter   → Token, smart card, celular\n  Ser   → Biometria, face ID, íris",
+    totalPhases: 4,
   },
 
-  // ═══════════════════════════════════════════════════
-  // MÓDULO 3 — Higiene de Senhas e Mesa Limpa
-  // ═══════════════════════════════════════════════════
+  // Fase 1 — Ordenação: fluxo IAM
   {
-    type: "briefing",
-    scenarioTitle: "Higiene de Senhas e Mesa Limpa",
-    category: "awareness",
-    difficulty: "Iniciante",
-    narrative:
-      "Senhas fracas são responsáveis por 81% das violações de dados confirmadas. Além disso, documentos físicos deixados sobre a mesa são uma das formas mais antigas — e mais negligenciadas — de vazamento de informações confidenciais.\n\nA política de Mesa Limpa garante que informações sensíveis não fiquem expostas quando você se ausenta.",
-    evidence:
-      "Senhas mais usadas em 2023 (e tempo para quebrar):\n\n  123456       →  < 1 segundo\n  senha123     →  < 1 segundo\n  qwerty       →  < 1 segundo\n  Tr0ub4dor&3  →  ~3 dias\n  correct-horse-battery →  Séculos",
-    totalPhases: 3,
+    type: "ordering",
+    instruction: "Ordene as etapas do fluxo de acesso seguindo a lógica correta do IAM:",
+    items: [
+      "Verificar se o usuário tem permissão para acessar o arquivo (Autorização)",
+      "Informar o nome de usuário (login) ao sistema (Identificação)",
+      "Inserir senha e token para validar a identidade (Autenticação)",
+    ],
+    // Correct order: Identificação (idx 1) → Autenticação (idx 2) → Autorização (idx 0)
+    correctOrder: [1, 2, 0],
+    phaseInfo: { scenario: "IAM", phase: 1, total: 4 },
   },
+
+  // Fase 2 — Associação: fatores de autenticação
+  {
+    type: "association",
+    instruction: "Classifique cada método de autenticação no tipo de fator correto:",
+    pairs: [
+      { left: "Impressão digital ou reconhecimento facial", right: "Algo que você É" },
+      { left: "Senha numérica (PIN) ou frase secreta", right: "Algo que você SABE" },
+      { left: "Token físico, smart card ou celular", right: "Algo que você TEM" },
+    ],
+    phaseInfo: { scenario: "IAM", phase: 2, total: 4 },
+  },
+
+  // Fase 3 — Múltipla escolha: MFA eficaz
   {
     type: "multiple_choice",
-    question: "Qual dessas senhas segue as melhores práticas de segurança?",
+    question: "Você precisa aumentar a segurança de um aplicativo bancário. Qual combinação representa uma Autenticação de Múltiplos Fatores (MFA) eficaz?",
     options: [
-      "joao1985",
-      "Empresa@2024",
-      "correto-cavalo-bateria-grampo",
-      "P@$$w0rd",
+      "Senha (saber) e PIN (saber) — dois fatores do mesmo tipo",
+      "Senha (saber) e Token no celular (ter) — fatores independentes",
+      "Cartão de acesso (ter) e chave física da sala (ter)",
+      "Reconhecimento facial (ser) e leitura de íris (ser)",
+    ],
+    correct: 1,
+    explanation:
+      "A segurança aumenta quando usamos fatores de categorias DIFERENTES e independentes: algo que você sabe (senha) + algo que você tem (token) garante que mesmo com a senha vazada, o invasor não acessa a conta.",
+    phaseInfo: { scenario: "IAM", phase: 3, total: 4 },
+  },
+
+  // Fase 4 — Múltipla escolha: Autorização no modelo Sujeito-Objeto
+  {
+    type: "multiple_choice",
+    question: "Em um sistema hospitalar, médicos podem ler e editar prontuários, mas recepcionistas só podem visualizar a agenda. Se uma recepcionista tentar alterar um prontuário, qual etapa do IAM deve bloqueá-la?",
+    options: [
+      "Identificação — o sistema não reconhece o usuário",
+      "Autenticação — a senha da recepcionista é inválida",
+      "Autorização — a recepcionista não tem permissão para essa ação",
+      "Criptografia — o arquivo está protegido por chave",
     ],
     correct: 2,
     explanation:
-      "Passphrase de múltiplas palavras aleatórias é mais segura E mais fácil de lembrar. Substituições óbvias como @ por 'a' e 0 por 'o' são conhecidas por atacantes. Dados pessoais (nome, ano de nascimento) tornam a senha previsível.",
-    phaseInfo: { scenario: "Higiene de Senhas e Mesa Limpa", phase: 1, total: 3 },
+      "A Autorização define quais ações um usuário autenticado pode executar sobre recursos específicos. A recepcionista foi identificada e autenticada corretamente, mas não possui permissão de Update sobre prontuários.",
+    phaseInfo: { scenario: "IAM", phase: 4, total: 4 },
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // MÓDULO 3 — Ameaças, Malware e Gestão de Riscos
+  // ═══════════════════════════════════════════════════════════════
+  {
+    type: "briefing",
+    scenarioTitle: "Ameaças, Malware e Gestão de Riscos",
+    category: "red_team",
+    difficulty: "Intermediário",
+    narrative:
+      "Ameaças são agentes externos que exploram Vulnerabilidades — fraquezas internas dos sistemas — para causar danos. A combinação desses elementos gera o Risco.\n\nMalwares são os principais vetores de ameaça moderna. Vírus, Worms, Trojans, Ransomware e Botnets têm comportamentos distintos e exigem respostas específicas de defesa.",
+    evidence:
+      "Classificação de Malware:\n\n  Vírus      → Depende do usuário para se espalhar\n  Worm       → Propaga-se sozinho pela rede\n  Trojan     → Disfarça-se como software legítimo\n  Ransomware → Criptografa dados e exige resgate\n  Botnet     → Rede de zumbis para ataques em escala\n\nFórmula: Risco = Ameaça × Vulnerabilidade × Impacto",
+    totalPhases: 4,
+  },
+
+  // Fase 1 — Associação: cadeia de risco
+  {
+    type: "association",
+    instruction: "Associe cada cenário do e-commerce ao conceito correto na cadeia de risco:",
+    pairs: [
+      { left: "Grupo hacker buscando dados de cartões de crédito", right: "Ameaça" },
+      { left: "Servidor sem backup e com software desatualizado", right: "Vulnerabilidade" },
+      { left: "Possibilidade real de perda total dos dados de clientes", right: "Risco" },
+    ],
+    phaseInfo: { scenario: "Ameaças e Riscos", phase: 1, total: 4 },
+  },
+
+  // Fase 2 — Associação: tipos de malware
+  {
+    type: "association",
+    instruction: "Associe o comportamento descrito ao tipo correto de malware:",
+    pairs: [
+      { left: "Infecta arquivos e precisa ser executado pelo usuário para se espalhar", right: "Vírus" },
+      { left: "Propaga-se automaticamente explorando vulnerabilidades de rede", right: "Worm" },
+      { left: "Disfarça-se como programa legítimo para enganar a vítima", right: "Trojan" },
+    ],
+    phaseInfo: { scenario: "Ameaças e Riscos", phase: 2, total: 4 },
+  },
+
+  // Fase 3 — Completar: Ransomware
   {
     type: "fill_blank",
-    instruction: "Complete a Política de Mesa Limpa da empresa:",
+    instruction: "Complete a definição técnica de Ransomware:",
     sentence:
-      "Ao se ausentar da mesa, ___ a tela do computador. Documentos confidenciais devem ser guardados em ___ ou destruídos na ___. Nunca deixe seu ___ sem supervisão.",
-    blanks: ["bloqueie", "gaveta", "fragmentadora", "crachá"],
+      "O ___ é um tipo de malware que realiza a ___ dos arquivos da vítima e exige o pagamento de um ___ para restaurar o acesso aos dados.",
+    blanks: ["ransomware", "criptografia", "resgate"],
     words: [
-      "bloqueie", "gaveta", "fragmentadora", "crachá",
-      "desligue", "armário", "lixeira", "celular",
+      "ransomware", "criptografia", "resgate",
+      "spyware", "compressão", "contrato", "keylogger", "backup",
     ],
-    phaseInfo: { scenario: "Higiene de Senhas e Mesa Limpa", phase: 2, total: 3 },
+    phaseInfo: { scenario: "Ameaças e Riscos", phase: 3, total: 4 },
   },
+
+  // Fase 4 — Múltipla escolha: Botnet e DDoS
   {
-    type: "ordering",
-    instruction: "Ordene as ações do checklist de saída do escritório:",
-    items: [
-      "Recolher documentos da mesa e gavetas",
-      "Bloquear ou desligar o computador",
-      "Verificar se a impressora está vazia",
-      "Guardar mídias removíveis (pen drives)",
-      "Trancar o armário com documentos sigilosos",
+    type: "multiple_choice",
+    question: "Um atacante infectou milhares de dispositivos para realizar um ataque de negação de serviço (DDoS) contra um site de governo. Qual é o nome dado a essa rede de dispositivos zumbis controlados remotamente?",
+    options: [
+      "Spyware — software que monitora o usuário secretamente",
+      "Botnet — rede de bots controlada por servidor C&C",
+      "Keylogger — captura tudo que o usuário digita",
+      "Adware — exibe publicidade não solicitada",
     ],
-    correctOrder: [1, 0, 2, 3, 4],
-    phaseInfo: { scenario: "Higiene de Senhas e Mesa Limpa", phase: 3, total: 3 },
+    correct: 1,
+    explanation:
+      "Uma Botnet é uma rede de bots controlada por um servidor de Comando e Controle (C&C). Cada dispositivo infectado age como um 'zumbi', obedecendo ao atacante para realizar ataques em larga escala como DDoS, envio de spam ou roubo de credenciais.",
+    phaseInfo: { scenario: "Ameaças e Riscos", phase: 4, total: 4 },
   },
 ];
