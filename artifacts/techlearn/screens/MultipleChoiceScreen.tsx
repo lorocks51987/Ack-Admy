@@ -45,16 +45,28 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
     return <Circle size={18} color={colors.border} strokeWidth={2} />;
   };
 
+  const canCheck = selected !== null;
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={[styles.tag, { color: colors.primary }]}>MÚLTIPLA ESCOLHA</Text>
         <Text style={[styles.question, { color: colors.foreground }]}>{exercise.question}</Text>
         <View style={styles.options}>
           {exercise.options.map((opt, idx) => {
             const s = getOptionStyle(idx);
             return (
-              <TouchableOpacity key={idx} style={[styles.option, { backgroundColor: s.bg, borderColor: s.border }]} onPress={() => handleSelect(idx)} activeOpacity={0.8}>
+              <TouchableOpacity
+                key={idx}
+                style={[styles.option, { backgroundColor: s.bg, borderColor: s.border }]}
+                onPress={() => handleSelect(idx)}
+                activeOpacity={0.75}
+              >
                 {renderIcon(idx)}
                 <Text style={[styles.optionText, { color: colors.foreground }]}>{opt}</Text>
               </TouchableOpacity>
@@ -62,9 +74,15 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
           })}
         </View>
       </ScrollView>
+
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity style={[styles.btn, { backgroundColor: selected !== null ? colors.primary : colors.muted }]} onPress={handleCheck} activeOpacity={0.85} disabled={selected === null}>
-          <Text style={[styles.btnText, { color: selected !== null ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
+          onPress={handleCheck}
+          activeOpacity={0.85}
+          disabled={!canCheck}
+        >
+          <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -72,14 +90,26 @@ export function MultipleChoiceScreen({ exercise, onAnswer }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 20, gap: 16, paddingBottom: 24 },
   tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
-  question: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28 },
+  question: { fontSize: 17, fontFamily: "Inter_700Bold", lineHeight: 26 },
   options: { gap: 10 },
-  option: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 16, gap: 12 },
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
   optionText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", lineHeight: 20 },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  footer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
   btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
   btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { LESSONS } from "@/constants/lessons";
 import { ExerciseHeader } from "@/components/ExerciseHeader";
@@ -16,18 +15,16 @@ import { PhishingSimulatorScreen } from "@/screens/PhishingSimulatorScreen";
 
 export default function LessonScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [currentIdx, setCurrentIdx]     = useState(0);
+  const [lives, setLives]               = useState(3);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [lastCorrect, setLastCorrect] = useState(false);
-  const [xp, setXp] = useState(0);
+  const [lastCorrect, setLastCorrect]   = useState(false);
+  const [xp, setXp]                     = useState(0);
 
-  const exercise = LESSONS[currentIdx];
+  const exercise   = LESSONS[currentIdx];
   const isBriefing = exercise.type === "briefing";
-  const phaseInfo = !isBriefing && "phaseInfo" in exercise ? exercise.phaseInfo : undefined;
+  const phaseInfo  = !isBriefing && "phaseInfo" in exercise ? exercise.phaseInfo : undefined;
 
   const advance = () => {
     if (currentIdx + 1 >= LESSONS.length) {
@@ -36,8 +33,6 @@ export default function LessonScreen() {
       setCurrentIdx((i) => i + 1);
     }
   };
-
-  const handleBriefingStart = () => advance();
 
   const handleAnswer = (correct: boolean) => {
     setLastCorrect(correct);
@@ -51,8 +46,6 @@ export default function LessonScreen() {
     advance();
   };
 
-  const handleClose = () => router.back();
-
   const explanation =
     exercise.type === "multiple_choice" ? exercise.explanation
     : exercise.type === "phishing_email" ? exercise.explanation
@@ -60,18 +53,20 @@ export default function LessonScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Top progress bar + lives */}
       <ExerciseHeader
         current={currentIdx}
         total={LESSONS.length}
         lives={lives}
-        onClose={handleClose}
+        onClose={() => router.back()}
         phaseInfo={phaseInfo}
         isBriefing={isBriefing}
       />
 
-      <View style={[styles.body, { paddingBottom: bottomPad }]}>
-        {isBriefing && exercise.type === "briefing" && (
-          <BriefingScreen exercise={exercise} onStart={handleBriefingStart} />
+      {/* Exercise body — fills remaining space, each screen manages its own scroll + footer */}
+      <View style={styles.body}>
+        {exercise.type === "briefing" && (
+          <BriefingScreen exercise={exercise} onStart={advance} />
         )}
         {exercise.type === "multiple_choice" && (
           <MultipleChoiceScreen exercise={exercise} onAnswer={handleAnswer} />
@@ -93,6 +88,7 @@ export default function LessonScreen() {
         )}
       </View>
 
+      {/* Feedback modal renders above everything as a true Modal overlay */}
       {!isBriefing && (
         <FeedbackModal
           visible={showFeedback}

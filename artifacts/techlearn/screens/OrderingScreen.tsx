@@ -13,12 +13,17 @@ interface Props {
 export function OrderingScreen({ exercise, onAnswer }: Props) {
   const colors = useColors();
 
-  const shuffled = useMemo(() => {
-    return [...exercise.items].map((item, i) => ({ item, origIdx: i })).sort(() => Math.random() - 0.5);
-  }, [exercise.items]);
+  const initialPool = useMemo(
+    () =>
+      exercise.items
+        .map((item, i) => ({ item, origIdx: i }))
+        .sort(() => Math.random() - 0.5),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   const [arranged, setArranged] = useState<{ item: string; origIdx: number }[]>([]);
-  const [pool, setPool] = useState(shuffled);
+  const [pool, setPool] = useState(initialPool);
 
   const addToArranged = (entry: { item: string; origIdx: number }) => {
     Haptics.selectionAsync();
@@ -40,40 +45,65 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
   const canCheck = arranged.length === exercise.items.length;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={[styles.tag, { color: colors.primary }]}>ORDENAÇÃO</Text>
         <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
 
-        <View style={[styles.arrangedZone, { backgroundColor: colors.muted, borderColor: canCheck ? colors.primary : colors.border }]}>
+        {/* Drop zone */}
+        <View style={[styles.dropZone, { backgroundColor: colors.muted, borderColor: canCheck ? colors.primary : colors.border }]}>
+          <Text style={[styles.dropLabel, { color: colors.mutedForeground }]}>SEQUÊNCIA CORRETA</Text>
           {arranged.length === 0 ? (
-            <Text style={[styles.placeholder, { color: colors.mutedForeground }]}>Toque nos itens abaixo para ordenar</Text>
+            <Text style={[styles.placeholder, { color: colors.mutedForeground }]}>
+              Toque nos itens abaixo para ordenar
+            </Text>
           ) : (
-            <View style={styles.chips}>
+            <View style={styles.arrangedList}>
               {arranged.map((entry, i) => (
-                <TouchableOpacity key={entry.origIdx} style={[styles.chip, { backgroundColor: "rgba(99,102,241,0.1)", borderColor: colors.primary }]} onPress={() => removeFromArranged(entry)} activeOpacity={0.8}>
-                  <Text style={[styles.chipNum, { color: colors.mutedForeground }]}>{i + 1}</Text>
-                  <Text style={[styles.chipText, { color: colors.primary }]}>{entry.item}</Text>
-                  <X size={13} color={colors.mutedForeground} strokeWidth={2} />
+                <TouchableOpacity
+                  key={entry.origIdx}
+                  style={[styles.arrangedChip, { backgroundColor: "rgba(99,102,241,0.12)", borderColor: colors.primary }]}
+                  onPress={() => removeFromArranged(entry)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.numBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.numText}>{i + 1}</Text>
+                  </View>
+                  <Text style={[styles.arrangedText, { color: colors.foreground }]}>{entry.item}</Text>
+                  <X size={14} color={colors.mutedForeground} strokeWidth={2} />
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
+        {/* Pool */}
         <Text style={[styles.poolLabel, { color: colors.mutedForeground }]}>ITENS DISPONÍVEIS</Text>
-
         <View style={styles.pool}>
           {pool.map((entry) => (
-            <TouchableOpacity key={entry.origIdx} style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => addToArranged(entry)} activeOpacity={0.8}>
-              <Text style={[styles.chipText, { color: colors.foreground }]}>{entry.item}</Text>
+            <TouchableOpacity
+              key={entry.origIdx}
+              style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => addToArranged(entry)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.poolText, { color: colors.foreground }]}>{entry.item}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]} onPress={handleCheck} activeOpacity={0.85} disabled={!canCheck}>
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
+          onPress={handleCheck}
+          activeOpacity={0.85}
+          disabled={!canCheck}
+        >
           <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
         </TouchableOpacity>
       </View>
@@ -82,20 +112,51 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 20, gap: 14, paddingBottom: 24 },
   tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
-  instruction: { fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 28 },
-  arrangedZone: { borderRadius: 10, borderWidth: 1, minHeight: 80, padding: 12, justifyContent: "center" },
-  placeholder: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", fontStyle: "italic" },
-  chips: { gap: 8 },
-  chip: { flexDirection: "row", alignItems: "center", borderRadius: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14, gap: 8 },
-  chipNum: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  chipText: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
-  poolLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
+  instruction: { fontSize: 16, fontFamily: "Inter_700Bold", lineHeight: 26 },
+  dropZone: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    minHeight: 80,
+    padding: 12,
+    gap: 8,
+  },
+  dropLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
+  placeholder: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", fontStyle: "italic", paddingVertical: 12 },
+  arrangedList: { gap: 8 },
+  arrangedChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  numBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  numText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  arrangedText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  poolLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
   pool: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  poolChip: { borderRadius: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 16 },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, borderTopWidth: 1 },
+  poolChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  poolText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  footer: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
   btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
   btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
 });
