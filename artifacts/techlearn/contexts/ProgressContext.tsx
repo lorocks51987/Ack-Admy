@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const STORAGE_KEY = "@ackadmy:progress_v2";
+import { progressService } from "@/services/progressService";
 
 export interface ProgressState {
   xp: number;
@@ -18,7 +16,7 @@ const DEFAULT: ProgressState = {
   xp: 0,
   completedModules: [],
   lives: 3,
-  streak: 1,
+  streak: 0,
   lastActivityDate: null,
   totalExercises: 0,
   correctAnswers: 0,
@@ -35,41 +33,59 @@ interface ProgressContextValue {
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
+function computeStreak(prev: ProgressState, today: string): number {
+  if (prev.lastActivityDate === null) {
+    // First ever activity
+    return 1;
+  }
+  if (prev.lastActivityDate === today) {
+    // Already recorded today — no change
+    return prev.streak;
+  }
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
+  if (prev.lastActivityDate === yesterday) {
+    // Consecutive day
+    return prev.streak + 1;
+  }
+  // Gap > 1 day — reset
+  return 1;
+}
+
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>(DEFAULT);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          setProgress({ ...DEFAULT, ...JSON.parse(raw) });
-        } catch {}
-      }
+    progressService.getProgress().then((saved) => {
+      if (saved) setProgress({ ...DEFAULT, ...saved });
       setLoaded(true);
     });
   }, []);
 
   const persist = useCallback((next: ProgressState) => {
     setProgress(next);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+    progressService.saveProgress(next);
   }, []);
 
   const completeModule = useCallback((moduleId: number, xpEarned: number) => {
     setProgress((prev) => {
       const already = prev.completedModules.includes(moduleId);
-      const completedModules = already ? prev.completedModules : [...prev.completedModules, moduleId];
       const today = new Date().toISOString().split("T")[0];
-      const isNewDay = prev.lastActivityDate !== today;
+      const newStreak = computeStreak(prev, today);
+
       const next: ProgressState = {
         ...prev,
-        xp: prev.xp + xpEarned,
-        completedModules,
-        streak: isNewDay ? prev.streak + 1 : prev.streak,
+        // XP only added once per module — if already completed, no bonus
+        xp: already ? prev.xp : prev.xp + xpEarned,
+        completedModules: already ? prev.completedModules : [...prev.completedModules, moduleId],
+        streak: newStreak,
         lastActivityDate: today,
-        moduleXP: { ...prev.moduleXP, [moduleId]: (prev.moduleXP[moduleId] ?? 0) + xpEarned },
+        // moduleXP only recorded once
+        moduleXP: already
+          ? prev.moduleXP
+          : { ...prev.moduleXP, [moduleId]: xpEarned },
       };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      progressService.saveProgress(next);
       return next;
     });
   }, []);
@@ -81,13 +97,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         totalExercises: prev.totalExercises + 1,
         correctAnswers: prev.correctAnswers + (correct ? 1 : 0),
       };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      progressService.saveProgress(next);
       return next;
     });
   }, []);
 
   const resetProgress = useCallback(async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await progressService.clearProgress();
     setProgress(DEFAULT);
   }, []);
 

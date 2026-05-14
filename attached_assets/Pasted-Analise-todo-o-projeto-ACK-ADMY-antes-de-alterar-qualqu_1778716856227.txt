@@ -1,0 +1,174 @@
+Analise todo o projeto ACK-ADMY antes de alterar qualquer coisa.
+
+O objetivo agora NÃO é criar novas funcionalidades visuais, nem mudar o design principal do app. O foco é corrigir erros técnicos, organizar melhor a estrutura e preparar o projeto para funcionar como uma plataforma real.
+
+Com base no código atual, faça as seguintes correções e melhorias:
+
+1. Corrigir as rotas da API
+
+Verifique o backend Express.
+
+Hoje o app provavelmente está usando algo como:
+
+app.use("/api", router)
+
+Mas algumas rotas internas já começam com "/api", gerando caminhos duplicados como:
+
+/api/api/progress/:deviceId
+
+Corrija isso.
+
+As rotas internas devem ficar sem o prefixo "/api".
+
+Exemplo correto:
+
+router.get("/progress/:deviceId", ...)
+router.post("/progress/:deviceId", ...)
+
+O resultado final deve ser:
+
+GET /api/progress/:deviceId
+POST /api/progress/:deviceId
+
+Não quebre as outras rotas existentes.
+
+2. Corrigir o sistema de XP duplicado
+
+No app, revise o ProgressContext ou arquivo equivalente onde o progresso é salvo.
+
+Atualmente, ao concluir um módulo, o XP pode ser somado novamente mesmo que o módulo já tenha sido concluído antes.
+
+Corrija para que o XP só seja somado uma vez por módulo ou lição concluída.
+
+Regra esperada:
+
+- Se o módulo/lição ainda não foi concluído, adicionar XP.
+- Se já foi concluído, não adicionar XP novamente.
+- O usuário pode refazer a lição, mas não deve farmar XP infinito.
+
+3. Corrigir o streak inicial
+
+O progresso inicial não deve começar com streak 1.
+
+Altere o valor padrão para:
+
+streak: 0
+
+Depois, ajuste a lógica para que o streak só aumente quando o usuário realmente completar uma atividade em dias consecutivos.
+
+Regra esperada:
+
+- Primeiro dia de atividade: streak = 1
+- Dia seguinte com atividade: streak aumenta +1
+- Se pular um dia: streak volta para 1 na próxima atividade
+- Sem atividade: não aumenta nada
+
+4. Corrigir o sistema de vidas
+
+Na tela de lição, existe um sistema de vidas com valor inicial 3.
+
+Hoje, quando o usuário erra e chega a 0 vidas, nada relevante acontece.
+
+Implemente uma regra simples:
+
+- O usuário começa com 3 vidas.
+- A cada erro, perde 1 vida.
+- Ao chegar em 0 vidas, bloquear o avanço da lição.
+- Mostrar uma mensagem dizendo que ele precisa tentar novamente.
+- Oferecer um botão para reiniciar a lição.
+- Ao reiniciar, as vidas voltam para 3 e a lição começa novamente.
+
+Não precisa criar tela nova, apenas ajustar o comportamento atual.
+
+5. Preparar integração com backend
+
+O app ainda salva muito progresso localmente usando AsyncStorage.
+
+Não remova totalmente o AsyncStorage agora, mas organize o código para permitir sincronização futura com a API.
+
+Crie ou ajuste uma camada de serviço, por exemplo:
+
+services/progressService.ts
+
+Ela deve centralizar funções como:
+
+- getProgress()
+- saveProgress()
+- syncProgressWithApi()
+
+Mesmo que a API ainda não esteja completa, deixe o código preparado de forma limpa.
+
+6. Melhorar o backend de progresso
+
+Hoje o backend usa Map em memória para salvar progresso.
+
+Isso é apenas temporário e perde dados quando o servidor reinicia.
+
+Por enquanto, mantenha funcionando, mas organize o código para futuramente trocar por banco PostgreSQL/Supabase.
+
+Faça isso sem implementar Supabase ainda, apenas deixando a estrutura mais preparada.
+
+Exemplo esperado:
+
+- Separar controller
+- Separar service
+- Separar routes
+- Evitar lógica grande direto dentro da rota
+
+7. Atualizar documentação
+
+Revise o README ou replit.md.
+
+A documentação atual diz que existem 3 módulos e 12 lições, mas o projeto possui mais módulos/lições.
+
+Atualize a documentação para refletir o estado real do projeto.
+
+Inclua também:
+
+- Como rodar o app
+- Como rodar a API
+- Quais tecnologias são usadas
+- Quais partes ainda são mock/local
+- Quais melhorias futuras são recomendadas
+
+8. Padronizar uso de cores
+
+O projeto orienta usar useColors(), mas existem cores fixas espalhadas no código, como:
+
+#F59E0B
+#EF4444
+#FFFFFF
+
+Revise os principais arquivos visuais e substitua cores hardcoded por valores vindos do tema/useColors(), sempre que possível.
+
+Não quebre o layout atual.
+
+9. Não criar funcionalidades novas desnecessárias
+
+Não quero que você crie páginas novas, dashboards complexos, login completo ou banco de dados agora.
+
+O foco é:
+
+- corrigir bugs
+- organizar código
+- melhorar estabilidade
+- preparar para Supabase futuramente
+- manter o visual atual
+
+10. Ao finalizar
+
+Explique claramente:
+
+- quais arquivos foram alterados
+- quais bugs foram corrigidos
+- o que ainda está pendente
+- como testar cada correção
+
+Importante:
+Não duplique arquivos.
+Não crie versões alternativas desnecessárias.
+Não reescreva o projeto inteiro.
+Não mude a identidade visual principal.
+Não remova funcionalidades existentes sem necessidade.
+
+Faça alterações pequenas, seguras e bem organizadas.

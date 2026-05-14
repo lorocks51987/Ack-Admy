@@ -1,17 +1,10 @@
 import { Router, type IRouter } from "express";
+import { getProgress, saveProgress } from "../controllers/progressController";
 
 const router: IRouter = Router();
 
-const store = new Map<string, unknown>();
-
-router.get("/api/progress/:deviceId", (req, res) => {
-  const data = store.get(req.params.deviceId) ?? null;
-  res.json({ data });
-});
-
-router.post("/api/progress/:deviceId", (req, res) => {
-  store.set(req.params.deviceId, req.body);
-  res.json({ ok: true });
-});
+// Mounted under /api in app.ts — final paths: GET/POST /api/progress/:deviceId
+router.get("/progress/:deviceId", getProgress);
+router.post("/progress/:deviceId", saveProgress);
 
 export default router;
