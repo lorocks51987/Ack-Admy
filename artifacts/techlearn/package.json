@@ -61,6 +61,8 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "lucide-react-native": "^1.8.0"
+    "@supabase/supabase-js": "^2.105.4",
+    "lucide-react-native": "^1.8.0",
+    "react-native-url-polyfill": "^3.0.0"
   }
 }

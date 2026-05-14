@@ -1,4 +1,3 @@
-import { useSignIn } from "@clerk/expo";
 import { Link, Redirect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
@@ -10,16 +9,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Shield, Eye, EyeOff } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
+import { supabase } from "@/services/supabaseClient";
+import { useAuth } from "@/contexts/AuthContext";
 
-function WebSignIn() {
-  return <Redirect href="/(tabs)" />;
-}
-
-function NativeSignIn() {
+export default function SignInScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { signIn, setActive, isLoaded } = useSignIn();
+  const { session, loading, profileLoading, refreshProfile } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,19 +24,45 @@ function NativeSignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  if (session && !isLoading && !loading && !profileLoading) {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  const validateForm = () => {
+    if (!email.trim() || !email.includes("@")) return "E-mail inválido.";
+    if (!password) return "A senha é obrigatória.";
+    return null;
+  };
+
   const handleSignIn = async () => {
-    if (!isLoaded || !email || !password) return;
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsLoading(true);
     setError(null);
     try {
-      const result = await signIn.create({ identifier: email, password });
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        if (signInError.message.includes("Invalid login credentials")) {
+          throw new Error("E-mail ou senha incorretos.");
+        }
+        throw new Error(signInError.message);
+      }
+
+      if (data.session) {
+        await refreshProfile(data.session.user.id);
         router.replace("/(tabs)" as any);
       }
     } catch (err: any) {
-      setError(err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || "Credenciais inválidas.");
+      setError(err?.message || "Erro ao entrar.");
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +70,7 @@ function NativeSignIn() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           contentContainerStyle={[s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
           keyboardShouldPersistTaps="handled"
@@ -63,7 +86,7 @@ function NativeSignIn() {
 
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[s.title, { color: colors.foreground }]}>Entrar</Text>
-            <Text style={[s.subtitle, { color: colors.mutedForeground }]}>Acesse sua conta corporativa</Text>
+            <Text style={[s.subtitle, { color: colors.mutedForeground }]}>Acesse sua conta</Text>
 
             {error ? (
               <View style={[s.errBanner, { backgroundColor: colors.error + "15", borderColor: colors.error + "40" }]}>
@@ -98,7 +121,7 @@ function NativeSignIn() {
             </View>
 
             <TouchableOpacity
-              style={[s.btn, { backgroundColor: colors.primary }, (isLoading || !email || !password) && s.btnDisabled]}
+              style={[s.btn, { backgroundColor: colors.primary }, (isLoading || !email || !password) ? s.btnDisabled : undefined]}
               onPress={handleSignIn} disabled={isLoading || !email || !password} activeOpacity={0.8}
             >
               {isLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Entrar</Text>}
@@ -117,12 +140,9 @@ function NativeSignIn() {
   );
 }
 
-const SignInScreen = Platform.OS === "web" ? WebSignIn : NativeSignIn;
-export default SignInScreen;
-
 const s = StyleSheet.create({
   root:         { flex: 1 },
-  scroll:       { flexGrow: 1, justifyContent: "center", padding: 20, gap: 24 },
+  scroll:       { flexGrow: 1, padding: 20, gap: 24, paddingTop: 60 },
   logoArea:     { alignItems: "center", gap: 10 },
   logoCircle:   { width: 72, height: 72, borderRadius: 36, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   appName:      { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from "react";
 import { progressService } from "@/services/progressService";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ProgressState {
   xp: number;
@@ -35,37 +36,48 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 
 function computeStreak(prev: ProgressState, today: string): number {
   if (prev.lastActivityDate === null) {
-    // First ever activity
     return 1;
   }
   if (prev.lastActivityDate === today) {
-    // Already recorded today — no change
     return prev.streak;
   }
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
   if (prev.lastActivityDate === yesterday) {
-    // Consecutive day
     return prev.streak + 1;
   }
-  // Gap > 1 day — reset
   return 1;
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const [progress, setProgress] = useState<ProgressState>(DEFAULT);
   const [loaded, setLoaded] = useState(false);
+  
+  // Usamos uma referência para o userId atual para não precisarmos recriar
+  // as funções useCallback (completeModule, recordAnswer, etc) a cada mudança de sessão.
+  const userRef = useRef(user?.id);
 
   useEffect(() => {
-    progressService.getProgress().then((saved) => {
+    userRef.current = user?.id;
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Aguardamos a inicialização do AuthContext para ter certeza do estado do usuário
+    if (authLoading) return;
+
+    let isMounted = true;
+    
+    // Passamos o user.id para buscar do Supabase se houver login
+    progressService.getProgress(user?.id).then((saved) => {
+      if (!isMounted) return;
       if (saved) setProgress({ ...DEFAULT, ...saved });
       setLoaded(true);
     });
-  }, []);
 
-  const persist = useCallback((next: ProgressState) => {
-    setProgress(next);
-    progressService.saveProgress(next);
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, user?.id]);
 
   const completeModule = useCallback((moduleId: number, xpEarned: number) => {
     setProgress((prev) => {
@@ -75,17 +87,16 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
       const next: ProgressState = {
         ...prev,
-        // XP only added once per module — if already completed, no bonus
         xp: already ? prev.xp : prev.xp + xpEarned,
         completedModules: already ? prev.completedModules : [...prev.completedModules, moduleId],
         streak: newStreak,
         lastActivityDate: today,
-        // moduleXP only recorded once
         moduleXP: already
           ? prev.moduleXP
           : { ...prev.moduleXP, [moduleId]: xpEarned },
       };
-      progressService.saveProgress(next);
+      // Salva usando o ID guardado na referência
+      progressService.saveProgress(next, userRef.current);
       return next;
     });
   }, []);
@@ -97,13 +108,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         totalExercises: prev.totalExercises + 1,
         correctAnswers: prev.correctAnswers + (correct ? 1 : 0),
       };
-      progressService.saveProgress(next);
+      progressService.saveProgress(next, userRef.current);
       return next;
     });
   }, []);
 
   const resetProgress = useCallback(async () => {
-    await progressService.clearProgress();
+    await progressService.clearProgress(userRef.current);
     setProgress(DEFAULT);
   }, []);
 

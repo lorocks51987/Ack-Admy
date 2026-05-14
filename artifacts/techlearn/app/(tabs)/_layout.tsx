@@ -1,17 +1,22 @@
-import { useAuth } from "@clerk/expo";
 import { BlurView } from "expo-blur";
 import { Redirect, Tabs } from "expo-router";
 import { House, Trophy, UserCircle } from "lucide-react-native";
 import React from "react";
 import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/contexts/AuthContext";
 
 function TabLayoutContent() {
   const colors = useColors();
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
+
+  const safeBottom = Math.max(insets.bottom, 8);
+  const tabHeight = 56 + safeBottom;
 
   return (
     <Tabs
@@ -25,8 +30,8 @@ function TabLayoutContent() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: Platform.OS === "web" ? 64 : Platform.OS === "ios" ? 88 : 64,
-          paddingBottom: Platform.OS === "ios" ? 24 : 8,
+          height: tabHeight,
+          paddingBottom: safeBottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -66,11 +71,11 @@ function TabLayoutContent() {
   );
 }
 
-function NativeTabLayout() {
+export default function TabLayout() {
+  const { session, loading } = useAuth();
   const colors = useColors();
-  const { isSignedIn, isLoaded } = useAuth();
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -78,14 +83,9 @@ function NativeTabLayout() {
     );
   }
 
-  if (!isSignedIn) {
+  if (!session) {
     return <Redirect href="/sign-in" />;
   }
 
   return <TabLayoutContent />;
 }
-
-const TabLayout = Platform.OS === "web" ? TabLayoutContent : NativeTabLayout;
-export default TabLayout;
-
-const styles = StyleSheet.create({});

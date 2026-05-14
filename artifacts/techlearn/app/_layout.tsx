@@ -5,8 +5,6 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { ClerkProvider } from "@clerk/expo";
-import { tokenCache as nativeTokenCache } from "@clerk/expo/token-cache";
 import { Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot } from "expo-router";
@@ -18,40 +16,29 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProgressProvider } from "@/contexts/ProgressContext";
 
+import { AuthProvider } from "@/contexts/AuthContext";
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 
 function AppCore() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <ProgressProvider>
-          <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <Slot />
-            </GestureHandlerRootView>
-          </QueryClientProvider>
-        </ProgressProvider>
+        <AuthProvider>
+            <ProgressProvider>
+              <QueryClientProvider client={queryClient}>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <Slot />
+                </GestureHandlerRootView>
+              </QueryClientProvider>
+            </ProgressProvider>
+        </AuthProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
-
-function NativeRoot() {
-  return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={nativeTokenCache}>
-      <AppCore />
-    </ClerkProvider>
-  );
-}
-
-function WebRoot() {
-  return <AppCore />;
-}
-
-const AppRoot = Platform.OS === "web" ? WebRoot : NativeRoot;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -67,7 +54,9 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
-  return <AppRoot />;
+  return <AppCore />;
 }

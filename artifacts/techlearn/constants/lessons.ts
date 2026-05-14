@@ -106,8 +106,8 @@ export interface ModuleDefinition {
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   {
     id: 1,
-    title: "Tríade CID",
-    subtitle: "Pilares de segurança e incidentes reais",
+    title: "Fundamentos da Segurança Digital",
+    subtitle: "Princípios essenciais e proteção de dados",
     iconName: "Shield",
     startIdx: 0,
     length: 5,
@@ -117,8 +117,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: 2,
-    title: "IAM e Controle de Acesso",
-    subtitle: "Identidade, autenticação e MFA",
+    title: "Senhas e Autenticação",
+    subtitle: "Gestão de identidade e múltiplos fatores",
     iconName: "Key",
     startIdx: 5,
     length: 5,
@@ -128,8 +128,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: 3,
-    title: "Ameaças e Malware",
-    subtitle: "Vírus, ransomware e gestão de riscos",
+    title: "Cultura de Segurança no Trabalho",
+    subtitle: "Identificação de malwares e gestão de riscos",
     iconName: "AlertTriangle",
     startIdx: 10,
     length: 5,
@@ -139,8 +139,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: 4,
-    title: "LGPD e Privacidade",
-    subtitle: "Lei Geral de Proteção de Dados",
+    title: "LGPD e Proteção de Dados",
+    subtitle: "Conformidade e privacidade corporativa",
     iconName: "FileText",
     startIdx: 15,
     length: 5,
@@ -150,8 +150,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: 5,
-    title: "Phishing Avançado",
-    subtitle: "Reconheça e bloqueie ataques de engenharia social",
+    title: "Phishing e Engenharia Social",
+    subtitle: "Prevenção contra ataques direcionados",
     iconName: "Mail",
     startIdx: 20,
     length: 5,
