@@ -5,8 +5,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { ClerkProvider } from "@clerk/expo";
+import { tokenCache as nativeTokenCache } from "@clerk/expo/token-cache";
+import { Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -18,6 +21,37 @@ import { ProgressProvider } from "@/contexts/ProgressContext";
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+
+function AppCore() {
+  return (
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <ProgressProvider>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <Slot />
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ProgressProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
+  );
+}
+
+function NativeRoot() {
+  return (
+    <ClerkProvider publishableKey={publishableKey} tokenCache={nativeTokenCache}>
+      <AppCore />
+    </ClerkProvider>
+  );
+}
+
+function WebRoot() {
+  return <AppCore />;
+}
+
+const AppRoot = Platform.OS === "web" ? WebRoot : NativeRoot;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -35,21 +69,5 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <ProgressProvider>
-          <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="lesson" />
-                <Stack.Screen name="complete" />
-              </Stack>
-            </GestureHandlerRootView>
-          </QueryClientProvider>
-        </ProgressProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
-  );
+  return <AppRoot />;
 }

@@ -5,9 +5,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Zap, Star, Target, BookOpen, CheckCircle2,
-  AlertTriangle, FileText, Shield, Key, Mail, RotateCcw, TrendingUp,
+  AlertTriangle, FileText, Shield, Key, Mail, RotateCcw, TrendingUp, LogOut,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { useClerk, useUser } from "@clerk/expo";
+import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useProgress } from "@/contexts/ProgressContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
@@ -16,11 +18,22 @@ const ICON_MAP = { Shield, Key, AlertTriangle, FileText, Mail } as const;
 const TAB_HEIGHT = Platform.OS === "ios" ? 88 : 64;
 const XP_PER_LEVEL = 50;
 
-// Non-semantic accent colors not present in the theme palette
 const ACCENT_BLUE   = "#3B82F6";
 const ACCENT_PURPLE = "#8B5CF6";
 
-export default function ProfileScreen() {
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "?";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function ProfileBody({ displayName, initials, email, onSignOut }: {
+  displayName: string;
+  initials: string;
+  email?: string;
+  onSignOut?: () => void;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -62,11 +75,14 @@ export default function ProfileScreen() {
       <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.avatarRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primary + "25", borderColor: colors.primary }]}>
-            <Text style={[styles.avatarText, { color: colors.primary }]}>CA</Text>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>{initials}</Text>
           </View>
           <View style={styles.avatarInfo}>
-            <Text style={[styles.userName, { color: colors.foreground }]}>Colaborador ACK-ADMY</Text>
+            <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>{displayName}</Text>
             <Text style={[styles.userRole, { color: colors.mutedForeground }]}>Nível {level} — Analista de Segurança</Text>
+            {email ? (
+              <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{email}</Text>
+            ) : null}
           </View>
           <View style={[styles.levelBadge, { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}>
             <Text style={[styles.levelText, { color: colors.primary }]}>Nv {level}</Text>
@@ -91,12 +107,12 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ESTATÍSTICAS</Text>
         <View style={styles.statsGrid}>
           {[
-            { Icon: Star,        value: `${progress.xp}`,            label: "XP Total",  color: colors.primary },
-            { Icon: Zap,         value: `${progress.streak}d`,       label: "Sequência", color: colors.warning },
-            { Icon: Target,      value: `${accuracy}%`,              label: "Precisão",  color: colors.success },
-            { Icon: BookOpen,    value: `${progress.totalExercises}`, label: "Exercícios",color: ACCENT_BLUE },
-            { Icon: CheckCircle2,value: `${progress.completedModules.length}`, label: "Módulos",  color: colors.success },
-            { Icon: TrendingUp,  value: `${progress.correctAnswers}`, label: "Acertos",  color: ACCENT_PURPLE },
+            { Icon: Star,        value: `${progress.xp}`,            label: "XP Total",   color: colors.primary },
+            { Icon: Zap,         value: `${progress.streak}d`,       label: "Sequência",  color: colors.warning },
+            { Icon: Target,      value: `${accuracy}%`,              label: "Precisão",   color: colors.success },
+            { Icon: BookOpen,    value: `${progress.totalExercises}`, label: "Exercícios", color: ACCENT_BLUE },
+            { Icon: CheckCircle2,value: `${progress.completedModules.length}`, label: "Módulos",   color: colors.success },
+            { Icon: TrendingUp,  value: `${progress.correctAnswers}`, label: "Acertos",   color: ACCENT_PURPLE },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <s.Icon size={20} color={s.color} strokeWidth={2} />
@@ -167,10 +183,66 @@ export default function ProfileScreen() {
           <RotateCcw size={14} color={colors.error} strokeWidth={2} />
           <Text style={[styles.resetText, { color: colors.error }]}>Resetar progresso</Text>
         </TouchableOpacity>
+
+        {onSignOut ? (
+          <TouchableOpacity
+            style={[styles.signOutBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={onSignOut}
+            activeOpacity={0.75}
+          >
+            <LogOut size={14} color={colors.mutedForeground} strokeWidth={2} />
+            <Text style={[styles.signOutText, { color: colors.mutedForeground }]}>Sair da conta</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </View>
   );
 }
+
+function WebProfileScreen() {
+  return (
+    <ProfileBody
+      displayName="Colaborador"
+      initials="CO"
+    />
+  );
+}
+
+function NativeProfileScreen() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const router = useRouter();
+
+  const displayName = user?.fullName || user?.emailAddresses?.[0]?.emailAddress || "Colaborador";
+  const initials    = getInitials(user?.fullName || user?.emailAddresses?.[0]?.emailAddress);
+  const email       = user?.emailAddresses?.[0]?.emailAddress;
+
+  const handleSignOut = () => {
+    Alert.alert("Sair", "Deseja encerrar sua sessão?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          signOut().then(() => router.replace("/sign-in" as any));
+        },
+      },
+    ]);
+  };
+
+  return (
+    <ProfileBody
+      displayName={displayName}
+      initials={initials}
+      email={email}
+      onSignOut={handleSignOut}
+    />
+  );
+}
+
+const ProfileScreen = Platform.OS === "web" ? WebProfileScreen : NativeProfileScreen;
+export default ProfileScreen;
 
 const styles = StyleSheet.create({
   root:         { flex: 1 },
@@ -181,6 +253,7 @@ const styles = StyleSheet.create({
   avatarInfo:   { flex: 1 },
   userName:     { fontSize: 16, fontFamily: "Inter_700Bold" },
   userRole:     { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  userEmail:    { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   levelBadge:   { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
   levelText:    { fontSize: 12, fontFamily: "Inter_700Bold" },
   xpArea:       { gap: 6 },
@@ -210,4 +283,6 @@ const styles = StyleSheet.create({
   accPct:       { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
   resetBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10, borderWidth: 1, paddingVertical: 14, marginTop: 24 },
   resetText:    { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  signOutBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10, borderWidth: 1, paddingVertical: 14, marginTop: 10 },
+  signOutText:  { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });

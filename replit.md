@@ -133,13 +133,25 @@ lib/db/src/schema/
 - Haptics em todas as interações do usuário (`selectionAsync` ou `impactAsync`)
 - Logs no servidor: usar `req.log` nas rotas, `logger` fora de rotas — nunca `console.log`
 
+## Autenticação (Clerk)
+
+- **Clerk App ID**: `app_3DiG1twvALgcXtfM831BbL8L43v`
+- **Secrets necessários**: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- **Estratégia de plataforma**: Clerk ativo APENAS no nativo (Android/Expo Go). Web preview ignora auth.
+  - `app/_layout.tsx`: `NativeRoot` (com `ClerkProvider`) vs `WebRoot` (sem) — via `Platform.OS`
+  - `app/(tabs)/_layout.tsx`: `NativeTabLayout` (verifica `isSignedIn`, redireciona `/sign-in`) vs `TabLayoutContent` (sem auth)
+  - `app/sign-in.tsx` / `app/sign-up.tsx`: `WebSignIn/WebSignUp` (redirect `/(tabs)`) vs `NativeSignIn/NativeSignUp` (formulários Clerk v3)
+  - `app/(tabs)/profile.tsx`: `WebProfileScreen` (nome fixo "Colaborador") vs `NativeProfileScreen` (useUser + useClerk)
+- **API Clerk v3**: `signIn.create({ identifier, password })` → `setActive({ session: result.createdSessionId })`
+- **Fluxo cadastro**: `signUp.create()` → `prepareEmailAddressVerification()` → código por e-mail → `attemptEmailAddressVerification()`
+
 ## O que ainda é Mock / Local
 
 | Componente | Status |
 |-----------|--------|
 | Progresso do usuário | AsyncStorage local — sem sync com servidor |
 | Ranking de departamentos | Dados estáticos hardcoded em `ranking.tsx` |
-| Identidade do usuário | Sem autenticação real — "Colaborador ACK-ADMY" fixo |
+| Identidade na web | "Colaborador" fixo (sem Clerk no web preview) |
 | Store de progresso da API | In-memory Map — perde dados ao reiniciar |
 | Múltiplos usuários / multi-tenant | Schema definido, não implementado |
 

@@ -1,12 +1,13 @@
+import { useAuth } from "@clerk/expo";
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { House, Trophy, UserCircle } from "lucide-react-native";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
-export default function TabLayout() {
+function TabLayoutContent() {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -64,5 +65,27 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+function NativeTabLayout() {
+  const colors = useColors();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Redirect href="/sign-in" />;
+  }
+
+  return <TabLayoutContent />;
+}
+
+const TabLayout = Platform.OS === "web" ? TabLayoutContent : NativeTabLayout;
+export default TabLayout;
 
 const styles = StyleSheet.create({});

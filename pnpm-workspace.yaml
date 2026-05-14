@@ -68,7 +68,10 @@ catalog:
 autoInstallPeers: false
 
 onlyBuiltDependencies:
+  - '@clerk/shared'
   - '@swc/core'
+  - browser-tabs-lock
+  - core-js
   - esbuild
   - msw
   - unrs-resolver
