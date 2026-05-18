@@ -7,10 +7,19 @@ import {
   ScrollView, ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Shield, Eye, EyeOff, CheckCircle2 } from "lucide-react-native";
+import { Shield, Eye, EyeOff, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import { supabase } from "@/services/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
+
+const LOCAL_FALLBACK_CLASSES = [
+  "ADS - 5º Termo",
+  "Engenharia de Software",
+  "Ciência da Computação",
+  "Administração",
+  "Direito",
+  "Marketing"
+];
 
 export default function SignUpScreen() {
   const colors = useColors();
@@ -24,9 +33,58 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [classes, setClasses] = useState<{ id: string; label: string }[]>([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+  const [classesLoading, setClassesLoading] = useState(true);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const loadClasses = async () => {
+      setClassesLoading(true);
+      setIsUsingFallback(false);
+      try {
+        const { data, error: classesErr } = await supabase
+          .from("classes")
+          .select("id, name, course, term");
+
+        if (classesErr) {
+          throw new Error(classesErr.message);
+        }
+
+        if (data && data.length > 0) {
+          const mapped = data.map((c) => {
+            let label = "ADS - 5º Termo";
+            if (c.name) {
+              label = c.name;
+            } else if (c.course && c.term) {
+              label = `${c.course} — ${c.term}`;
+            }
+            return { id: String(c.id), label };
+          });
+          setClasses(mapped);
+          setSelectedClass(mapped[0].label);
+        } else {
+          setClasses(LOCAL_FALLBACK_CLASSES.map((label, idx) => ({ id: String(idx), label })));
+          setSelectedClass(LOCAL_FALLBACK_CLASSES[0]);
+          setIsUsingFallback(true);
+        }
+      } catch (err) {
+        console.warn("Failed to load real database classes, applying fallbacks:", err);
+        setClasses(LOCAL_FALLBACK_CLASSES.map((label, idx) => ({ id: String(idx), label })));
+        setSelectedClass(LOCAL_FALLBACK_CLASSES[0]);
+        setIsUsingFallback(true);
+      } finally {
+        setClassesLoading(false);
+      }
+    };
+
+    loadClasses();
+  }, []);
 
   // Se já estiver logado (e os dados tiverem terminado de carregar localmente), redireciona
   if (session && !isLoading && !loading && !profileLoading) {
@@ -36,6 +94,7 @@ export default function SignUpScreen() {
   const validateForm = () => {
     if (!name.trim()) return "O nome é obrigatório.";
     if (!email.trim() || !email.includes("@")) return "E-mail inválido.";
+    if (!selectedClass) return "Selecione sua turma para continuar.";
     if (password.length < 6) return "A senha deve ter no mínimo 6 caracteres.";
     if (password !== confirmPassword) return "As senhas não coincidem.";
     return null;
@@ -62,7 +121,17 @@ export default function SignUpScreen() {
         }
       });
 
-      if (authError) throw new Error(authError.message);
+      if (authError) {
+        let msg = authError.message;
+        if (msg.includes("User already registered")) {
+          msg = "Este e-mail já está cadastrado.";
+        } else if (msg.includes("Password should be")) {
+          msg = "A senha deve ter no mínimo 6 caracteres.";
+        } else if (msg.includes("Signup requires a valid email")) {
+          msg = "Por favor, forneça um e-mail válido.";
+        }
+        throw new Error(msg);
+      }
 
       const user = authData?.user;
       
@@ -73,7 +142,7 @@ export default function SignUpScreen() {
           name: name,
           email: email,
           role: "student",
-          class_name: "ADS - 5º Termo"
+          class_name: selectedClass
         });
 
         if (profileError) {
@@ -122,7 +191,7 @@ export default function SignUpScreen() {
   if (step === "verify") {
     return (
       <View style={[s.root, { backgroundColor: colors.background }]}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
           <ScrollView {...scrollProps}>
             <View style={s.logoArea}>
               <View style={[s.logoCircle, { backgroundColor: colors.success + "20", borderColor: colors.success + "40" }]}>
@@ -147,11 +216,11 @@ export default function SignUpScreen() {
     );
   }
 
-  const isFormValid = name && email && password && confirmPassword && (password === confirmPassword);
+  const isFormValid = name && email && password && confirmPassword && (password === confirmPassword) && selectedClass;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
         <ScrollView {...scrollProps}>
           <View style={s.logoArea}>
             <View style={[s.logoCircle, { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" }]}>
@@ -170,11 +239,9 @@ export default function SignUpScreen() {
               </View>
             ) : null}
 
-
-
             {[
-              { label: "Nome completo", value: name, onChange: setName, placeholder: "João Silva", autoComplete: "name", autoCapitalize: "words" as const },
-              { label: "E-mail acadêmico", value: email, onChange: setEmail, placeholder: "seu@unimar.br", autoComplete: "email", keyboardType: "email-address" as const, autoCapitalize: "none" as const },
+              { label: "Nome completo", value: name, onChange: setName, placeholder: "João Silva", autoComplete: "name" as const, autoCapitalize: "words" as const },
+              { label: "E-mail acadêmico", value: email, onChange: setEmail, placeholder: "seu@unimar.br", autoComplete: "email" as const, keyboardType: "email-address" as const, autoCapitalize: "none" as const },
             ].map(({ label, value, onChange, placeholder, ...rest }) => (
               <View key={label} style={s.field}>
                 <Text style={[s.label, { color: colors.mutedForeground }]}>{label}</Text>
@@ -185,6 +252,79 @@ export default function SignUpScreen() {
                 />
               </View>
             ))}
+
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.mutedForeground }]}>Turma</Text>
+              <Text style={s.helperText}>Escolha a turma em que você está matriculado</Text>
+              
+              {classesLoading ? (
+                <View style={[s.input, s.loadingField, { backgroundColor: colors.input, borderColor: colors.border }]}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[s.loadingText, { color: colors.mutedForeground }]}>Carregando turmas...</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 4 }}>
+                  <TouchableOpacity
+                    style={[s.input, s.dropdownTrigger, { backgroundColor: colors.input, borderColor: colors.border }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setIsClassDropdownOpen(o => !o);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ color: selectedClass ? colors.foreground : colors.mutedForeground, fontSize: 15, fontFamily: "Inter_400Regular" }}>
+                      {selectedClass || "Selecione uma turma"}
+                    </Text>
+                    {isClassDropdownOpen ? (
+                      <ChevronUp size={18} color={colors.mutedForeground} />
+                    ) : (
+                      <ChevronDown size={18} color={colors.mutedForeground} />
+                    )}
+                  </TouchableOpacity>
+
+                  {isClassDropdownOpen && (
+                    <View style={[s.dropdownList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                        {classes.map((cls) => {
+                          const isSelected = selectedClass === cls.label;
+                          return (
+                            <TouchableOpacity
+                              key={cls.id}
+                              style={[
+                                s.dropdownItem,
+                                isSelected && { backgroundColor: colors.primary + "15" },
+                                { borderBottomWidth: 1, borderBottomColor: colors.border + "40" }
+                              ]}
+                              onPress={() => {
+                                Haptics.selectionAsync();
+                                setSelectedClass(cls.label);
+                                setIsClassDropdownOpen(false);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[
+                                s.dropdownItemText,
+                                { color: isSelected ? colors.primary : colors.foreground },
+                                isSelected && { fontFamily: "Inter_700Bold" }
+                              ]}>
+                                {cls.label}
+                              </Text>
+                              {isSelected && <CheckCircle2 size={16} color={colors.primary} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  )}
+                  
+                  {isUsingFallback && (
+                    <Text style={[s.fallbackAlert, { color: "#D97706" }]}>
+                      ⚠️ Usando opções padrão de turmas.
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
 
             <View style={s.field}>
               <Text style={[s.label, { color: colors.mutedForeground }]}>Senha</Text>
@@ -258,4 +398,13 @@ const s = StyleSheet.create({
   footer:       { flexDirection: "row", justifyContent: "center", marginTop: 4 },
   footerText:   { fontSize: 13, fontFamily: "Inter_400Regular" },
   footerLink:   { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+
+  helperText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#888", marginTop: -4, marginBottom: 2 },
+  loadingField: { flexDirection: "row", alignItems: "center", gap: 10, justifyContent: "center" },
+  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  dropdownTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  dropdownList: { borderRadius: 10, borderWidth: 1, marginTop: 4, overflow: "hidden" },
+  dropdownItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, paddingHorizontal: 16 },
+  dropdownItemText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  fallbackAlert: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 4, marginLeft: 2 },
 });

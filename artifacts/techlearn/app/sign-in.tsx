@@ -70,7 +70,7 @@ export default function SignInScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
         <ScrollView
           contentContainerStyle={[s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
           keyboardShouldPersistTaps="handled"
@@ -81,7 +81,7 @@ export default function SignInScreen() {
               <Shield size={36} color={colors.primary} strokeWidth={2} />
             </View>
             <Text style={[s.appName, { color: colors.foreground }]}>ACK-ADMY</Text>
-            <Text style={[s.tagline, { color: colors.mutedForeground }]}>Segurança & Conformidade LGPD</Text>
+            <Text style={[s.tagline, { color: colors.mutedForeground }]}>Segurança da Informação — Unimar</Text>
           </View>
 
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>

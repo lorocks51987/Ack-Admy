@@ -72,10 +72,10 @@ function TabLayoutContent() {
 }
 
 export default function TabLayout() {
-  const { session, loading } = useAuth();
+  const { session, loading, profileLoading } = useAuth();
   const colors = useColors();
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.primary} size="large" />

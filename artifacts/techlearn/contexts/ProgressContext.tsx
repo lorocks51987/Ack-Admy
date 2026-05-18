@@ -70,7 +70,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     // Passamos o user.id para buscar do Supabase se houver login
     progressService.getProgress(user?.id).then((saved) => {
       if (!isMounted) return;
-      if (saved) setProgress({ ...DEFAULT, ...saved });
+      if (saved) {
+        setProgress({ ...DEFAULT, ...saved });
+      } else {
+        setProgress(DEFAULT);
+      }
       setLoaded(true);
     });
 

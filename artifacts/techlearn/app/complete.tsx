@@ -1,19 +1,33 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated, ActivityIndicator } from "react-native";
+import { router, useLocalSearchParams, Redirect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Award, Zap, CheckCircle2, TrendingUp, ChevronRight, RotateCcw } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useProgress } from "@/contexts/ProgressContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
 
 export default function CompleteScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { session, loading } = useAuth();
   const { xp: xpParam, moduleId: moduleIdParam } = useLocalSearchParams<{ xp: string; moduleId: string }>();
   const { progress } = useProgress();
   const native = Platform.OS !== "web";
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/sign-in" />;
+  }
 
   const xpEarned = parseInt(xpParam || "0", 10);
   const moduleId = parseInt(moduleIdParam || "1", 10);
@@ -64,7 +78,7 @@ export default function CompleteScreen() {
           <Text style={[styles.modName, { color: colors.primary }]}>{moduleDef.title}</Text>
         )}
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Excelente desempenho! Continue sua jornada de conformidade.
+          Excelente desempenho! Continue sua jornada de aprendizado em segurança.
         </Text>
 
         <View style={styles.statsRow}>

@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.ackadmy.app"
+      "bundleIdentifier": "com.shieldack.ackadmy"
     },
     "android": {
-      "package": "com.ackadmy.app"
+      "package": "com.shieldack.ackadmy"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"

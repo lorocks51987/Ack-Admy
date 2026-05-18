@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform, ActivityIndicator } from "react-native";
+import { router, useLocalSearchParams, Redirect } from "expo-router";
 import { AlertCircle, RotateCcw, ChevronLeft } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { LESSONS, MODULE_DEFINITIONS } from "@/constants/lessons";
 import { useProgress } from "@/contexts/ProgressContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ExerciseHeader } from "@/components/ExerciseHeader";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { MultipleChoiceScreen } from "@/screens/MultipleChoiceScreen";
@@ -21,8 +22,21 @@ const MAX_LIVES = 3;
 
 export default function LessonScreen() {
   const colors = useColors();
+  const { session, loading } = useAuth();
   const { moduleId: moduleIdParam } = useLocalSearchParams<{ moduleId?: string }>();
   const { completeModule, recordAnswer } = useProgress();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/sign-in" />;
+  }
 
   const moduleId  = parseInt(moduleIdParam ?? "1", 10);
   const moduleDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId) ?? MODULE_DEFINITIONS[0];

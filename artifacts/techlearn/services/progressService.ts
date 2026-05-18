@@ -2,13 +2,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/services/supabaseClient";
 import type { ProgressState } from "@/contexts/ProgressContext";
 
-const STORAGE_KEY = "@ackadmy:progress_v2";
+const STORAGE_KEY = "@ackadmy:progress_v3";
+
+const getStorageKey = (userId?: string) => {
+  return userId ? `${STORAGE_KEY}:${userId}` : `${STORAGE_KEY}:anonymous`;
+};
 
 export const progressService = {
   async getProgress(userId?: string): Promise<ProgressState | null> {
     try {
+      const storageKey = getStorageKey(userId);
       // 1. Tentar pegar do AsyncStorage local primeiro
-      const rawLocal = await AsyncStorage.getItem(STORAGE_KEY);
+      const rawLocal = await AsyncStorage.getItem(storageKey);
       const localData: ProgressState | null = rawLocal ? JSON.parse(rawLocal) : null;
 
       // 2. Se houver usuário logado, buscar da nuvem
@@ -44,7 +49,7 @@ export const progressService = {
           }
 
           // Se a nuvem for mais recente ou igual, usamos ela e sincronizamos o local
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mappedCloud));
+          await AsyncStorage.setItem(storageKey, JSON.stringify(mappedCloud));
           return mappedCloud;
         }
       }
@@ -59,8 +64,9 @@ export const progressService = {
 
   async saveProgress(data: ProgressState, userId?: string): Promise<void> {
     try {
+      const storageKey = getStorageKey(userId);
       // Sempre salvar localmente (fallback/offline)
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      await AsyncStorage.setItem(storageKey, JSON.stringify(data));
 
       // Se existir usuário, salva na nuvem
       if (userId) {
@@ -89,8 +95,9 @@ export const progressService = {
 
   async clearProgress(userId?: string): Promise<void> {
     try {
+      const storageKey = getStorageKey(userId);
       // Limpa no local
-      await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(storageKey);
 
       // Reseta os contadores no banco, sem deletar o registro
       if (userId) {

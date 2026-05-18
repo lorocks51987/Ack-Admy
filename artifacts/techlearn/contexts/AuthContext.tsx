@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/services/supabaseClient";
 
@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
+  const lastUserRef = useRef<string | null>(null);
 
   const refreshProfile = async (userId: string) => {
     setProfileLoading(true);
@@ -58,8 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        lastUserRef.current = session.user.id;
         refreshProfile(session.user.id).finally(() => setLoading(false));
       } else {
+        lastUserRef.current = null;
         setProfile(null);
         setProfileLoading(false);
         setLoading(false);
@@ -71,8 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        refreshProfile(session.user.id);
+        if (lastUserRef.current !== session.user.id) {
+          lastUserRef.current = session.user.id;
+          refreshProfile(session.user.id);
+        }
       } else {
+        lastUserRef.current = null;
         setProfile(null);
         setProfileLoading(false);
       }
