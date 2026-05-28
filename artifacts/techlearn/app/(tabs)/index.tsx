@@ -1392,10 +1392,6 @@ export default function HomeScreen() {
 
         {MODULE_DEFINITIONS.map((mod, index) => {
           let { isCompleted, isLocked } = getModuleState(mod);
-          
-          if (isGuest && index > 0) {
-            isLocked = true;
-          }
 
           const IconComp = ICON_MAP[mod.iconName];
           const accentColor = isCompleted ? colors.success : isLocked ? colors.mutedForeground : mod.accentColor;
@@ -1435,7 +1431,7 @@ export default function HomeScreen() {
                 <View style={styles.cardInfo}>
                   <Text style={[styles.cardTitle, { color: colors.foreground }]}>{mod.title}</Text>
                   <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>
-                    {isGuest && index > 0 ? "Requer conta de aluno para acesso" : mod.subtitle}
+                    {mod.subtitle}
                   </Text>
                 </View>
                 {isCompleted

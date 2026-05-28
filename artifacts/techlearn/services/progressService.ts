@@ -14,7 +14,25 @@ export const progressService = {
       const storageKey = getStorageKey(userId);
       // 1. Tentar pegar do AsyncStorage local primeiro
       const rawLocal = await AsyncStorage.getItem(storageKey);
-      const localData: ProgressState | null = rawLocal ? JSON.parse(rawLocal) : null;
+      let localData: ProgressState | null = rawLocal ? JSON.parse(rawLocal) : null;
+
+      // Se houver usuário logado, mas não temos dados locais para ele,
+      // vamos verificar se existe progresso de visitante (anônimo) para migrar!
+      if (userId && !localData) {
+        const anonKey = getStorageKey(undefined);
+        const rawAnon = await AsyncStorage.getItem(anonKey);
+        if (rawAnon) {
+          const anonData: ProgressState = JSON.parse(rawAnon);
+          if (anonData.xp > 0 || anonData.completedModules.length > 0) {
+            localData = anonData;
+            // Salva esse progresso na chave do usuário logado
+            await AsyncStorage.setItem(storageKey, JSON.stringify(localData));
+            // Remove a chave do visitante para evitar migrações indevidas
+            await AsyncStorage.removeItem(anonKey);
+            console.log("Migrated guest progress to logged user:", userId);
+          }
+        }
+      }
 
       // 2. Se houver usuário logado, buscar da nuvem
       if (userId) {
@@ -48,7 +66,7 @@ export const progressService = {
             hintUsedCount: rawModuleXp._hint_used_count || 0,
           };
 
-          // Lógica de Merge: se o local tem mais XP, o usuário deve ter jogado offline.
+          // Lógica de Merge: se o local (migrado ou offline) tem mais XP, o usuário deve ter jogado offline.
           if (localData && localData.xp > mappedCloud.xp) {
             // Salvar silenciosamente o local mais atualizado na nuvem
             this.saveProgress(localData, userId).catch(() => {});
@@ -59,7 +77,7 @@ export const progressService = {
           await AsyncStorage.setItem(storageKey, JSON.stringify(mappedCloud));
           return mappedCloud;
         } else {
-          // Se não existir registro no banco ainda, mas temos progresso local, sincronizamos imediatamente
+          // Se não existir registro no banco ainda, mas temos progresso local (migrado), sincronizamos imediatamente
           if (localData) {
             this.saveProgress(localData, userId).catch(() => {});
           }

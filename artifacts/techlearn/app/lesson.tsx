@@ -92,10 +92,6 @@ export function LessonScreenInternal() {
   const isMistakesReview = moduleIdParam === "mistakes";
   const moduleId = isMistakesReview ? -1 : parseInt(moduleIdParam ?? "1", 10);
 
-  if (isGuest && moduleId > 1) {
-    return <Redirect href="/" />;
-  }
-
   const moduleDef = isMistakesReview
     ? ({ id: -1, title: "Caixa de Erros", subtitle: "Revisão de conceitos errados", iconName: "AlertTriangle", startIdx: 0, length: 0, accentColor: "#EF4444", category: "awareness", difficulty: "Iniciante" } as any)
     : (MODULE_DEFINITIONS.find((m) => m.id === moduleId) ?? MODULE_DEFINITIONS[0]);
