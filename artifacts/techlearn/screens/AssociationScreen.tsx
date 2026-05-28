@@ -124,8 +124,8 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
         <View style={[s.instructionBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[s.instructionText, { color: colors.foreground }]}>
             {selectedLeft === null 
-              ? "👉 Passo 1: Escolha um conceito abaixo." 
-              : "🎯 Passo 2: Agora escolha a definição correspondente."}
+              ? "Escolha um conceito abaixo." 
+              : "Agora escolha a definição correspondente."}
           </Text>
         </View>
 
