@@ -16,7 +16,7 @@ export default function SignInScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { session, loading, profileLoading, refreshProfile } = useAuth();
+  const { session, loading, profileLoading, refreshProfile, isGuest, loginAsGuest } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,7 +72,7 @@ export default function SignInScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
         <ScrollView
-          contentContainerStyle={[s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 80 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -125,6 +125,17 @@ export default function SignInScreen() {
               onPress={handleSignIn} disabled={isLoading || !email || !password} activeOpacity={0.8}
             >
               {isLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Entrar</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.btn, { backgroundColor: "transparent", borderColor: colors.border, borderWidth: 1 }]}
+              onPress={() => {
+                loginAsGuest();
+                router.replace("/(tabs)" as any);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.btnText, { color: colors.foreground }]}>Testar sem login</Text>
             </TouchableOpacity>
 
             <View style={s.footer}>

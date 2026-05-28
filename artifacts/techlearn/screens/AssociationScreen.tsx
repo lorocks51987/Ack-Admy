@@ -1,22 +1,30 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Link2 } from "lucide-react-native";
+import { CheckCircle2, XCircle } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { AssociationExercise } from "@/constants/lessons";
+import { audioService } from "@/services/audioService";
 
 interface Props {
   exercise: AssociationExercise;
   onAnswer: (correct: boolean) => void;
+  feedbackVisible?: boolean;
+  powerUpUsed?: boolean;
 }
 
-export function AssociationScreen({ exercise, onAnswer }: Props) {
+export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false, powerUpUsed = false }: Props) {
   const colors = useColors();
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+  const [wrongLeft, setWrongLeft] = useState<number | null>(null);
+  const [wrongRight, setWrongRight] = useState<number | null>(null);
   const [matched, setMatched] = useState<Record<number, number>>({});
-  const [checked, setChecked] = useState(false);
 
-  // Shuffle right side once on mount
+  const insets = useSafeAreaInsets();
+  const locked = feedbackVisible;
+
+  // Shuffled right definitions list
   const shuffledRight = useMemo(
     () =>
       exercise.pairs
@@ -26,212 +34,262 @@ export function AssociationScreen({ exercise, onAnswer }: Props) {
     []
   );
 
-  // ---------- handlers ----------
-  const handleLeft = useCallback(
-    (idx: number) => {
-      if (checked) return;
-      if (matched[idx] !== undefined) {
-        // Tap a paired left item → unlink it
-        Haptics.selectionAsync();
-        setMatched((prev) => {
-          const next = { ...prev };
-          delete next[idx];
-          return next;
-        });
-        setSelectedLeft(null);
-        return;
+  // Power-up auto-resolves first pair
+  React.useEffect(() => {
+    if (powerUpUsed && matched[0] === undefined) {
+      const newMatched = { ...matched, 0: 0 };
+      setMatched(newMatched);
+      if (selectedLeft === 0) setSelectedLeft(null);
+      if (Object.keys(newMatched).length === exercise.pairs.length) {
+        setTimeout(() => {
+          onAnswer(true);
+        }, 600);
       }
-      Haptics.selectionAsync();
-      setSelectedLeft((prev) => (prev === idx ? null : idx));
-    },
-    [checked, matched]
-  );
+    }
+  }, [powerUpUsed]);
 
-  const handleRight = useCallback(
-    (origIdx: number) => {
-      if (checked || selectedLeft === null) return;
-      // Tap an already-paired right item that belongs to selectedLeft → unlink
-      const existingLeft = Object.keys(matched).find(
-        (k) => matched[+k] === origIdx
-      );
-      if (existingLeft !== undefined) return; // belongs to another left, ignore
+  const evaluateMatch = useCallback((lIdx: number, rIdx: number) => {
+    if (lIdx === rIdx) {
+      // Correct Match!
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setMatched((prev) => ({ ...prev, [selectedLeft]: origIdx }));
+      const newMatched = { ...matched, [lIdx]: rIdx };
+      setMatched(newMatched);
       setSelectedLeft(null);
-    },
-    [checked, selectedLeft, matched]
-  );
-
-  const handleCheck = () => {
-    if (Object.keys(matched).length < exercise.pairs.length) return;
-    setChecked(true);
-    onAnswer(exercise.pairs.every((_, i) => matched[i] === i));
-  };
-
-  // ---------- style helpers ----------
-  // Returns { bg, border } based on state — only left items are ever "selected"
-  const leftStyle = (idx: number) => {
-    if (checked) {
-      if (matched[idx] !== undefined) {
-        const ok = matched[idx] === idx;
-        return { bg: ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", border: ok ? colors.success : colors.error };
+      
+      // Check if all matched
+      if (Object.keys(newMatched).length === exercise.pairs.length) {
+        setTimeout(() => {
+          onAnswer(true);
+        }, 600);
       }
-      return { bg: colors.card, border: colors.border };
+    } else {
+      // Wrong Match!
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      audioService.playWrong();
+      setWrongLeft(lIdx);
+      setWrongRight(rIdx);
+      setSelectedLeft(null);
+      
+      // Clear wrong flash after 600ms
+      setTimeout(() => {
+        setWrongLeft(null);
+        setWrongRight(null);
+      }, 600);
     }
-    if (selectedLeft === idx) return { bg: "rgba(99,102,241,0.18)", border: colors.primary };
-    if (matched[idx] !== undefined) return { bg: "rgba(99,102,241,0.07)", border: colors.primary + "70" };
-    return { bg: colors.card, border: colors.border };
-  };
+  }, [matched, exercise.pairs.length, onAnswer]);
 
-  const rightStyle = (origIdx: number) => {
-    const isPaired = Object.values(matched).includes(origIdx);
-    if (checked) {
-      const lKey = Object.keys(matched).find((k) => matched[+k] === origIdx);
-      if (lKey !== undefined) {
-        const ok = +lKey === origIdx;
-        return { bg: ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", border: ok ? colors.success : colors.error };
-      }
-      return { bg: colors.card, border: colors.border };
+  const handleSelectLeft = useCallback((idx: number) => {
+    if (locked || matched[idx] !== undefined) return;
+    Haptics.selectionAsync();
+    setSelectedLeft(prev => prev === idx ? null : idx);
+  }, [locked, matched]);
+
+  const handleSelectRight = useCallback((origIdx: number) => {
+    if (locked || Object.values(matched).includes(origIdx)) return;
+    if (selectedLeft === null) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
     }
-    if (isPaired) return { bg: "rgba(99,102,241,0.07)", border: colors.primary + "70" };
-    // Only highlight available right items when a left is selected
-    if (selectedLeft !== null) return { bg: "rgba(99,102,241,0.06)", border: colors.primary };
-    return { bg: colors.card, border: colors.border };
-  };
+    evaluateMatch(selectedLeft, origIdx);
+  }, [locked, matched, selectedLeft, evaluateMatch]);
 
-  const allMatched = Object.keys(matched).length === exercise.pairs.length;
+  // Filtra itens ainda pendentes para conexão
+  const pendingConcepts = useMemo(() => {
+    return exercise.pairs
+      .map((p, idx) => ({ ...p, originalIdx: idx }))
+      .filter(p => matched[p.originalIdx] === undefined);
+  }, [exercise.pairs, matched]);
+
+  const pendingDefinitions = useMemo(() => {
+    return shuffledRight.filter(item => !Object.values(matched).includes(item.originalIdx));
+  }, [shuffledRight, matched]);
+
+  // Pares concluídos
+  const completedPairs = useMemo(() => {
+    return Object.keys(matched).map(lIdx => {
+      const idx = parseInt(lIdx, 10);
+      return exercise.pairs[idx];
+    });
+  }, [matched, exercise.pairs]);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={s.scroll}
+        contentContainerStyle={[s.scrollContent, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.tag, { color: colors.primary }]}>ASSOCIAÇÃO</Text>
-        <Text style={[styles.instruction, { color: colors.foreground }]}>
-          {exercise.instruction}
-        </Text>
-
-        {/* Active selection hint */}
-        <View style={[styles.hintBar, { backgroundColor: colors.card, borderColor: selectedLeft !== null ? colors.primary : colors.border }]}>
-          <Link2 size={13} color={selectedLeft !== null ? colors.primary : colors.mutedForeground} strokeWidth={2} />
-          <Text style={[styles.hintText, { color: selectedLeft !== null ? colors.primary : colors.mutedForeground }]}>
-            {selectedLeft !== null
-              ? `"${exercise.pairs[selectedLeft].left}" — agora selecione à direita`
-              : allMatched
-              ? "Todos os pares conectados!"
-              : "Selecione um item à esquerda para começar"}
+        {/* Instrução Dinâmica */}
+        <View style={[s.instructionBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[s.instructionText, { color: colors.foreground }]}>
+            {selectedLeft === null 
+              ? "👉 Passo 1: Escolha um conceito abaixo." 
+              : "🎯 Passo 2: Agora escolha a definição correspondente."}
           </Text>
         </View>
 
-        {/* Two columns */}
-        <View style={styles.columns}>
-          {/* LEFT column */}
-          <View style={styles.column}>
-            <Text style={[styles.colLabel, { color: colors.mutedForeground }]}>CONCEITO</Text>
-            {exercise.pairs.map((pair, idx) => {
-              const s = leftStyle(idx);
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.chip, { backgroundColor: s.bg, borderColor: s.border }]}
-                  onPress={() => handleLeft(idx)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.chipText, { color: colors.foreground }]}>{pair.left}</Text>
-                  {matched[idx] !== undefined && (
-                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+        {/* LISTA DE CONCEITOS PENDENTES */}
+        {pendingConcepts.length > 0 && (
+          <View style={s.section}>
+            <Text style={[s.sectionTitle, { color: colors.mutedForeground }]}>CONCEITOS DISPONÍVEIS</Text>
+            <View style={s.list}>
+              {pendingConcepts.map((c) => {
+                const isSelected = selectedLeft === c.originalIdx;
+                const isWrong = wrongLeft === c.originalIdx;
+                return (
+                  <TouchableOpacity
+                    key={`concept-${c.originalIdx}`}
+                    style={[
+                      s.cardItem,
+                      {
+                        backgroundColor: isSelected 
+                          ? colors.primary + "12" 
+                          : isWrong 
+                          ? colors.error + "12" 
+                          : colors.card,
+                        borderColor: isSelected 
+                          ? colors.primary 
+                          : isWrong 
+                          ? colors.error 
+                          : colors.border,
+                      }
+                    ]}
+                    onPress={() => handleSelectLeft(c.originalIdx)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
+                      {c.left}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
+        )}
 
-          {/* RIGHT column */}
-          <View style={styles.column}>
-            <Text style={[styles.colLabel, { color: colors.mutedForeground }]}>CATEGORIA</Text>
-            {shuffledRight.map((item) => {
-              const isPaired = Object.values(matched).includes(item.originalIdx);
-              const s = rightStyle(item.originalIdx);
-              // Right items are ONLY tappable when a left is selected and this right isn't paired to another left
-              const disabled = checked || selectedLeft === null || isPaired;
-              return (
-                <TouchableOpacity
-                  key={item.originalIdx}
-                  style={[
-                    styles.chip,
-                    { backgroundColor: s.bg, borderColor: s.border, opacity: isPaired && selectedLeft !== null ? 0.5 : 1 },
-                  ]}
-                  onPress={() => handleRight(item.originalIdx)}
-                  activeOpacity={disabled ? 1 : 0.75}
-                  disabled={disabled}
-                >
-                  <Text style={[styles.chipText, { color: colors.foreground }]}>{item.label}</Text>
-                  {isPaired && !checked && (
-                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+        {/* LISTA DE DEFINIÇÕES PENDENTES */}
+        {pendingDefinitions.length > 0 && (
+          <View style={s.section}>
+            <Text style={[s.sectionTitle, { color: colors.mutedForeground }]}>DEFINIÇÕES DISPONÍVEIS</Text>
+            <View style={s.list}>
+              {pendingDefinitions.map((d) => {
+                const isWrong = wrongRight === d.originalIdx;
+                return (
+                  <TouchableOpacity
+                    key={`def-${d.originalIdx}`}
+                    style={[
+                      s.cardItem,
+                      {
+                        backgroundColor: isWrong ? colors.error + "12" : colors.card,
+                        borderColor: isWrong ? colors.error : colors.border,
+                        opacity: selectedLeft === null ? 0.6 : 1,
+                      }
+                    ]}
+                    onPress={() => handleSelectRight(d.originalIdx)}
+                    activeOpacity={selectedLeft === null ? 1 : 0.75}
+                  >
+                    <Text style={[s.cardText, { color: colors.foreground }]}>
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* CONEXÕES FEITAS */}
+        {completedPairs.length > 0 && (
+          <View style={s.section}>
+            <Text style={[s.sectionTitle, { color: colors.success }]}>CONEXÕES FEITAS</Text>
+            <View style={s.list}>
+              {completedPairs.map((p, idx) => (
+                <View
+                  key={`done-${idx}`}
+                  style={[s.doneItem, { backgroundColor: colors.success + "08", borderColor: colors.success + "30" }]}
+                >
+                  <CheckCircle2 size={16} color={colors.success} strokeWidth={2.5} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[s.doneLeftText, { color: colors.foreground }]}>{p.left}</Text>
+                    <Text style={[s.doneRightText, { color: colors.mutedForeground }]}>{p.right}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: allMatched ? colors.primary : colors.muted }]}
-          onPress={handleCheck}
-          activeOpacity={0.85}
-          disabled={!allMatched}
-        >
-          <Text style={[styles.btnText, { color: allMatched ? "#FFFFFF" : colors.mutedForeground }]}>
-            Verificar
+      {!feedbackVisible && (
+        <View style={[s.footer, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <Text style={[s.footerMessage, { color: colors.mutedForeground }]}>
+            {completedPairs.length < exercise.pairs.length
+              ? `Progresso: ${completedPairs.length} de ${exercise.pairs.length} pares conectados`
+              : "Verificando conexões..."}
           </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root:          { flex: 1 },
-  scroll:        { flex: 1 },
-  scrollContent: { padding: 20, gap: 14, paddingBottom: 24 },
-  tag:           { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
-  instruction:   { fontSize: 15, fontFamily: "Inter_700Bold", lineHeight: 24 },
-  hintBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  hintText: { flex: 1, fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  columns:   { flexDirection: "row", gap: 10 },
-  column:    { flex: 1, gap: 8 },
-  colLabel:  { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5, textAlign: "center" },
-  chip: {
-    borderRadius: 10,
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 24, gap: 20, paddingBottom: 32 },
+  instructionBox: {
+    borderRadius: 12,
     borderWidth: 1.5,
-    padding: 12,
-    minHeight: 58,
+    padding: 16,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 6,
   },
-  chipText: {
-    flex: 1,
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
+  instructionText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
     textAlign: "center",
-    lineHeight: 17,
+    lineHeight: 20,
   },
-  dot:    { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
-  footer: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
-  btn:    { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
-  btnText:{ fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  section: { gap: 10 },
+  sectionTitle: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1.5,
+    marginBottom: 2,
+  },
+  list: { gap: 8 },
+  cardItem: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 52,
+    justifyContent: "center",
+  },
+  cardText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 18,
+  },
+  doneItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  doneLeftText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  doneRightText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 16,
+  },
+  footer: { paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: 1 },
+  footerMessage: { fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingVertical: 6 },
 });

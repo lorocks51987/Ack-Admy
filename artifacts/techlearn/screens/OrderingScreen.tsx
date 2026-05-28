@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { X } from "lucide-react-native";
+import { X, CheckCircle, XCircle } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { OrderingExercise } from "@/constants/lessons";
 
 interface Props {
   exercise: OrderingExercise;
   onAnswer: (correct: boolean) => void;
+  feedbackVisible?: boolean;
+  powerUpUsed?: boolean;
 }
 
-export function OrderingScreen({ exercise, onAnswer }: Props) {
+export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, powerUpUsed = false }: Props) {
   const colors = useColors();
 
   const initialPool = useMemo(
@@ -24,59 +27,105 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
 
   const [arranged, setArranged] = useState<{ item: string; origIdx: number }[]>([]);
   const [pool, setPool] = useState(initialPool);
+  const [checked, setChecked] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const locked = checked || feedbackVisible;
+
+  React.useEffect(() => {
+    if (powerUpUsed && arranged[0]?.origIdx !== exercise.correctOrder[0]) {
+      const correctIdx = exercise.correctOrder[0];
+      const correctItem = exercise.items[correctIdx];
+      
+      setArranged(prev => {
+        const next = prev.filter(e => e.origIdx !== correctIdx);
+        return [{ item: correctItem, origIdx: correctIdx }, ...next];
+      });
+      setPool(p => p.filter(e => e.origIdx !== correctIdx));
+    }
+  }, [powerUpUsed, exercise]);
 
   const addToArranged = (entry: { item: string; origIdx: number }) => {
+    if (locked) return;
     Haptics.selectionAsync();
     setPool((p) => p.filter((e) => e.origIdx !== entry.origIdx));
     setArranged((a) => [...a, entry]);
   };
 
   const removeFromArranged = (entry: { item: string; origIdx: number }) => {
+    if (locked || (powerUpUsed && entry.origIdx === exercise.correctOrder[0])) return;
     Haptics.selectionAsync();
     setArranged((a) => a.filter((e) => e.origIdx !== entry.origIdx));
     setPool((p) => [...p, entry]);
   };
 
   const handleCheck = () => {
-    if (arranged.length < exercise.items.length) return;
-    onAnswer(arranged.every((entry, i) => entry.origIdx === exercise.correctOrder[i]));
+    if (arranged.length < exercise.items.length || locked) return;
+    setChecked(true);
+    const correct = arranged.every((entry, i) => entry.origIdx === exercise.correctOrder[i]);
+    Haptics.impactAsync(correct ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
+    onAnswer(correct);
   };
 
-  const canCheck = arranged.length === exercise.items.length;
+  const canCheck = arranged.length === exercise.items.length && !locked;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.tag, { color: colors.primary }]}>ORDENAÇÃO</Text>
-        <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
+
+
+        <View style={[styles.instructionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
+        </View>
 
         {/* Drop zone */}
-        <View style={[styles.dropZone, { backgroundColor: colors.muted, borderColor: canCheck ? colors.primary : colors.border }]}>
-          <Text style={[styles.dropLabel, { color: colors.mutedForeground }]}>SEQUÊNCIA CORRETA</Text>
+        <View style={[styles.dropZone, { backgroundColor: colors.card, borderColor: canCheck ? colors.primary : colors.border }]}>
+          <Text style={[styles.dropLabel, { color: colors.mutedForeground }]}>SUA SEQUÊNCIA</Text>
           {arranged.length === 0 ? (
-            <Text style={[styles.placeholder, { color: colors.mutedForeground }]}>
-              Toque nos itens abaixo para ordenar
-            </Text>
+            <View style={styles.placeholderBox}>
+              <Text style={[styles.placeholder, { color: colors.mutedForeground }]}>
+                Toque nos itens abaixo para ordená-los aqui
+              </Text>
+            </View>
           ) : (
             <View style={styles.arrangedList}>
-              {arranged.map((entry, i) => (
-                <TouchableOpacity
-                  key={entry.origIdx}
-                  style={[styles.arrangedChip, { backgroundColor: "rgba(99,102,241,0.12)", borderColor: colors.primary }]}
-                  onPress={() => removeFromArranged(entry)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.numBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.numText}>{i + 1}</Text>
-                  </View>
-                  <Text style={[styles.arrangedText, { color: colors.foreground }]}>{entry.item}</Text>
-                  <X size={14} color={colors.mutedForeground} strokeWidth={2} />
-                </TouchableOpacity>
-              ))}
+              {arranged.map((entry, i) => {
+                const isCorrect = entry.origIdx === exercise.correctOrder[i];
+                const isPowerUpSolved = powerUpUsed && i === 0 && entry.origIdx === exercise.correctOrder[0];
+                const bg = checked 
+                  ? (isCorrect ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)") 
+                  : isPowerUpSolved ? colors.success + "12" : colors.card;
+                const border = checked
+                  ? (isCorrect ? colors.success : colors.error)
+                  : isPowerUpSolved ? colors.success : colors.border;
+                
+                return (
+                  <TouchableOpacity
+                    key={entry.origIdx}
+                    style={[styles.arrangedChip, { backgroundColor: bg, borderColor: border }]}
+                    onPress={() => removeFromArranged(entry)}
+                    activeOpacity={locked || isPowerUpSolved ? 1 : 0.7}
+                    disabled={locked || isPowerUpSolved}
+                  >
+                    <View style={[styles.numBadge, { backgroundColor: isPowerUpSolved ? colors.success + "15" : (checked ? (isCorrect ? colors.success : colors.error) : colors.primary) }]}>
+                      <Text style={[styles.numText, { color: isPowerUpSolved ? colors.success : "#FFFFFF" }]}>{i + 1}</Text>
+                    </View>
+                    <Text style={[styles.arrangedText, { color: colors.foreground }]}>{entry.item}</Text>
+                    
+                    {isPowerUpSolved ? (
+                      <CheckCircle size={18} color={colors.success} style={{ marginLeft: 8 }} />
+                    ) : checked ? (
+                      isCorrect ? <CheckCircle size={16} color={colors.success} /> : <XCircle size={16} color={colors.error} />
+                    ) : (
+                      <X size={16} color={colors.mutedForeground} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -89,7 +138,8 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
               key={entry.origIdx}
               style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => addToArranged(entry)}
-              activeOpacity={0.75}
+              activeOpacity={locked ? 1 : 0.7}
+              disabled={locked}
             >
               <Text style={[styles.poolText, { color: colors.foreground }]}>{entry.item}</Text>
             </TouchableOpacity>
@@ -97,16 +147,18 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted }]}
-          onPress={handleCheck}
-          activeOpacity={0.85}
-          disabled={!canCheck}
-        >
-          <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Verificar</Text>
-        </TouchableOpacity>
-      </View>
+      {!feedbackVisible && (
+        <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: canCheck ? colors.primary : colors.muted, opacity: canCheck ? 1 : 0.6 }]}
+            onPress={handleCheck}
+            activeOpacity={0.85}
+            disabled={!canCheck}
+          >
+            <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Confirmar resposta</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -114,49 +166,45 @@ export function OrderingScreen({ exercise, onAnswer }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { padding: 20, gap: 14, paddingBottom: 24 },
-  tag: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1.5 },
-  instruction: { fontSize: 16, fontFamily: "Inter_700Bold", lineHeight: 26 },
+  scrollContent: { padding: 24, gap: 16, paddingBottom: 32 },
+  tagRow: { flexDirection: "row" },
+  tag: {
+    flexDirection: "row", alignItems: "center",
+    borderRadius: 20, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  tagText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2 },
+  instructionCard: { borderRadius: 16, borderWidth: 1, padding: 20 },
+  instruction: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   dropZone: {
+    borderRadius: 16, borderWidth: 1.5, borderStyle: "dashed",
+    minHeight: 120, padding: 20, gap: 14,
+  },
+  dropLabel: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
+  placeholderBox: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 70 },
+  placeholder: { fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center", fontStyle: "italic" },
+  arrangedList: { gap: 12 },
+  arrangedChip: {
+    flexDirection: "row", alignItems: "center",
+    borderRadius: 12, borderWidth: 1.5,
+    paddingVertical: 14, paddingHorizontal: 16, gap: 14,
+  },
+  numBadge: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  numText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  arrangedText: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  poolLabel: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2, marginTop: 8 },
+  pool: { gap: 12, width: "100%" },
+  poolChip: {
     borderRadius: 12,
     borderWidth: 1.5,
-    borderStyle: "dashed",
-    minHeight: 80,
-    padding: 12,
-    gap: 8,
-  },
-  dropLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
-  placeholder: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", fontStyle: "italic", paddingVertical: 12 },
-  arrangedList: { gap: 8 },
-  arrangedChip: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
   },
-  numBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  numText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  arrangedText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  poolLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1.5 },
-  pool: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  poolChip: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  poolText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  footer: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
-  btn: { borderRadius: 10, paddingVertical: 16, alignItems: "center" },
-  btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  poolText: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  footer: { paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: 1 },
+  btn: { borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
 });

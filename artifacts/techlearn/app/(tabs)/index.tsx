@@ -8,7 +8,7 @@ import {
   ChevronRight, Lock, Zap, Star, CheckCircle2,
   Users, BarChart3, Presentation, ChevronLeft,
   Award, Target, TrendingUp, BookOpen, Medal, Crown,
-  Plus, Edit2, Info, ChevronDown, ChevronUp
+  Plus, Edit2, Info, ChevronDown, ChevronUp, MessageSquare, ThumbsUp, Download
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -53,6 +53,17 @@ interface AdminDashboardData {
   highlightClass: string;
   classes: AdminClassSummary[];
   students: AdminStudent[];
+  feedbackStats: {
+    total: number;
+    usability: number;
+    clarity: number;
+    exercises: number;
+    feedback: number;
+    returnIntention: number;
+    recommendationYesPct: number;
+  };
+  recentFeedbacks: any[];
+  reports: any[];
 }
 
 function AdminDashboard() {
@@ -64,6 +75,7 @@ function AdminDashboard() {
   const [adminLoading, setAdminLoading] = React.useState(true);
   const [adminError, setAdminError] = React.useState<string | null>(null);
   const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
+  const [hiddenReportIds, setHiddenReportIds] = React.useState<string[]>([]);
 
   // Estados de Gestão de Turmas
   const [rawClasses, setRawClasses] = React.useState<{ id: string; name: string; course: string; term: string }[]>([]);
@@ -88,7 +100,7 @@ function AdminDashboard() {
       // 1. Buscar perfis com role = 'student' contendo nome, email e turma
       const { data: studentProfiles, error: profilesErr } = await supabase
         .from("profiles")
-        .select("id, name, email, class_name")
+        .select("id, name, email, class_name, course, term, room")
         .eq("role", "student");
 
       if (profilesErr) throw new Error(profilesErr.message);
@@ -140,8 +152,10 @@ function AdminDashboard() {
 
       const studentsList: AdminStudent[] = [];
 
-      (studentProfiles || []).forEach((p) => {
-        const className = p.class_name || "Sem Turma";
+      (studentProfiles || []).forEach((p: any) => {
+        const className = (p.course && p.term && p.room) 
+          ? `${p.course} - ${p.term} ${p.room}`
+          : (p.class_name || "Sem Turma");
         const prog = progressMap.get(p.id) || {
           xp: 0,
           completedCount: 0,
@@ -243,6 +257,49 @@ function AdminDashboard() {
         term: c.term || ""
       })));
 
+      // 4. Fetch feedbacks
+      const { data: feedbackData, error: feedbackErr } = await supabase
+        .from("feedbacks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      let feedbackStats = { total: 0, usability: 0, clarity: 0, exercises: 0, feedback: 0, returnIntention: 0, recommendationYesPct: 0 };
+      let recentFeedbacks: any[] = [];
+
+      if (feedbackData && feedbackData.length > 0) {
+        let recYes = 0;
+        feedbackData.forEach((f: any) => {
+          feedbackStats.usability += f.rating_usability || 0;
+          feedbackStats.clarity += f.rating_clarity || 0;
+          feedbackStats.exercises += f.rating_exercises || 0;
+          feedbackStats.feedback += f.rating_feedback || 0;
+          feedbackStats.returnIntention += f.rating_return || 0;
+          if (f.recommendation === "Sim") recYes++;
+        });
+
+        const total = feedbackData.length;
+        feedbackStats = {
+          total,
+          usability: Number((feedbackStats.usability / total).toFixed(1)),
+          clarity: Number((feedbackStats.clarity / total).toFixed(1)),
+          exercises: Number((feedbackStats.exercises / total).toFixed(1)),
+          feedback: Number((feedbackStats.feedback / total).toFixed(1)),
+          returnIntention: Number((feedbackStats.returnIntention / total).toFixed(1)),
+          recommendationYesPct: Math.round((recYes / total) * 100),
+        };
+        recentFeedbacks = feedbackData.slice(0, 3);
+      }
+
+      // 5. Fetch question reports (contestations)
+      const { data: reportsData, error: reportsErr } = await supabase
+        .from("question_reports")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (reportsErr) {
+        console.warn("Supabase fetch question reports error:", reportsErr.message);
+      }
+
       setAdminData({
         activeStudents,
         averageXp,
@@ -250,6 +307,9 @@ function AdminDashboard() {
         highlightClass,
         classes: classesList,
         students: studentsList,
+        feedbackStats,
+        recentFeedbacks,
+        reports: reportsData || [],
       });
     } catch (err: any) {
       console.warn("Error fetching admin dashboard data:", err);
@@ -351,6 +411,61 @@ function AdminDashboard() {
     }
   };
 
+  const handleResolveReport = async (reportId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setHiddenReportIds(prev => [...prev, reportId]);
+    try {
+      await supabase.from("question_reports").delete().eq("id", reportId);
+    } catch (err) {
+      console.warn("Error deleting question report:", err);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!selectedClass || !adminData) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const studentsInClass = adminData.students
+      .filter((s) => s.className === selectedClass)
+      .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name));
+
+    // Headers em português do Brasil
+    const headers = ["Turma", "Nome do Aluno", "Email", "XP", "Modulos Concluidos", "Precisao (%)", "Dias Ativos"];
+    const rows = studentsInClass.map(s => [
+      s.className,
+      s.name,
+      s.email,
+      s.xp,
+      s.completedCount,
+      s.accuracy,
+      s.streak
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+
+    if (Platform.OS === 'web') {
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Relatorio_${selectedClass.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      const FileSystem = require("expo-file-system");
+      const Sharing = require("expo-sharing");
+      const fileUri = `${FileSystem.documentDirectory}Relatorio_${selectedClass.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+      FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 })
+        .then(() => {
+          Sharing.shareAsync(fileUri);
+        })
+        .catch((err: any) => {
+          console.warn("Erro ao compartilhar relatorio CSV:", err);
+        });
+    }
+  };
+
   if (adminLoading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -441,9 +556,27 @@ function AdminDashboard() {
             <ChevronLeft size={20} color={colors.primary} />
             <Text style={[styles.backButtonText, { color: colors.primary }]}>Voltar para turmas</Text>
           </TouchableOpacity>
-          <Text style={[styles.adminHeaderTitle, { color: colors.foreground, marginTop: 8 }]}>
-            Turma: {selectedClass}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginTop: 8, gap: 10 }}>
+            <Text style={[styles.adminHeaderTitle, { color: colors.foreground, flex: 1, marginTop: 0 }]}>
+              Turma: {selectedClass}
+            </Text>
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                backgroundColor: colors.primary,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8
+              }}
+              onPress={handleExportCSV}
+              activeOpacity={0.8}
+            >
+              <Download size={14} color="#FFF" />
+              <Text style={{ color: "#FFF", fontSize: 12, fontFamily: "Inter_700Bold" }}>Exportar CSV</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
             Acompanhamento analítico de desempenho individual dos alunos
           </Text>
@@ -634,7 +767,7 @@ function AdminDashboard() {
 
       <ScrollView
         key="admin-main-scroll"
-        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_HEIGHT + insets.bottom + 20 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* INDICADORES PRINCIPAIS */}
@@ -750,6 +883,126 @@ function AdminDashboard() {
                 </View>
               );
             })
+          )}
+        </View>
+
+        {/* FEEDBACKS DOS ALUNOS */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>FEEDBACKS DOS ALUNOS</Text>
+        <View style={{ marginBottom: 24, gap: 12 }}>
+          {adminData.feedbackStats.total === 0 ? (
+            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MessageSquare size={24} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Os feedbacks aparecerão aqui após os alunos concluírem o primeiro módulo.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Feedback Resumo */}
+              <View style={[styles.feedbackSummaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.feedbackSummaryHeader}>
+                  <Text style={[styles.feedbackTotalText, { color: colors.foreground }]}>{adminData.feedbackStats.total} avaliações</Text>
+                  <View style={[styles.feedbackRecBadge, { backgroundColor: colors.success + "15" }]}>
+                    <ThumbsUp size={12} color={colors.success} />
+                    <Text style={[styles.feedbackRecText, { color: colors.success }]}>{adminData.feedbackStats.recommendationYesPct}% recomendam</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.feedbackAveragesGrid}>
+                  <View style={styles.feedbackAvgItem}>
+                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.usability}</Text>
+                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Usabilidade</Text>
+                  </View>
+                  <View style={styles.feedbackAvgItem}>
+                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.clarity}</Text>
+                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Clareza</Text>
+                  </View>
+                  <View style={styles.feedbackAvgItem}>
+                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.exercises}</Text>
+                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Exercícios</Text>
+                  </View>
+                  <View style={styles.feedbackAvgItem}>
+                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.feedback}</Text>
+                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Dicas</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Comentários recentes */}
+              {adminData.recentFeedbacks.length > 0 && (
+                <View style={{ gap: 8, marginTop: 4 }}>
+                  <Text style={[styles.feedbackRecentTitle, { color: colors.foreground }]}>Comentários recentes</Text>
+                  {adminData.recentFeedbacks.map(f => (
+                    <View key={f.id} style={[styles.feedbackItemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                        <Text style={[styles.feedbackItemName, { color: colors.foreground }]}>{f.user_name || "Aluno anônimo"}</Text>
+                        <Text style={[styles.feedbackItemRec, { color: f.recommendation === 'Sim' ? colors.success : colors.mutedForeground }]}>
+                          Rec: {f.recommendation}
+                        </Text>
+                      </View>
+                      <Text style={[styles.feedbackItemClass, { color: colors.mutedForeground }]}>{f.class_name}</Text>
+                      
+                      {f.liked_most ? (
+                        <View style={{ marginTop: 8 }}>
+                          <Text style={[styles.feedbackQ, { color: colors.foreground }]}>O que mais gostou?</Text>
+                          <Text style={[styles.feedbackA, { color: colors.mutedForeground }]}>{f.liked_most}</Text>
+                        </View>
+                      ) : null}
+                      
+                      {f.improvement_suggestion ? (
+                        <View style={{ marginTop: 6 }}>
+                          <Text style={[styles.feedbackQ, { color: colors.foreground }]}>O que melhoraria?</Text>
+                          <Text style={[styles.feedbackA, { color: colors.mutedForeground }]}>{f.improvement_suggestion}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* CENTRAL DE CONTESTAÇÕES */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>CENTRAL DE CONTESTAÇÕES</Text>
+        <View style={{ marginBottom: 24, gap: 12 }}>
+          {(!adminData.reports || adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).length === 0) ? (
+            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <AlertTriangle size={24} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Nenhuma contestação ativa no momento. Bom trabalho!
+              </Text>
+            </View>
+          ) : (
+            adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).map((report) => (
+              <View key={report.id} style={[styles.feedbackItemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={[styles.feedbackItemName, { color: colors.foreground }]} numberOfLines={1}>
+                      {report.user_email}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 1 }}>
+                      Módulo {report.module_id} • Questão {Number(report.question_id) + 1}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: colors.success + "15", borderColor: colors.success + "30", borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
+                    onPress={() => handleResolveReport(report.id)}
+                  >
+                    <Text style={{ color: colors.success, fontSize: 11, fontFamily: "Inter_700Bold" }}>Resolver</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ marginVertical: 4 }}>
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: colors.foreground }}>
+                    Questão: "{report.question_title}"
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: colors.background, padding: 10, borderRadius: 8, marginTop: 6 }}>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 2 }}>Motivo da contestação:</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, lineHeight: 16 }}>"{report.reason}"</Text>
+                </View>
+              </View>
+            ))
           )}
         </View>
 
@@ -977,7 +1230,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const { progress } = useProgress();
-  const { profile, loading, profileLoading } = useAuth();
+  const { profile, loading, profileLoading, isGuest } = useAuth();
 
   if (loading || profileLoading) {
     return (
@@ -987,8 +1240,8 @@ export default function HomeScreen() {
     );
   }
 
-  // Se não existir profile, mostra aviso amigável
-  if (!profile) {
+  // Se não existir profile e não for guest, mostra aviso amigável
+  if (!profile && !isGuest) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 20 }]}>
         <AlertTriangle size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />
@@ -1003,7 +1256,7 @@ export default function HomeScreen() {
   }
 
   // Se for admin, exibe o painel. Se não, exibe a jornada normal de aluno.
-  if (profile.role === "admin") {
+  if (profile?.role === "admin") {
     return <AdminDashboard />;
   }
 
@@ -1023,66 +1276,76 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { paddingTop: topPad + 12, paddingBottom: 12, backgroundColor: colors.card, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Trilha de Segurança da Informação</Text>
-            <Text style={[styles.name, { color: colors.foreground }]}>{profile.name || "Aluno"}</Text>
+          <View style={styles.greetingContainer}>
+            <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>Olá, </Text>
+            <Text style={[styles.name, { color: colors.foreground }]}>{isGuest ? "Visitante" : (profile?.name || "Aluno")}</Text>
           </View>
           <View style={styles.badges}>
-            <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Zap size={13} color="#F59E0B" strokeWidth={2} />
-              <Text style={[styles.badgeText, { color: "#F59E0B" }]}>{progress.streak}d</Text>
+            <View style={[styles.badgeCompact, { backgroundColor: "#F59E0B" + "10" }]}>
+              <Zap size={13} color="#F59E0B" strokeWidth={2.5} />
+              <Text style={[styles.badgeTextCompact, { color: "#F59E0B" }]}>{progress.streak}d</Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Star size={13} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.badgeText, { color: colors.primary }]}>{progress.xp} XP</Text>
+            <View style={[styles.badgeCompact, { backgroundColor: colors.primary + "10" }]}>
+              <Star size={13} color={colors.primary} strokeWidth={2.5} />
+              <Text style={[styles.badgeTextCompact, { color: colors.primary }]}>{progress.xp} XP</Text>
+            </View>
+            <View style={[styles.badgeCompact, { backgroundColor: colors.success + "10" }]}>
+              <Target size={13} color={colors.success} strokeWidth={2.5} />
+              <Text style={[styles.badgeTextCompact, { color: colors.success }]}>{accuracy}%</Text>
             </View>
           </View>
-        </View>
-
-        {/* Compliance bar */}
-        <View style={styles.complianceArea}>
-          <View style={styles.goalRow}>
-            <Text style={[styles.goalLabel, { color: colors.mutedForeground }]}>Progresso da Trilha</Text>
-            <Text style={[styles.goalValue, { color: colors.foreground }]}>{completedCount}/{totalModules} módulos</Text>
-          </View>
-          <View style={[styles.goalTrack, { backgroundColor: colors.muted }]}>
-            <View style={[styles.goalFill, { backgroundColor: colors.primary, width: `${progressPct * 100}%` }]} />
-          </View>
-          <Text style={[
-            styles.complianceStatus,
-            { color: completedCount === totalModules ? colors.success : colors.warning },
-          ]}>
-            {completedCount === totalModules
-              ? "✓ Você concluiu a jornada de segurança!"
-              : `⚠ ${totalModules - completedCount} módulo(s) de segurança pendente(s)`}
-          </Text>
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_HEIGHT + insets.bottom + 20 }]}
+        contentContainerStyle={[styles.scroll, { padding: 20, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats strip */}
-        <View style={styles.statsStrip}>
-          {[
-            { label: "XP Total", value: String(progress.xp), color: colors.primary },
-            { label: "Precisão", value: `${accuracy}%`, color: colors.success },
-            { label: "Dias Ativos", value: `${progress.streak}d`, color: "#F59E0B" },
-          ].map((s) => (
-            <View key={s.label} style={[styles.statChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{s.label}</Text>
+        {/* Card de Destaque / Ação Rápida */}
+        <View style={{ marginBottom: 24 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.primary,
+              borderRadius: 16,
+              padding: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+            activeOpacity={0.9}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
+              router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
+            }}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
+                {completedCount === 0 ? "Começar do Início" : "Continuar Aprendizado"}
+              </Text>
+              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
+                {completedCount === 0 
+                  ? "Inicie sua jornada de segurança defensiva." 
+                  : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
+              </Text>
             </View>
-          ))}
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+              <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
+            </View>
+          </TouchableOpacity>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MÓDULOS DE APRENDIZAGEM</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUA JORNADA</Text>
 
         {MODULE_DEFINITIONS.map((mod, index) => {
-          const { isCompleted, isLocked } = getModuleState(mod);
+          let { isCompleted, isLocked } = getModuleState(mod);
+          
+          if (isGuest && index > 0) {
+            isLocked = true;
+          }
+
           const IconComp = ICON_MAP[mod.iconName];
           const accentColor = isCompleted ? colors.success : isLocked ? colors.mutedForeground : mod.accentColor;
 
@@ -1100,33 +1363,60 @@ export default function HomeScreen() {
                   borderColor: isCompleted ? colors.success + "60" : isLocked ? colors.border : mod.accentColor + "40",
                   opacity: isLocked ? 0.45 : 1,
                 }]}
-                onPress={() => {
+                onPress={async () => {
                   if (isLocked) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push({ pathname: "/lesson", params: { moduleId: mod.id } });
+                  if (isCompleted) {
+                    if (Platform.OS === 'web') {
+                      const confirm = window.confirm("Deseja revisar esta aula?");
+                      if (confirm) {
+                        const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+                        const userKey = isGuest ? "guest" : (profile?.id ?? "anon");
+                        const sessionKey = `@ackadmy:lesson_session:${userKey}:${mod.id}`;
+                        try {
+                          await AsyncStorage.removeItem(sessionKey);
+                        } catch {}
+                        router.push({ pathname: "/lesson", params: { moduleId: mod.id, isRevision: "true" } });
+                      }
+                    } else {
+                      const { Alert } = require("react-native");
+                      Alert.alert(
+                        "Revisar aula",
+                        "Deseja revisar esta aula?",
+                        [
+                          { text: "Cancelar", style: "cancel" },
+                          { 
+                            text: "Revisar do início", 
+                            onPress: async () => {
+                              const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+                              const userKey = isGuest ? "guest" : (profile?.id ?? "anon");
+                              const sessionKey = `@ackadmy:lesson_session:${userKey}:${mod.id}`;
+                              try {
+                                await AsyncStorage.removeItem(sessionKey);
+                              } catch {}
+                              router.push({ pathname: "/lesson", params: { moduleId: mod.id, isRevision: "true" } });
+                            }
+                          }
+                        ]
+                      );
+                    }
+                  } else {
+                    router.push({ pathname: "/lesson", params: { moduleId: mod.id } });
+                  }
                 }}
                 activeOpacity={isLocked ? 1 : 0.8}
               >
                 <View style={[styles.iconWrap, {
-                  backgroundColor: accentColor + "18",
-                  borderColor: accentColor + "50",
+                  backgroundColor: accentColor + "12",
+                  borderColor: accentColor + "30",
                 }]}>
-                  {isCompleted
-                    ? <CheckCircle2 size={20} color={colors.success} strokeWidth={2} />
-                    : <IconComp size={20} color={accentColor} strokeWidth={2} />
-                  }
+                  <IconComp size={20} color={accentColor} strokeWidth={2} />
                 </View>
                 <View style={styles.cardInfo}>
                   <Text style={[styles.cardTitle, { color: colors.foreground }]}>{mod.title}</Text>
-                  <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>{mod.subtitle}</Text>
-                  <View style={styles.metaRow}>
-                    <View style={[styles.diffBadge, { backgroundColor: accentColor + "20" }]}>
-                      <Text style={[styles.diffText, { color: accentColor }]}>{mod.difficulty}</Text>
-                    </View>
-                    <Text style={[styles.lessonCount, { color: colors.mutedForeground }]}>
-                      {mod.length - 1} exercícios
-                    </Text>
-                  </View>
+                  <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>
+                    {isGuest && index > 0 ? "Requer conta de aluno para acesso" : mod.subtitle}
+                  </Text>
                 </View>
                 {isCompleted
                   ? <CheckCircle2 size={18} color={colors.success} strokeWidth={2} />
@@ -1145,31 +1435,18 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, gap: 14 },
+  header: { paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1 },
   headerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  greeting: { fontSize: 11, fontFamily: "Inter_400Regular", letterSpacing: 0.5 },
-  name: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 2 },
-  badges: { flexDirection: "row", gap: 8 },
-  badge: {
-    flexDirection: "row", alignItems: "center", borderRadius: 20,
-    borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, gap: 4,
+  greetingContainer: { flexDirection: "row", alignItems: "baseline" },
+  greetingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  name: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  badges: { flexDirection: "row", gap: 6 },
+  badgeCompact: {
+    flexDirection: "row", alignItems: "center", borderRadius: 8,
+    paddingHorizontal: 8, paddingVertical: 5, gap: 3.5,
   },
-  badgeText: { fontSize: 12, fontFamily: "Inter_700Bold" },
-  complianceArea: { gap: 6 },
-  goalRow: { flexDirection: "row", justifyContent: "space-between" },
-  goalLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
-  goalValue: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  goalTrack: { height: 5, borderRadius: 3, overflow: "hidden" },
-  goalFill: { height: 5, borderRadius: 3 },
-  complianceStatus: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  badgeTextCompact: { fontSize: 11, fontFamily: "Inter_700Bold" },
   scroll: { padding: 16, gap: 0 },
-  statsStrip: { flexDirection: "row", gap: 8, marginBottom: 20 },
-  statChip: {
-    flex: 1, borderRadius: 10, borderWidth: 1,
-    paddingVertical: 12, alignItems: "center", gap: 3,
-  },
-  statValue: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 10, fontFamily: "Inter_500Medium" },
   sectionLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 2, marginBottom: 12 },
   connector: { width: 2, height: 12, marginBottom: 0 },
   card: {
@@ -1298,4 +1575,23 @@ const styles = StyleSheet.create({
 
   pillBadge: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2 },
   pillBadgeText: { fontSize: 9, fontFamily: "Inter_700Bold" },
+
+  // Feedbacks
+  feedbackSummaryCard: { borderRadius: 12, borderWidth: 1, padding: 16 },
+  feedbackSummaryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  feedbackTotalText: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  feedbackRecBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16 },
+  feedbackRecText: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  feedbackAveragesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  feedbackAvgItem: { flex: 1, minWidth: "20%", alignItems: "center", backgroundColor: "rgba(0,0,0,0.03)", paddingVertical: 10, borderRadius: 8 },
+  feedbackAvgVal: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  feedbackAvgLbl: { fontSize: 10, fontFamily: "Inter_500Medium", marginTop: 2 },
+  
+  feedbackRecentTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginLeft: 4 },
+  feedbackItemCard: { borderRadius: 12, borderWidth: 1, padding: 14 },
+  feedbackItemName: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  feedbackItemClass: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  feedbackItemRec: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  feedbackQ: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  feedbackA: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
 });

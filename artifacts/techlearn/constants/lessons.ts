@@ -13,7 +13,15 @@ export interface PhaseInfo {
   total: number;
 }
 
-export interface MultipleChoiceExercise {
+// ── Shared educational fields (optional, used by hint/feedback panel) ─────────
+export interface EducationalFields {
+  hint?: string;
+  feedbackCorrect?: string;
+  feedbackWrong?: string;
+  learnMore?: string;
+}
+
+export interface MultipleChoiceExercise extends EducationalFields {
   type: "multiple_choice";
   question: string;
   options: string[];
@@ -22,14 +30,14 @@ export interface MultipleChoiceExercise {
   phaseInfo?: PhaseInfo;
 }
 
-export interface AssociationExercise {
+export interface AssociationExercise extends EducationalFields {
   type: "association";
   instruction: string;
   pairs: { left: string; right: string }[];
   phaseInfo?: PhaseInfo;
 }
 
-export interface TextInputExercise {
+export interface TextInputExercise extends EducationalFields {
   type: "text_input";
   question: string;
   answer: string;
@@ -37,7 +45,7 @@ export interface TextInputExercise {
   phaseInfo?: PhaseInfo;
 }
 
-export interface OrderingExercise {
+export interface OrderingExercise extends EducationalFields {
   type: "ordering";
   instruction: string;
   items: string[];
@@ -45,7 +53,7 @@ export interface OrderingExercise {
   phaseInfo?: PhaseInfo;
 }
 
-export interface FillBlankExercise {
+export interface FillBlankExercise extends EducationalFields {
   type: "fill_blank";
   instruction: string;
   sentence: string;
@@ -66,7 +74,7 @@ export interface BriefingExercise {
 
 export type FraudIndicator = "sender" | "link" | "attachment";
 
-export interface PhishingEmailExercise {
+export interface PhishingEmailExercise extends EducationalFields {
   type: "phishing_email";
   fromDisplay: string;
   fromEmail: string;
@@ -106,56 +114,67 @@ export interface ModuleDefinition {
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   {
     id: 1,
-    title: "Fundamentos da Segurança Digital",
-    subtitle: "Princípios essenciais e proteção de dados",
+    title: "Fundamentos de Segurança de Aplicações",
+    subtitle: "Princípios essenciais da informação",
     iconName: "Shield",
     startIdx: 0,
-    length: 5,
+    length: 6,
     accentColor: "#6366F1",
     category: "awareness",
     difficulty: "Iniciante",
   },
   {
     id: 2,
-    title: "Senhas e Autenticação",
-    subtitle: "Gestão de identidade e múltiplos fatores",
-    iconName: "Key",
-    startIdx: 5,
-    length: 5,
-    accentColor: "#3B82F6",
-    category: "blue_team",
-    difficulty: "Intermediário",
-  },
-  {
-    id: 3,
-    title: "Cultura de Segurança no Trabalho",
-    subtitle: "Identificação de malwares e gestão de riscos",
+    title: "Riscos comuns em aplicações",
+    subtitle: "Identificação de malwares e riscos",
     iconName: "AlertTriangle",
-    startIdx: 10,
+    startIdx: 11,
     length: 5,
     accentColor: "#EF4444",
     category: "red_team",
     difficulty: "Intermediário",
   },
   {
+    id: 3,
+    title: "Controle de acesso e autenticação",
+    subtitle: "Gestão de identidade e acessos",
+    iconName: "Key",
+    startIdx: 6,
+    length: 5,
+    accentColor: "#3B82F6",
+    category: "blue_team",
+    difficulty: "Intermediário",
+  },
+  {
     id: 4,
-    title: "LGPD e Proteção de Dados",
-    subtitle: "Conformidade e privacidade corporativa",
+    title: "Phishing e engenharia social",
+    subtitle: "Prevenção contra ataques",
+    iconName: "Mail",
+    startIdx: 21,
+    length: 5,
+    accentColor: "#F59E0B",
+    category: "awareness",
+    difficulty: "Avançado",
+  },
+  {
+    id: 5,
+    title: "Proteção de dados",
+    subtitle: "Privacidade e conformidade",
     iconName: "FileText",
-    startIdx: 15,
+    startIdx: 16,
     length: 5,
     accentColor: "#8B5CF6",
     category: "lgpd",
     difficulty: "Intermediário",
   },
   {
-    id: 5,
-    title: "Phishing e Engenharia Social",
-    subtitle: "Prevenção contra ataques direcionados",
-    iconName: "Mail",
-    startIdx: 20,
-    length: 5,
-    accentColor: "#F59E0B",
+    id: 6,
+    title: "Aplicando o que aprendeu",
+    subtitle: "Teste seus conhecimentos",
+    iconName: "Shield",
+    startIdx: 0,
+    length: 6,
+    accentColor: "#10B981",
     category: "awareness",
     difficulty: "Avançado",
   },
@@ -164,18 +183,18 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
 // ── All lessons ───────────────────────────────────────────────────────────────
 export const LESSONS: Exercise[] = [
   // ══════════════════════════════════════════════════════════════════
-  // MÓDULO 1 — Tríade CID (indices 0–4)
+  // MÓDULO 1 — Tríade CID (indices 0–5)  ★ MÓDULO DEMO (VISITANTE) ★
   // ══════════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "Tríade CID e Fundamentos de Segurança",
+    scenarioTitle: "Fundamentos de Segurança de Aplicações",
     category: "awareness",
     difficulty: "Iniciante",
     narrative:
       "A Segurança da Informação é sustentada por três pilares fundamentais da ISO 27000: Confidencialidade, Integridade e Disponibilidade — a Tríade CID.\n\nMas segurança vai além da tecnologia. Ela exige equilíbrio entre Tecnologia, Pessoas e Processos. O elo mais fraco de um sistema quase sempre é o humano.",
     evidence:
       "ISO/IEC 27000 — Pilares da Segurança:\n\n  Confidencialidade → Acesso somente por autorizados\n  Integridade       → Dados não alterados sem permissão\n  Disponibilidade   → Sistemas acessíveis quando necessário\n\nFato: 95% dos incidentes têm causa raiz humana (IBM, 2023).",
-    totalPhases: 4,
+    totalPhases: 5,
   },
   {
     type: "association",
@@ -185,7 +204,11 @@ export const LESSONS: Exercise[] = [
       { left: "Vírus altera os valores de uma planilha financeira", right: "Integridade" },
       { left: "Ataque DDoS deixa site de banco fora do ar", right: "Disponibilidade" },
     ],
-    phaseInfo: { scenario: "Tríade CID", phase: 1, total: 4 },
+    phaseInfo: { scenario: "Tríade CID", phase: 1, total: 5 },
+    hint: "Pense em qual pilar cada incidente afeta: quem pode ver (C), se foi alterado (I) ou se está acessível (D).",
+    feedbackCorrect: "Perfeito! Você entendeu como cada pilar protege um aspecto diferente da informação.",
+    feedbackWrong: "Quase lá! Relembre: Confidencialidade = quem acessa, Integridade = se foi alterado, Disponibilidade = se está acessível.",
+    learnMore: "Confidencialidade protege contra acesso não autorizado. Integridade protege contra alterações indevidas. Disponibilidade garante que o sistema esteja no ar quando preciso.",
   },
   {
     type: "multiple_choice",
@@ -193,7 +216,11 @@ export const LESSONS: Exercise[] = [
     options: ["Integridade", "Confidencialidade", "Disponibilidade", "Autenticidade"],
     correct: 2,
     explanation: "A paralisação operacional total é uma violação direta da Disponibilidade — impede o acesso oportuno às informações quando necessário.",
-    phaseInfo: { scenario: "Tríade CID", phase: 2, total: 4 },
+    phaseInfo: { scenario: "Tríade CID", phase: 2, total: 5 },
+    hint: "Pense: o que acontece quando os sistemas ficam completamente indisponíveis? Qual pilar garante que os sistemas estejam acessíveis?",
+    feedbackCorrect: "Exato! Quando sistemas ficam paralisados e indisponíveis, o pilar da Disponibilidade foi violado.",
+    feedbackWrong: "Pense em qual pilar garante que os sistemas estejam acessíveis quando necessário. O ransomware bloqueou o acesso — isso é um problema de disponibilidade, não de integridade ou confidencialidade.",
+    learnMore: "Disponibilidade significa que os sistemas e dados devem estar acessíveis aos usuários autorizados quando precisarem. Um ataque que paralisa sistemas viola diretamente esse pilar.",
   },
   {
     type: "fill_blank",
@@ -202,7 +229,11 @@ export const LESSONS: Exercise[] = [
       "A ___ garante que a informação não seja vista por pessoas não autorizadas. A ___ assegura que o dado não foi modificado. A ___ garante que o sistema esteja acessível.",
     blanks: ["Confidencialidade", "Integridade", "Disponibilidade"],
     words: ["Confidencialidade", "Integridade", "Disponibilidade", "Autenticidade", "Privacidade", "Não Repúdio"],
-    phaseInfo: { scenario: "Tríade CID", phase: 3, total: 4 },
+    phaseInfo: { scenario: "Tríade CID", phase: 3, total: 5 },
+    hint: "Os três pilares formam a sigla CID: Confidencialidade, Integridade, Disponibilidade — nessa ordem lógica.",
+    feedbackCorrect: "Ótimo! Você memorizou os três pilares da Tríade CID e seus significados.",
+    feedbackWrong: "Lembre-se da sigla CID: Confidencialidade (controle de acesso), Integridade (dados sem alteração) e Disponibilidade (sistema acessível). Tente novamente na ordem correta!",
+    learnMore: "A Tríade CID é a base da ISO/IEC 27000. Confidencialidade: só autorizados acessam. Integridade: dados não são alterados sem permissão. Disponibilidade: sistemas ficam no ar quando necessário.",
   },
   {
     type: "multiple_choice",
@@ -215,15 +246,29 @@ export const LESSONS: Exercise[] = [
     ],
     correct: 1,
     explanation: "Segurança não é só tecnologia. Depende de pessoas treinadas e processos definidos. O fator humano é o elo mais crítico.",
-    phaseInfo: { scenario: "Tríade CID", phase: 4, total: 4 },
+    phaseInfo: { scenario: "Tríade CID", phase: 4, total: 5 },
+    hint: "Segurança da Informação é sustentada por três pilares além da CID: Tecnologia, Pessoas e Processos. Nenhum funciona sozinho.",
+    feedbackCorrect: "Muito bem! Segurança eficaz exige o equilíbrio entre Tecnologia, Pessoas e Processos. Nenhum pilar sozinho é suficiente.",
+    feedbackWrong: "Firewalls são ferramentas de Tecnologia. Mas sem Pessoas treinadas e Processos definidos, qualquer sistema fica vulnerável. Segurança exige os três elementos juntos.",
+    learnMore: "Pesquisas da IBM mostram que 95% dos incidentes de segurança têm causa raiz humana: um clique errado, uma senha fraca, falta de procedimento. Por isso pessoas e processos são tão críticos quanto a tecnologia.",
+  },
+  {
+    type: "text_input",
+    question: "Em uma aplicação web, qual é o nome do controle que impede um usuário de acessar dados de outro usuário?",
+    answer: "autorização|controle de autorização|validação de autorização",
+    hint: "Pense na diferença entre provar quem você é e definir o que você pode acessar.",
+    phaseInfo: { scenario: "Tríade CID", phase: 5, total: 5 },
+    feedbackCorrect: "Boa! Autorização é o que garante que o usuário só acesse recursos permitidos.",
+    feedbackWrong: "Quase. Aqui a ideia não é apenas saber quem é o usuário, mas verificar o que ele pode acessar.",
+    learnMore: "Autenticação confirma identidade. Autorização define permissões.",
   },
 
   // ══════════════════════════════════════════════════════════════════
-  // MÓDULO 2 — IAM (indices 5–9)
+  // MÓDULO 3 — IAM (indices 6–10)
   // ══════════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "IAM — Gestão de Identidade e Acesso",
+    scenarioTitle: "Controle de acesso e autenticação",
     category: "blue_team",
     difficulty: "Intermediário",
     narrative:
@@ -242,6 +287,10 @@ export const LESSONS: Exercise[] = [
     ],
     correctOrder: [1, 2, 0],
     phaseInfo: { scenario: "IAM", phase: 1, total: 4 },
+    hint: "Pense na ordem lógica: primeiro você diz quem é, depois prova quem é, e só então o sistema decide o que você pode fazer.",
+    feedbackCorrect: "Perfeito! Identificação → Autenticação → Autorização é a sequência correta do IAM.",
+    feedbackWrong: "A ordem correta é: 1) Identificação (dizer quem é), 2) Autenticação (provar quem é), 3) Autorização (o que pode fazer).",
+    learnMore: "No IAM, você sempre começa se identificando (login/usuário), depois se autentica (senha/token/biometria) e só então o sistema autoriza suas ações com base nas suas permissões.",
   },
   {
     type: "association",
@@ -252,6 +301,10 @@ export const LESSONS: Exercise[] = [
       { left: "Token físico, smart card ou celular", right: "Algo que você TEM" },
     ],
     phaseInfo: { scenario: "IAM", phase: 2, total: 4 },
+    hint: "MFA usa 3 categories: o que você SABE (memória), o que você TEM (objeto físico) e o que você É (característica biológica).",
+    feedbackCorrect: "Excelente! Você domina os três fatores de autenticação do MFA.",
+    feedbackWrong: "Lembre: SABER = algo memorizado (senha/PIN). TER = algo físico (token/celular). SER = característica biológica única (digital/rosto).",
+    learnMore: "MFA é mais seguro porque combina fatores de categorias diferentes. Se sua senha vazar, um atacante ainda precisaria do seu token físico ou da sua biometria para acessar.",
   },
   {
     type: "multiple_choice",
@@ -265,6 +318,10 @@ export const LESSONS: Exercise[] = [
     correct: 1,
     explanation: "A segurança aumenta com fatores de categorias DIFERENTES: algo que você sabe (senha) + algo que você tem (token) garante proteção mesmo com senha vazada.",
     phaseInfo: { scenario: "IAM", phase: 3, total: 4 },
+    hint: "MFA eficaz combina fatores de categorias DIFERENTES. Dois fatores da mesma categoria (como duas senhas) não aumentam a segurança.",
+    feedbackCorrect: "Correto! Senha (SABER) + Token (TER) combinam categorias distintas, tornando o acesso muito mais seguro.",
+    feedbackWrong: "Atenção: para MFA ser eficaz, os fatores precisam ser de categorias DIFERENTES. Dois fatores do mesmo tipo (duas senhas ou dois cartões) não oferecem proteção adicional real.",
+    learnMore: "MFA só é eficaz quando combina categorias distintas. Se um atacante obtém sua senha, ele ainda precisaria de algo físico (celular/token) para entrar. Por isso o MFA reduz drasticamente o risco de invasão.",
   },
   {
     type: "multiple_choice",
@@ -278,14 +335,18 @@ export const LESSONS: Exercise[] = [
     correct: 2,
     explanation: "A Autorização define quais ações um usuário autenticado pode executar. A recepcionista foi identificada e autenticada, mas não tem permissão de Update sobre prontuários.",
     phaseInfo: { scenario: "IAM", phase: 4, total: 4 },
+    hint: "A recepcionista já está logada e identificada. O bloqueio acontece quando o sistema decide O QUE ela pode ou não fazer.",
+    feedbackCorrect: "Certo! A Autorização controla as permissões de cada usuário autenticado.",
+    feedbackWrong: "A recepcionista já passou pela Identificação (login) e Autenticação (senha). O bloqueio ocorre na Autorização — a etapa que define quais ações cada usuário pode executar.",
+    learnMore: "Autorização é o controle de acesso baseado em papéis (RBAC). Mesmo usuários autenticados só podem realizar ações que seu perfil permite. Isso é o princípio do menor privilégio em ação.",
   },
 
   // ══════════════════════════════════════════════════════════════════
-  // MÓDULO 3 — Ameaças e Malware (indices 10–14)
+  // MÓDULO 2 — Ameaças e Malware (indices 11–15)
   // ══════════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "Ameaças, Malware e Gestão de Riscos",
+    scenarioTitle: "Riscos comuns em aplicações",
     category: "red_team",
     difficulty: "Intermediário",
     narrative:
@@ -303,6 +364,10 @@ export const LESSONS: Exercise[] = [
       { left: "Possibilidade real de perda total dos dados", right: "Risco" },
     ],
     phaseInfo: { scenario: "Ameaças", phase: 1, total: 4 },
+    hint: "Ameaça é quem ataca, Vulnerabilidade é a fraqueza explorada, Risco é a probabilidade de dano real.",
+    feedbackCorrect: "Exato! Você entende a cadeia: Ameaça + Vulnerabilidade = Risco.",
+    feedbackWrong: "Lembre: Ameaça = agente externo (quem quer atacar). Vulnerabilidade = fraqueza interna (o que pode ser explorado). Risco = combinação dos dois.",
+    learnMore: "A fórmula do risco é: Risco = Ameaça × Vulnerabilidade × Impacto. Reduzir qualquer um desses fatores reduz o risco total. Sistemas atualizados reduzem vulnerabilidades.",
   },
   {
     type: "association",
@@ -313,6 +378,10 @@ export const LESSONS: Exercise[] = [
       { left: "Disfarça-se como programa legítimo para enganar", right: "Trojan" },
     ],
     phaseInfo: { scenario: "Ameaças", phase: 2, total: 4 },
+    hint: "A diferença chave: Vírus precisa de ação humana, Worm é autônomo, Trojan engana fingindo ser legítimo.",
+    feedbackCorrect: "Perfeito! Cada tipo de malware tem comportamento distinto e requer resposta diferente.",
+    feedbackWrong: "Lembre: Vírus = precisa de execução humana. Worm = se propaga sozinho. Trojan = disfarçado de software legítimo. São comportamentos distintos!",
+    learnMore: "Entender o comportamento de cada malware ajuda na defesa: Vírus = não execute arquivos suspeitos. Worm = mantenha sistemas atualizados. Trojan = só instale software de fontes confiáveis.",
   },
   {
     type: "fill_blank",
@@ -322,6 +391,10 @@ export const LESSONS: Exercise[] = [
     blanks: ["ransomware", "criptografia", "resgate"],
     words: ["ransomware", "criptografia", "resgate", "spyware", "compressão", "contrato", "keylogger", "backup"],
     phaseInfo: { scenario: "Ameaças", phase: 3, total: 4 },
+    hint: "Ransomware usa criptografia para 'sequestrar' arquivos e pede pagamento (resgate) para liberar.",
+    feedbackCorrect: "Correto! Ransomware = criptografar arquivos + exigir resgate. Nunca pague o resgate — não há garantia de recuperação.",
+    feedbackWrong: "Lembre: o nome 'ransom' significa resgate em inglês. O malware usa criptografia para bloquear arquivos e exige pagamento.",
+    learnMore: "Ransomware é hoje o ataque mais lucrativo para criminosos. A melhor defesa é backup regular offline e atualização de sistemas. Pagar o resgate não garante recuperação e financia mais ataques.",
   },
   {
     type: "multiple_choice",
@@ -335,14 +408,18 @@ export const LESSONS: Exercise[] = [
     correct: 1,
     explanation: "Uma Botnet é controlada por servidor C&C. Cada dispositivo age como zumbi para ataques em larga escala como DDoS, spam ou roubo de credenciais.",
     phaseInfo: { scenario: "Ameaças", phase: 4, total: 4 },
+    hint: "Pense: 'bot' = robô, 'net' = rede. Uma rede de dispositivos controlados remotamente como zumbis.",
+    feedbackCorrect: "Exato! Botnet is a network of compromised devices controlled by a Command and Control server (C&C).",
+    feedbackWrong: "Spyware monitors, Keylogger captures keys, Adware shows ads. A zombie network for DDoS is a Botnet.",
+    learnMore: "Botnets can contain millions of infected devices without their owners' knowledge. They are used for DDoS, spam, and credential theft. Keeping an updated antivirus helps prevent your device from becoming a zombie.",
   },
 
   // ══════════════════════════════════════════════════════════════════
-  // MÓDULO 4 — LGPD e Privacidade (indices 15–19)
+  // MÓDULO 5 — LGPD e Privacidade (indices 16–20)
   // ══════════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "LGPD — Lei Geral de Proteção de Dados",
+    scenarioTitle: "Proteção de dados",
     category: "lgpd",
     difficulty: "Intermediário",
     narrative:
@@ -363,6 +440,10 @@ export const LESSONS: Exercise[] = [
     correct: 2,
     explanation: "A LGPD define dado pessoal como qualquer informação que identifique ou possa identificar uma pessoa natural, incluindo nome, CPF, e-mail, endereço IP e muito mais.",
     phaseInfo: { scenario: "LGPD", phase: 1, total: 4 },
+    hint: "A LGPD tem uma definição ampla: dado pessoal é qualquer informação que identifique ou possa identificar uma pessoa — direta ou indiretamente.",
+    feedbackCorrect: "Correto! A LGPD tem uma definição muito ampla de dado pessoal — qualquer informação que possa identificar alguém.",
+    feedbackWrong: "A LGPD define dado pessoal de forma muito ampla: qualquer informação que identifique uma pessoa, direta ou indiretamente. Isso inclui IP, e-mail, nome, CPF e muito mais.",
+    learnMore: "Dados pessoais sensíveis têm proteção ainda maior: origem racial, convicção religiosa, dado genético, biométrico, saúde, vida sexual e dados de crianças/adolescentes exigem tratamento especial.",
   },
   {
     type: "association",
@@ -373,6 +454,10 @@ export const LESSONS: Exercise[] = [
       { left: "Direito de Portabilidade", right: "Transferir seus dados para outro fornecedor" },
     ],
     phaseInfo: { scenario: "LGPD", phase: 2, total: 4 },
+    hint: "Acesso = ver, Exclusão = apagar, Portabilidade = mover. Cada direito dá controle sobre uma ação diferente.",
+    feedbackCorrect: "Perfeito! Você conhece os direitos do titular garantidos pela LGPD.",
+    feedbackWrong: "Lembre: Acesso = conhecer seus dados. Exclusão = apagar seus dados. Portabilidade = levar seus dados para outro serviço.",
+    learnMore: "A LGPD garante 9 direitos ao titular: acesso, correção, exclusão, portabilidade, informação, revogação do consentimento, oposição, revisão de decisões automatizadas e confirmação de existência dos dados.",
   },
   {
     type: "fill_blank",
@@ -382,6 +467,10 @@ export const LESSONS: Exercise[] = [
     blanks: ["consentimento", "obrigação", "vida"],
     words: ["consentimento", "obrigação", "vida", "interesse", "contrato", "lucro", "aprovação", "notificação"],
     phaseInfo: { scenario: "LGPD", phase: 3, total: 4 },
+    hint: "A LGPD lista 10 bases legais. As mais comuns: consentimento explícito, obrigação legal e proteção da vida.",
+    feedbackCorrect: "Correto! Consentimento, obrigação legal e proteção da vida são três das 10 bases legais da LGPD.",
+    feedbackWrong: "A LGPD permite o tratamento de dados com: consentimento do titular, para cumprir obrigação legal, ou para proteger a vida do titular.",
+    learnMore: "A LGPD tem 10 bases legais para tratamento de dados. Consentimento é a mais conhecida, mas não a única. Contratos, obrigações legais e legítimo interesse também justificam o tratamento sem consentimento.",
   },
   {
     type: "multiple_choice",
@@ -395,14 +484,18 @@ export const LESSONS: Exercise[] = [
     correct: 2,
     explanation: "A ANPD é a autoridade criada pela LGPD para zelar pela proteção de dados pessoais, emitir regulamentos, fiscalizar e aplicar sanções administrativas às organizações infratoras.",
     phaseInfo: { scenario: "LGPD", phase: 4, total: 4 },
+    hint: "A LGPD criou um órgão específico para fiscalização. Pense em qual sigla combina com 'Nacional de Proteção de Dados'.",
+    feedbackCorrect: "Correto! A ANPD (Autoridade Nacional de Proteção de Dados) é o órgão regulador criado pela própria LGPD.",
+    feedbackWrong: "A LGPD criou a ANPD especificamente para fiscalizar sua aplicação. PROCON cuida de relações de consumo, Banco Central cuida do sistema financeiro, Ministério da Justiça tem escopo diferente.",
+    learnMore: "A ANPD pode aplicar multas de até 2% do faturamento ou R$ 50 milhões por infração. Além da ANPD, a própria LGPD permite que titulares busquem reparação judicial por danos.",
   },
 
   // ══════════════════════════════════════════════════════════════════
-  // MÓDULO 5 — Phishing Avançado (indices 20–24)
+  // MÓDULO 4 — Phishing Avançado (indices 21–25)
   // ══════════════════════════════════════════════════════════════════
   {
     type: "briefing",
-    scenarioTitle: "Phishing e Engenharia Social",
+    scenarioTitle: "Phishing e engenharia social",
     category: "awareness",
     difficulty: "Avançado",
     narrative:
@@ -423,6 +516,10 @@ export const LESSONS: Exercise[] = [
     correct: 2,
     explanation: "Spear Phishing usa informações reais da vítima (nome, cargo, contexto) para criar e-mails convincentes. É 3x mais eficaz que phishing genérico exatamente por ser personalizado.",
     phaseInfo: { scenario: "Phishing", phase: 1, total: 4 },
+    hint: "A palavra 'spear' significa lança em inglês — um ataque direcionado e preciso a uma pessoa específica, ao contrário de uma rede (fishing) genérica.",
+    feedbackCorrect: "Correto! Spear Phishing é o ataque direcionado com informações reais da vítima — muito mais perigoso que o phishing genérico.",
+    feedbackWrong: "A personalização é a chave: nome, cargo e contexto real = Spear Phishing. Smishing = SMS. Vishing = ligação. Phishing genérico = e-mail em massa sem personalização.",
+    learnMore: "Spear Phishing é tão eficaz porque os atacantes pesquisam a vítima no LinkedIn, redes sociais e sites corporativos antes de agir. A familiaridade cria confiança — e aí está o perigo.",
   },
   {
     type: "phishing_email",
@@ -437,6 +534,10 @@ export const LESSONS: Exercise[] = [
     fraudIndicators: ["sender", "link", "attachment"],
     explanation: "Três red flags: (1) Domínio do remetente é .net.br, não .com.br; (2) Link usa 'acc0unt' com zero no lugar do 'o'; (3) Anexo .exe nunca deve ser aberto em ambiente corporativo.",
     phaseInfo: { scenario: "Phishing", phase: 2, total: 4 },
+    hint: "Examine com cuidado: o remetente é realmente da sua empresa? O link tem algo estranho? O anexo é seguro?",
+    feedbackCorrect: "Muito bem! Você identificou todos os indicadores de fraude nesse e-mail.",
+    feedbackWrong: "Procure as irregularidades: domínio do remetente (.net.br vs .com.br), caracteres trocados no link (0 no lugar de 'o') e extensão perigosa do arquivo (.exe).",
+    learnMore: "Protocolo anti-phishing: Não clique → Não abra → Reporte. Se receber um e-mail suspeito, sempre confirme pelo canal oficial (telefone ou chat interno) antes de qualquer ação.",
   },
   {
     type: "ordering",
@@ -449,6 +550,10 @@ export const LESSONS: Exercise[] = [
     ],
     correctOrder: [1, 2, 0, 3],
     phaseInfo: { scenario: "Phishing", phase: 3, total: 4 },
+    hint: "O protocolo começa com NÃO fazer nada de prejudicial (não clicar, não abrir), depois reportar, e por fim aguardar orientação.",
+    feedbackCorrect: "Perfeito! O protocolo correto protege você e toda a organização.",
+    feedbackWrong: "O protocolo é: primeiro evitar qualquer ação prejudicial (não clicar, não abrir), depois reportar ao time de SI, e então aguardar orientação antes de fazer qualquer outra coisa.",
+    learnMore: "Reportar rapidamente um phishing permite que o time de SI bloqueie o domínio malicioso e alerte outros usuários. Uma denúncia a tempo pode evitar que dezenas de colegas caiam no mesmo golpe.",
   },
   {
     type: "association",
@@ -459,5 +564,9 @@ export const LESSONS: Exercise[] = [
       { left: "Vishing", right: "Ligação telefônica fraudulenta" },
     ],
     phaseInfo: { scenario: "Phishing", phase: 4, total: 4 },
+    hint: "Pense nos canais: 'Ph' de phishing = e-mail, 'Sm' de smishing = SMS, 'V' de vishing = voice (voz).",
+    feedbackCorrect: "Excelente! Você conhece todos os vetores de ataque de engenharia social.",
+    feedbackWrong: "Lembre das siglas: Phishing = e-mail. Smishing = SMS (SM = Short Message). Vishing = Voice phishing = ligação telefônica.",
+    learnMore: "Atacantes escolhem o canal conforme a vítima. Spear Phishing por e-mail é o mais comum corporativamente. Smishing cresce com o uso de WhatsApp. Vishing usa IA de voz para imitar gerentes e CEOs.",
   },
 ];

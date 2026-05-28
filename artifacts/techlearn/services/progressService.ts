@@ -30,6 +30,9 @@ export const progressService = {
         }
 
         if (cloudData) {
+          const rawModuleXp = cloudData.module_xp || {};
+          const { _failed_question_ids, _achievements, _streak_freezes, ...cleanedModuleXp } = rawModuleXp;
+
           const mappedCloud: ProgressState = {
             xp: cloudData.xp || 0,
             completedModules: cloudData.completed_modules || [],
@@ -38,7 +41,11 @@ export const progressService = {
             lastActivityDate: cloudData.last_activity_date || null,
             totalExercises: cloudData.total_exercises || 0,
             correctAnswers: cloudData.correct_answers || 0,
-            moduleXP: cloudData.module_xp || {},
+            moduleXP: cleanedModuleXp || {},
+            failedQuestionIds: _failed_question_ids || [],
+            achievements: _achievements || [],
+            streakFreezes: _streak_freezes || 0,
+            hintUsedCount: rawModuleXp._hint_used_count || 0,
           };
 
           // Lógica de Merge: se o local tem mais XP, o usuário deve ter jogado offline.
@@ -51,6 +58,11 @@ export const progressService = {
           // Se a nuvem for mais recente ou igual, usamos ela e sincronizamos o local
           await AsyncStorage.setItem(storageKey, JSON.stringify(mappedCloud));
           return mappedCloud;
+        } else {
+          // Se não existir registro no banco ainda, mas temos progresso local, sincronizamos imediatamente
+          if (localData) {
+            this.saveProgress(localData, userId).catch(() => {});
+          }
         }
       }
 
@@ -70,7 +82,15 @@ export const progressService = {
 
       // Se existir usuário, salva na nuvem
       if (userId) {
-        const { error } = await supabase.from("user_progress").upsert({
+        const moduleXPWithMetadata = {
+          ...data.moduleXP,
+          _failed_question_ids: data.failedQuestionIds,
+          _achievements: data.achievements,
+          _streak_freezes: data.streakFreezes,
+          _hint_used_count: data.hintUsedCount ?? 0,
+        };
+
+        const payload = {
           user_id: userId,
           xp: data.xp,
           completed_modules: data.completedModules,
@@ -79,13 +99,40 @@ export const progressService = {
           streak: data.streak,
           lives: data.lives,
           last_activity_date: data.lastActivityDate,
-          module_xp: data.moduleXP,
+          module_xp: moduleXPWithMetadata,
           sync_pending: false,
-        });
+        };
 
-        if (error) {
-          console.warn("Supabase upsert progress error:", error.message);
-          // Opcional: salvaríamos um { sync_pending: true } localmente aqui
+        // Verificamos de forma explícita se já existe um registro na nuvem para este usuário
+        const { data: existing, error: selectError } = await supabase
+          .from("user_progress")
+          .select("user_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (selectError) {
+          console.warn("Supabase check progress error:", selectError.message);
+        }
+
+        if (existing) {
+          // Se o registro já existir, fazemos uma atualização explícita (UPDATE)
+          const { error: updateError } = await supabase
+            .from("user_progress")
+            .update(payload)
+            .eq("user_id", userId);
+
+          if (updateError) {
+            console.warn("Supabase update progress error:", updateError.message);
+          }
+        } else {
+          // Se o registro não existir, fazemos uma inserção explícita (INSERT)
+          const { error: insertError } = await supabase
+            .from("user_progress")
+            .insert(payload);
+
+          if (insertError) {
+            console.warn("Supabase insert progress error:", insertError.message);
+          }
         }
       }
     } catch (err) {
@@ -111,7 +158,11 @@ export const progressService = {
             streak: 0,
             lives: 3,
             last_activity_date: null,
-            module_xp: {},
+            module_xp: {
+              _failed_question_ids: [],
+              _achievements: [],
+              _streak_freezes: 0,
+            },
           })
           .eq("user_id", userId);
 

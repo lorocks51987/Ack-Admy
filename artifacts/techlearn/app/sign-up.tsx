@@ -12,14 +12,15 @@ import { useColors } from "@/hooks/useColors";
 import { supabase } from "@/services/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
 
-const LOCAL_FALLBACK_CLASSES = [
-  "ADS - 5º Termo",
-  "Engenharia de Software",
+const COURSES = [
+  "Análise e Desenvolvimento de Sistemas",
   "Ciência da Computação",
-  "Administração",
-  "Direito",
-  "Marketing"
+  "Inteligência Artificial",
+  "Cibersegurança e Infraestrutura de Redes"
 ];
+
+const TERMS = ["1º Termo", "3º Termo", "5º Termo", "7º Termo"];
+const ROOMS = ["A", "B", "C", "D"];
 
 export default function SignUpScreen() {
   const colors = useColors();
@@ -33,60 +34,18 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [classes, setClasses] = useState<{ id: string; label: string }[]>([]);
-  const [selectedClass, setSelectedClass] = useState("");
-  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
-  const [classesLoading, setClassesLoading] = useState(true);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedTerm, setSelectedTerm] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState("");
+
+  const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+  const [isTermDropdownOpen, setIsTermDropdownOpen] = useState(false);
+  const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    const loadClasses = async () => {
-      setClassesLoading(true);
-      setIsUsingFallback(false);
-      try {
-        const { data, error: classesErr } = await supabase
-          .from("classes")
-          .select("id, name, course, term");
-
-        if (classesErr) {
-          throw new Error(classesErr.message);
-        }
-
-        if (data && data.length > 0) {
-          const mapped = data.map((c) => {
-            let label = "ADS - 5º Termo";
-            if (c.name) {
-              label = c.name;
-            } else if (c.course && c.term) {
-              label = `${c.course} — ${c.term}`;
-            }
-            return { id: String(c.id), label };
-          });
-          setClasses(mapped);
-          setSelectedClass(mapped[0].label);
-        } else {
-          setClasses(LOCAL_FALLBACK_CLASSES.map((label, idx) => ({ id: String(idx), label })));
-          setSelectedClass(LOCAL_FALLBACK_CLASSES[0]);
-          setIsUsingFallback(true);
-        }
-      } catch (err) {
-        console.warn("Failed to load real database classes, applying fallbacks:", err);
-        setClasses(LOCAL_FALLBACK_CLASSES.map((label, idx) => ({ id: String(idx), label })));
-        setSelectedClass(LOCAL_FALLBACK_CLASSES[0]);
-        setIsUsingFallback(true);
-      } finally {
-        setClassesLoading(false);
-      }
-    };
-
-    loadClasses();
-  }, []);
-
-  // Se já estiver logado (e os dados tiverem terminado de carregar localmente), redireciona
   if (session && !isLoading && !loading && !profileLoading) {
     return <Redirect href="/(tabs)" />;
   }
@@ -94,7 +53,9 @@ export default function SignUpScreen() {
   const validateForm = () => {
     if (!name.trim()) return "O nome é obrigatório.";
     if (!email.trim() || !email.includes("@")) return "E-mail inválido.";
-    if (!selectedClass) return "Selecione sua turma para continuar.";
+    if (!selectedCourse) return "Selecione o curso.";
+    if (!selectedTerm) return "Selecione o termo.";
+    if (!selectedRoom) return "Selecione a sala.";
     if (password.length < 6) return "A senha deve ter no mínimo 6 caracteres.";
     if (password !== confirmPassword) return "As senhas não coincidem.";
     return null;
@@ -112,7 +73,6 @@ export default function SignUpScreen() {
     setError(null);
     
     try {
-      // 1. Cadastrar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -136,13 +96,17 @@ export default function SignUpScreen() {
       const user = authData?.user;
       
       if (user) {
-        // 2. Inserir na tabela profiles (apenas alunos no cadastro público)
+        const className = `${selectedCourse} - ${selectedTerm} ${selectedRoom}`;
+
         const { error: profileError } = await supabase.from('profiles').insert({
           id: user.id,
           name: name,
           email: email,
           role: "student",
-          class_name: selectedClass
+          course: selectedCourse,
+          term: selectedTerm,
+          room: selectedRoom,
+          class_name: className
         });
 
         if (profileError) {
@@ -150,7 +114,6 @@ export default function SignUpScreen() {
           throw new Error("Sua conta foi criada, mas falhamos ao salvar o perfil. Contate o suporte.");
         }
 
-        // 3. Criar user_progress inicial
         const { error: progressError } = await supabase.from('user_progress').insert({
           user_id: user.id,
           xp: 0,
@@ -165,11 +128,9 @@ export default function SignUpScreen() {
           console.warn("Progress insert error:", progressError);
         }
         
-        // REFRESCAR O PERFIL NO CONTEXTO AGORA QUE ELE FOI INSERIDO
         await refreshProfile(user.id);
       }
 
-      // Se não houver sessão automática, pode requerer confirmação de email
       if (user && !authData.session) {
         setStep("verify");
       } else {
@@ -183,7 +144,7 @@ export default function SignUpScreen() {
   };
 
   const scrollProps = {
-    contentContainerStyle: [s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }] as any,
+    contentContainerStyle: [s.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 80 }] as any,
     keyboardShouldPersistTaps: "handled" as const,
     showsVerticalScrollIndicator: false,
   };
@@ -216,7 +177,65 @@ export default function SignUpScreen() {
     );
   }
 
-  const isFormValid = name && email && password && confirmPassword && (password === confirmPassword) && selectedClass;
+  const isFormValid = name && email && password && confirmPassword && (password === confirmPassword) && selectedCourse && selectedTerm && selectedRoom;
+
+  const Dropdown = ({ label, options, selected, setSelected, isOpen, setIsOpen }: any) => (
+    <View style={s.field}>
+      <Text style={[s.label, { color: colors.mutedForeground }]}>{label}</Text>
+      <View style={{ gap: 4 }}>
+        <TouchableOpacity
+          style={[s.input, s.dropdownTrigger, { backgroundColor: colors.input, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setIsCourseDropdownOpen(label === "Curso" ? !isOpen : false);
+            setIsTermDropdownOpen(label === "Termo" ? !isOpen : false);
+            setIsRoomDropdownOpen(label === "Sala" ? !isOpen : false);
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: selected ? colors.foreground : colors.mutedForeground, fontSize: 14, fontFamily: "Inter_400Regular" }}>
+            {selected || `Selecione`}
+          </Text>
+          {isOpen ? <ChevronUp size={18} color={colors.mutedForeground} /> : <ChevronDown size={18} color={colors.mutedForeground} />}
+        </TouchableOpacity>
+
+        {isOpen && (
+          <View style={[s.dropdownList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+              {options.map((opt: string) => {
+                const isSelected = selected === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[
+                      s.dropdownItem,
+                      isSelected && { backgroundColor: colors.primary + "15" },
+                      { borderBottomWidth: 1, borderBottomColor: colors.border + "40" }
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelected(opt);
+                      setIsOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      s.dropdownItemText,
+                      { color: isSelected ? colors.primary : colors.foreground },
+                      isSelected && { fontFamily: "Inter_700Bold" }
+                    ]}>
+                      {opt}
+                    </Text>
+                    {isSelected && <CheckCircle2 size={16} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    </View>
+  );
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -253,80 +272,21 @@ export default function SignUpScreen() {
               </View>
             ))}
 
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.mutedForeground }]}>Turma</Text>
-              <Text style={s.helperText}>Escolha a turma em que você está matriculado</Text>
+            <View style={{ gap: 12, marginTop: 4 }}>
+              <Text style={[s.label, { color: colors.mutedForeground }]}>Dados Acadêmicos</Text>
+              <Dropdown label="Curso" options={COURSES} selected={selectedCourse} setSelected={setSelectedCourse} isOpen={isCourseDropdownOpen} setIsOpen={setIsCourseDropdownOpen} />
               
-              {classesLoading ? (
-                <View style={[s.input, s.loadingField, { backgroundColor: colors.input, borderColor: colors.border }]}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[s.loadingText, { color: colors.mutedForeground }]}>Carregando turmas...</Text>
+              <View style={{ flexDirection: 'row', gap: 12, zIndex: -1 }}>
+                <View style={{ flex: 1 }}>
+                  <Dropdown label="Termo" options={TERMS} selected={selectedTerm} setSelected={setSelectedTerm} isOpen={isTermDropdownOpen} setIsOpen={setIsTermDropdownOpen} />
                 </View>
-              ) : (
-                <View style={{ gap: 4 }}>
-                  <TouchableOpacity
-                    style={[s.input, s.dropdownTrigger, { backgroundColor: colors.input, borderColor: colors.border }]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setIsClassDropdownOpen(o => !o);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ color: selectedClass ? colors.foreground : colors.mutedForeground, fontSize: 15, fontFamily: "Inter_400Regular" }}>
-                      {selectedClass || "Selecione uma turma"}
-                    </Text>
-                    {isClassDropdownOpen ? (
-                      <ChevronUp size={18} color={colors.mutedForeground} />
-                    ) : (
-                      <ChevronDown size={18} color={colors.mutedForeground} />
-                    )}
-                  </TouchableOpacity>
-
-                  {isClassDropdownOpen && (
-                    <View style={[s.dropdownList, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
-                        {classes.map((cls) => {
-                          const isSelected = selectedClass === cls.label;
-                          return (
-                            <TouchableOpacity
-                              key={cls.id}
-                              style={[
-                                s.dropdownItem,
-                                isSelected && { backgroundColor: colors.primary + "15" },
-                                { borderBottomWidth: 1, borderBottomColor: colors.border + "40" }
-                              ]}
-                              onPress={() => {
-                                Haptics.selectionAsync();
-                                setSelectedClass(cls.label);
-                                setIsClassDropdownOpen(false);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={[
-                                s.dropdownItemText,
-                                { color: isSelected ? colors.primary : colors.foreground },
-                                isSelected && { fontFamily: "Inter_700Bold" }
-                              ]}>
-                                {cls.label}
-                              </Text>
-                              {isSelected && <CheckCircle2 size={16} color={colors.primary} />}
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </ScrollView>
-                    </View>
-                  )}
-                  
-                  {isUsingFallback && (
-                    <Text style={[s.fallbackAlert, { color: "#D97706" }]}>
-                      ⚠️ Usando opções padrão de turmas.
-                    </Text>
-                  )}
+                <View style={{ flex: 1 }}>
+                  <Dropdown label="Sala" options={ROOMS} selected={selectedRoom} setSelected={setSelectedRoom} isOpen={isRoomDropdownOpen} setIsOpen={setIsRoomDropdownOpen} />
                 </View>
-              )}
+              </View>
             </View>
 
-            <View style={s.field}>
+            <View style={[s.field, { marginTop: 4, zIndex: -2 }]}>
               <Text style={[s.label, { color: colors.mutedForeground }]}>Senha</Text>
               <View style={s.passwordRow}>
                 <TextInput
@@ -343,7 +303,7 @@ export default function SignUpScreen() {
               </View>
             </View>
 
-            <View style={s.field}>
+            <View style={[s.field, { zIndex: -2 }]}>
               <Text style={[s.label, { color: colors.mutedForeground }]}>Confirmar Senha</Text>
               <TextInput
                 style={[s.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.foreground }]}
@@ -353,13 +313,13 @@ export default function SignUpScreen() {
             </View>
 
             <TouchableOpacity
-              style={[s.btn, { backgroundColor: colors.primary }, (isLoading || !isFormValid) ? s.btnDisabled : undefined]}
+              style={[s.btn, { backgroundColor: colors.primary }, (isLoading || !isFormValid) ? s.btnDisabled : undefined, { zIndex: -2 }]}
               onPress={handleSignUp} disabled={isLoading || !isFormValid} activeOpacity={0.8}
             >
               {isLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Criar conta</Text>}
             </TouchableOpacity>
 
-            <View style={s.footer}>
+            <View style={[s.footer, { zIndex: -2 }]}>
               <Text style={[s.footerText, { color: colors.mutedForeground }]}>Já tem uma conta? </Text>
               <Link href="/sign-in" asChild>
                 <TouchableOpacity><Text style={[s.footerLink, { color: colors.primary }]}>Entrar</Text></TouchableOpacity>
@@ -399,12 +359,8 @@ const s = StyleSheet.create({
   footerText:   { fontSize: 13, fontFamily: "Inter_400Regular" },
   footerLink:   { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  helperText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#888", marginTop: -4, marginBottom: 2 },
-  loadingField: { flexDirection: "row", alignItems: "center", gap: 10, justifyContent: "center" },
-  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
   dropdownTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dropdownList: { borderRadius: 10, borderWidth: 1, marginTop: 4, overflow: "hidden" },
+  dropdownList: { borderRadius: 10, borderWidth: 1, marginTop: 4, overflow: "hidden", position: 'absolute', top: 52, width: '100%', zIndex: 999 },
   dropdownItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, paddingHorizontal: 16 },
-  dropdownItemText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  fallbackAlert: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 4, marginLeft: 2 },
+  dropdownItemText: { fontSize: 14, fontFamily: "Inter_400Regular" }
 });

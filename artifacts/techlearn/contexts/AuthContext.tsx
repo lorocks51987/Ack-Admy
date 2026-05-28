@@ -7,6 +7,9 @@ export type UserProfile = {
   name: string;
   email: string;
   role: "student" | "admin";
+  course: string | null;
+  term: string | null;
+  room: string | null;
   class_name: string | null;
 };
 
@@ -16,6 +19,8 @@ type AuthContextType = {
   profile: UserProfile | null;
   loading: boolean;
   profileLoading: boolean;
+  isGuest: boolean;
+  loginAsGuest: () => void;
   refreshProfile: (userId: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -28,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
+  const loginAsGuest = () => setIsGuest(true);
   const lastUserRef = useRef<string | null>(null);
 
   const refreshProfile = async (userId: string) => {
@@ -59,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        setIsGuest(false);
         lastUserRef.current = session.user.id;
         refreshProfile(session.user.id).finally(() => setLoading(false));
       } else {
@@ -74,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        setIsGuest(false);
         if (lastUserRef.current !== session.user.id) {
           lastUserRef.current = session.user.id;
           refreshProfile(session.user.id);
@@ -91,11 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    setIsGuest(false);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, profileLoading, refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, profileLoading, isGuest, loginAsGuest, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

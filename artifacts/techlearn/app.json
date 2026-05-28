@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.shieldack.ackadmy"
     },
     "android": {
-      "package": "com.shieldack.ackadmy"
+      "package": "com.shieldack.ackadmy",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -31,11 +32,32 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "exclude": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "bc6976ba-4aed-40c3-9b36-7397b6523159"
+      }
+    },
+    "owner": "lorocks57321"
   }
 }

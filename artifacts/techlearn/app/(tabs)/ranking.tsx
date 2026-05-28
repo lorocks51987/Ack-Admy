@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Activit
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Trophy, Medal, Crown, AlertTriangle, ChevronDown, ChevronUp, Users, Star, Target, CheckCircle2 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { router, useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/services/supabaseClient";
+import { useProgress } from "@/contexts/ProgressContext";
+import { progressService } from "@/services/progressService";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -44,7 +47,8 @@ export default function RankingScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const { profile, loading, profileLoading } = useAuth();
+  const { profile, loading, profileLoading, isGuest } = useAuth();
+  const { progress } = useProgress();
   const isAdmin = profile?.role === "admin";
 
   const [activeTab, setActiveTab] = useState<"my_class" | "all_classes">("my_class");
@@ -64,7 +68,11 @@ export default function RankingScreen() {
     }));
   };
 
-  const fetchRankingData = async () => {
+  const fetchRankingData = React.useCallback(async () => {
+    if (isGuest) {
+      setRankingLoading(false);
+      return;
+    }
     setRankingLoading(true);
     setRankingError(null);
     try {
@@ -73,7 +81,7 @@ export default function RankingScreen() {
       // 1. Buscar todos os alunos estudantes (com nome e email)
       const { data: allProfiles, error: profilesErr } = await supabase
         .from("profiles")
-        .select("id, name, email, role, class_name")
+        .select("id, name, email, role, class_name, course, term, room")
         .eq("role", "student");
 
       if (profilesErr) throw new Error(profilesErr.message);
@@ -117,7 +125,10 @@ export default function RankingScreen() {
       const localStudentsList: StudentData[] = [];
 
       (allProfiles || []).forEach((p) => {
-        const className = p.class_name || "Sem Turma";
+        const className = (p.course && p.term && p.room) 
+          ? `${p.course} - ${p.term} ${p.room}`
+          : (p.class_name || "Sem Turma");
+          
         const progressInfo = progressMap.get(p.id) || {
           xp: 0,
           completedCount: 0,
@@ -197,13 +208,24 @@ export default function RankingScreen() {
     } finally {
       setRankingLoading(false);
     }
-  };
+  }, [isGuest, profile, isAdmin]);
 
-  useEffect(() => {
-    if (profile) {
-      fetchRankingData();
-    }
-  }, [profile]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (profile && !isGuest) {
+        // Sincronização de autocura: salva o progresso local na nuvem imediatamente antes de buscar o ranking.
+        const syncAndFetch = async () => {
+          try {
+            await progressService.saveProgress(progress, profile.id);
+          } catch {}
+          fetchRankingData();
+        };
+        syncAndFetch();
+      } else {
+        fetchRankingData();
+      }
+    }, [profile, isGuest, progress, fetchRankingData])
+  );
 
   if (loading || profileLoading) {
     return (
@@ -213,8 +235,8 @@ export default function RankingScreen() {
     );
   }
 
-  const myUser = isAdmin ? undefined : studentsList.find((s) => s.isCurrentUser);
-  const myRankIndex = studentsList.findIndex((s) => s.isCurrentUser);
+  const myUser = isAdmin || isGuest ? undefined : studentsList.find((s) => s.isCurrentUser);
+  const myRankIndex = isAdmin || isGuest ? -1 : studentsList.findIndex((s) => s.isCurrentUser);
   const top3 = studentsList.slice(0, 3);
   
   const xpNeededForTop3 = myRankIndex > 2 && top3.length === 3 
@@ -222,7 +244,7 @@ export default function RankingScreen() {
     : 0;
 
   const myClassIndex = classesList.findIndex(c => c.className === profile?.class_name);
-  const myClassData = isAdmin ? undefined : classesList[myClassIndex];
+  const myClassData = isAdmin || isGuest ? undefined : classesList[myClassIndex];
 
   // Render sublist of students under expanded dropdown
   const renderClassStudentsList = (classStudents: FullStudentData[], isAllowed: boolean) => {
@@ -290,19 +312,19 @@ export default function RankingScreen() {
 
                   {/* Student Status Badges */}
                   <View style={styles.badgeRowContainer}>
-                    {isTop3 && (
+                    {isTop3 && student.xp > 0 && (
                       <View style={[styles.statusBadge, { backgroundColor: "#F59E0B" + "12", borderColor: "#F59E0B" + "30" }]}>
-                        <Text style={[styles.statusBadgeText, { color: "#F59E0B" }]}>👑 Top 3</Text>
+                        <Text style={[styles.statusBadgeText, { color: "#F59E0B" }]}>Top 3</Text>
                       </View>
                     )}
                     {student.xp === 0 && (
                       <View style={[styles.statusBadge, { backgroundColor: colors.error + "12", borderColor: colors.error + "30" }]}>
-                        <Text style={[styles.statusBadgeText, { color: colors.error }]}>⚠ Sem progresso</Text>
+                        <Text style={[styles.statusBadgeText, { color: colors.error }]}>Sem progresso</Text>
                       </View>
                     )}
-                    {student.accuracy >= 80 && (
+                    {student.accuracy >= 80 && student.xp > 0 && (
                       <View style={[styles.statusBadge, { backgroundColor: colors.success + "12", borderColor: colors.success + "30" }]}>
-                        <Text style={[styles.statusBadgeText, { color: colors.success }]}>⭐ Alta precisão</Text>
+                        <Text style={[styles.statusBadgeText, { color: colors.success }]}>Alta precisão</Text>
                       </View>
                     )}
                   </View>
@@ -338,8 +360,8 @@ export default function RankingScreen() {
             : "Acompanhe sua posição e o desempenho das turmas"}
         </Text>
 
-        {/* Abas (Somente se for Aluno) */}
-        {!isAdmin && (
+        {/* Abas (Somente se for Aluno logado) */}
+        {!isAdmin && !isGuest && (
           <View style={[styles.tabsWrapper, { backgroundColor: colors.muted }]}>
             <TouchableOpacity
               style={[styles.tabBtn, activeTab === "my_class" && [styles.tabActive, { backgroundColor: colors.card }]]}
@@ -363,40 +385,66 @@ export default function RankingScreen() {
         )}
 
         {/* Banner Slim Fixado para Alunos */}
-        {!isAdmin && (
+        {!isAdmin && !isGuest && (
           activeTab === "my_class" && myUser && myRankIndex !== -1 ? (
             <View style={[styles.slimBanner, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
-              <View style={styles.bannerRow}>
-                <Text style={[styles.bannerMainText, { color: colors.primary }]}>
-                  Você está em {myRankIndex + 1}º lugar • {myUser.xp} XP
-                </Text>
-              </View>
-              <Text style={[styles.bannerSubText, { color: colors.mutedForeground }]}>
-                {xpNeededForTop3 > 0 
-                  ? `Faltam ${xpNeededForTop3} XP para alcançar o Top 3` 
-                  : `Você está no Top 3 da turma!`}
-              </Text>
+              {myUser.xp === 0 ? (
+                <View style={{ alignItems: "center" }}>
+                  <Text style={[styles.bannerMainText, { color: colors.primary, textAlign: "center" }]}>
+                    Complete seu primeiro módulo
+                  </Text>
+                  <Text style={[styles.bannerSubText, { color: colors.mutedForeground, textAlign: "center" }]}>
+                    para entrar de verdade na disputa
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.bannerRow}>
+                    <Text style={[styles.bannerMainText, { color: colors.primary }]}>
+                      Você está em {myRankIndex + 1}º lugar • {myUser.xp} XP
+                    </Text>
+                  </View>
+                  <Text style={[styles.bannerSubText, { color: colors.mutedForeground }]}>
+                    {xpNeededForTop3 > 0 
+                      ? `Faltam ${xpNeededForTop3} XP para alcançar o Top 3` 
+                      : `Você está no Top 3 da turma!`}
+                  </Text>
+                </>
+              )}
             </View>
           ) : activeTab === "all_classes" && myClassData && myClassIndex !== -1 ? (
             <View style={[styles.slimBanner, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
-              <View style={styles.bannerRow}>
-                <Text style={[styles.bannerMainText, { color: colors.primary }]}>
-                  Sua turma está em {myClassIndex + 1}º lugar
-                </Text>
-              </View>
-              <Text style={[styles.bannerSubText, { color: colors.mutedForeground }]}>
-                {myClassData.className} • {myClassData.averageXp} XP médio
-              </Text>
+              {myClassData.averageXp === 0 ? (
+                <View style={styles.bannerRow}>
+                  <Text style={[styles.bannerMainText, { color: colors.primary, textAlign: "center" }]}>
+                    Sua turma ainda não possui progresso
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.bannerRow}>
+                    <Text style={[styles.bannerMainText, { color: colors.primary }]}>
+                      Sua turma está em {myClassIndex + 1}º lugar
+                    </Text>
+                  </View>
+                  <Text style={[styles.bannerSubText, { color: colors.mutedForeground }]}>
+                    {myClassData.className} • {myClassData.averageXp} XP médio
+                  </Text>
+                </>
+              )}
             </View>
           ) : null
         )}
+
+        
       </View>
 
       {/* LISTA ROLÁVEL */}
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_HEIGHT + insets.bottom + 20 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      {!isGuest && (
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+        >
         {rankingLoading ? (
           <View style={{ padding: 40, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator color={colors.primary} size="large" />
@@ -414,7 +462,7 @@ export default function RankingScreen() {
               <Text style={{ color: "#FFF", fontWeight: "600", fontSize: 13 }}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
-        ) : (isAdmin || activeTab === "all_classes") ? (
+        ) : (isAdmin || isGuest || activeTab === "all_classes") ? (
           /* ABA TURMAS (PARA ADMIN E PARA ALUNOS) */
           <View style={{ gap: 12 }}>
             {classesList.length === 0 ? (
@@ -562,6 +610,37 @@ export default function RankingScreen() {
           </View>
         )}
       </ScrollView>
+      )}
+
+      {isGuest && (
+        <View style={{ flex: 1, padding: 24, justifyContent: "center", alignItems: "center" }}>
+          <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border, width: "100%", padding: 24, gap: 16 }]}>
+            <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center" }}>
+              Crie uma conta para participar do ranking.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push("/sign-up" as any);
+                }}
+              >
+                <Text style={{ color: "#FFF", fontSize: 13, fontFamily: "Inter_700Bold" }}>Criar conta</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push("/sign-in" as any);
+                }}
+              >
+                <Text style={{ color: colors.primary, fontSize: 13, fontFamily: "Inter_700Bold" }}>Entrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

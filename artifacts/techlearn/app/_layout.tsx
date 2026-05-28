@@ -18,11 +18,41 @@ import { ProgressProvider } from "@/contexts/ProgressContext";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 
+import { AppState, AppStateStatus } from "react-native";
+import { notificationService } from "@/services/notificationService";
+import Constants from "expo-constants";
+
 SplashScreen.preventAutoHideAsync();
+
+const isExpoGo = Constants.appOwnership === "expo";
 
 const queryClient = new QueryClient();
 
 function AppCore() {
+  useEffect(() => {
+    if (Platform.OS === "web" || isExpoGo) return;
+
+    notificationService.setupNotificationsAsync().catch(() => {});
+    // Solicita permissões e cancela alarmes pendentes ao iniciar o app
+    notificationService.requestPermissionsAsync().catch(() => {});
+    notificationService.cancelAllReminders().catch(() => {});
+
+    // Escuta mudanças de estado do App (fundo/ativo)
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active") {
+        notificationService.cancelAllReminders().catch(() => {});
+      } else if (nextAppState === "background" || nextAppState === "inactive") {
+        notificationService.scheduleDailyStreakReminder().catch(() => {});
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>

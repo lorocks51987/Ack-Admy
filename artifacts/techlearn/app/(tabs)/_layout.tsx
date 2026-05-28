@@ -72,7 +72,7 @@ function TabLayoutContent() {
 }
 
 export default function TabLayout() {
-  const { session, loading, profileLoading } = useAuth();
+  const { session, loading, profileLoading, isGuest } = useAuth();
   const colors = useColors();
 
   if (loading || profileLoading) {
@@ -83,7 +83,7 @@ export default function TabLayout() {
     );
   }
 
-  if (!session) {
+  if (!session && !isGuest) {
     return <Redirect href="/sign-in" />;
   }
 

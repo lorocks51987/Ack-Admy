@@ -2,17 +2,19 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams, Redirect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Award, Zap, CheckCircle2, TrendingUp, ChevronRight, RotateCcw } from "lucide-react-native";
+import { Award, Zap, CheckCircle2, TrendingUp, ChevronRight, RotateCcw, Crown } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useProgress } from "@/contexts/ProgressContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
+import { ConfettiEmitter } from "@/components/ConfettiEmitter";
+import { audioService } from "@/services/audioService";
 
 export default function CompleteScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, loading } = useAuth();
+  const { session, loading, isGuest } = useAuth();
   const { xp: xpParam, moduleId: moduleIdParam } = useLocalSearchParams<{ xp: string; moduleId: string }>();
   const { progress } = useProgress();
   const native = Platform.OS !== "web";
@@ -25,7 +27,7 @@ export default function CompleteScreen() {
     );
   }
 
-  if (!session) {
+  if (!session && !isGuest) {
     return <Redirect href="/sign-in" />;
   }
 
@@ -33,6 +35,7 @@ export default function CompleteScreen() {
   const moduleId = parseInt(moduleIdParam || "1", 10);
   const moduleDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
   const nextModule = MODULE_DEFINITIONS.find((m) => m.id === moduleId + 1);
+  const isCourseFinished = !nextModule && moduleId !== -1;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -42,6 +45,7 @@ export default function CompleteScreen() {
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    audioService.playVictory();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.sequence([
       Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 60, useNativeDriver: native }),
@@ -60,25 +64,44 @@ export default function CompleteScreen() {
     <View style={[styles.root, {
       backgroundColor: colors.background,
       paddingTop: topPad + 16,
-      paddingBottom: bottomPad + 16,
+      paddingBottom: bottomPad + 40,
     }]}>
-      {/* Trophy animation */}
+      <ConfettiEmitter />
+      {/* Trophy / Crown animation */}
       <Animated.View style={[styles.iconWrap, { transform: [{ scale: scaleAnim }] }]}>
-        <View style={[styles.glowOuter, { borderColor: colors.primary + "30" }]} />
-        <View style={[styles.glowMid, { borderColor: colors.primary + "50" }]} />
-        <View style={[styles.iconBg, { backgroundColor: colors.card, borderColor: colors.primary }]}>
-          <Award size={52} color={colors.primary} strokeWidth={1.5} />
+        <View style={[styles.glowOuter, { borderColor: isCourseFinished ? "#D9770630" : colors.primary + "30" }]} />
+        <View style={[styles.glowMid, { borderColor: isCourseFinished ? "#D9770650" : colors.primary + "50" }]} />
+        <View style={[styles.iconBg, { backgroundColor: colors.card, borderColor: isCourseFinished ? "#D97706" : colors.primary }]}>
+          {isCourseFinished ? (
+            <Crown size={56} color="#D97706" strokeWidth={1.5} />
+          ) : (
+            <Award size={52} color={colors.primary} strokeWidth={1.5} />
+          )}
         </View>
       </Animated.View>
 
       {/* Text + stats */}
       <Animated.View style={[styles.textArea, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Módulo Concluído!</Text>
-        {moduleDef && (
+        <Text style={[styles.title, { color: colors.foreground }]}>
+          {moduleId === -1 
+            ? "Revisão Concluída!" 
+            : isCourseFinished 
+            ? "🏆 Formação Completa!" 
+            : "Módulo Concluído!"}
+        </Text>
+        {moduleId === -1 ? (
+          <Text style={[styles.modName, { color: colors.primary }]}>Caixa de Erros Limpa</Text>
+        ) : isCourseFinished ? (
+          <Text style={[styles.modName, { color: "#D97706" }]}>Você é um Guardião Lendário!</Text>
+        ) : moduleDef ? (
           <Text style={[styles.modName, { color: colors.primary }]}>{moduleDef.title}</Text>
-        )}
+        ) : null}
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Excelente desempenho! Continue sua jornada de aprendizado em segurança.
+          {moduleId === -1
+            ? "Parabéns! Você revisou suas dúvidas e fixou os conceitos com maestria!"
+            : isCourseFinished
+            ? "Sensacional! Você superou todos os desafios pedagógicos e práticos de AppSec do Ack-Admy. Agora sua mente é uma fortaleza impenetrável!"
+            : "Excelente desempenho! Continue sua jornada de aprendizado em segurança."}
         </Text>
 
         <View style={styles.statsRow}>
@@ -97,16 +120,84 @@ export default function CompleteScreen() {
 
         {/* XP total bar */}
         <View style={[styles.xpBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Zap size={14} color={colors.primary} strokeWidth={2} />
+          <Zap size={14} color={isCourseFinished ? "#D97706" : colors.primary} strokeWidth={2} />
           <Text style={[styles.xpBarText, { color: colors.foreground }]}>
-            Total acumulado: <Text style={{ color: colors.primary, fontFamily: "Inter_700Bold" }}>{progress.xp} XP</Text>
+            Total acumulado: <Text style={{ color: isCourseFinished ? "#D97706" : colors.primary, fontFamily: "Inter_700Bold" }}>{progress.xp} XP</Text>
           </Text>
         </View>
+
+        {isCourseFinished && (
+          <View style={{
+            backgroundColor: "#D9770615",
+            borderColor: "#D9770640",
+            borderWidth: 1.5,
+            borderRadius: 16,
+            padding: 16,
+            width: "100%",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 10,
+          }}>
+            <Crown size={32} color="#D97706" strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: "#D97706" }}>Nova Conquista Desbloqueada!</Text>
+            <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>👑 Guardião Lendário</Text>
+            <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 16 }}>
+              Concedida por completar 100% da trilha pedagógica de segurança de aplicações. Seu nome está marcado na história do ACK-ADMY!
+            </Text>
+          </View>
+        )}
+
+        {isGuest && (
+          <View style={{ backgroundColor: colors.primary + "12", borderColor: colors.primary + "30", borderWidth: 1, padding: 14, borderRadius: 10, marginTop: 8, width: "100%" }}>
+            <Text style={{ color: colors.primary, fontSize: 13, fontFamily: "Inter_700Bold", marginBottom: 4, textAlign: 'center' }}>
+              Progresso salvo apenas neste dispositivo
+            </Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontFamily: "Inter_400Regular", textAlign: 'center', lineHeight: 18 }}>
+              Seus {parseInt(xpParam || "0", 10)} XP estão armazenados localmente. Crie uma conta para salvar na nuvem e desbloquear os demais módulos.
+            </Text>
+          </View>
+        )}
       </Animated.View>
 
       {/* Action buttons */}
       <Animated.View style={[styles.btns, { opacity: fadeAnim }]}>
-        {nextModule ? (
+        {isGuest ? (
+          <>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.replace('/sign-up' as any); }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryBtnText}>Criar conta e liberar acesso</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { borderColor: colors.border }]}
+              onPress={() => { Haptics.selectionAsync(); router.replace('/sign-in' as any); }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Já tenho conta (Entrar)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tertiaryBtn}
+              onPress={() => { Haptics.selectionAsync(); router.replace("/"); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.tertiaryBtnText, { color: colors.mutedForeground }]}>Voltar para a Home</Text>
+            </TouchableOpacity>
+          </>
+        ) : moduleId === -1 ? (
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.replace("/profile" as any);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.primaryBtnText}>Voltar ao Perfil</Text>
+            <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.5} />
+          </TouchableOpacity>
+        ) : nextModule ? (
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
@@ -120,30 +211,35 @@ export default function CompleteScreen() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.success }]}
+            style={[styles.primaryBtn, { backgroundColor: "#D97706" }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.replace("/"); }}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryBtnText}>Treinamento Completo! Voltar ao Início</Text>
+            <Crown size={16} color="#FFFFFF" strokeWidth={2} />
+            <Text style={styles.primaryBtnText}>Formação Concluída! Voltar ao Início</Text>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={[styles.secondaryBtn, { borderColor: colors.border }]}
-          onPress={() => { Haptics.selectionAsync(); router.replace("/"); }}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Voltar ao Início</Text>
-        </TouchableOpacity>
+        {!isGuest && (
+          <>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { borderColor: colors.border }]}
+              onPress={() => { Haptics.selectionAsync(); router.replace("/"); }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Voltar ao Início</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.tertiaryBtn}
-          onPress={() => { Haptics.selectionAsync(); router.replace({ pathname: "/lesson", params: { moduleId } }); }}
-          activeOpacity={0.75}
-        >
-          <RotateCcw size={13} color={colors.mutedForeground} strokeWidth={2} />
-          <Text style={[styles.tertiaryBtnText, { color: colors.mutedForeground }]}>Repetir este módulo</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tertiaryBtn}
+              onPress={() => { Haptics.selectionAsync(); router.replace({ pathname: "/lesson", params: { moduleId } }); }}
+              activeOpacity={0.75}
+            >
+              <RotateCcw size={13} color={colors.mutedForeground} strokeWidth={2} />
+              <Text style={[styles.tertiaryBtnText, { color: colors.mutedForeground }]}>Repetir este módulo</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </Animated.View>
     </View>
   );

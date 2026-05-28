@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator, TextInput, Modal
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator, TextInput, Modal, Switch
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Zap, Star, Target, BookOpen, CheckCircle2,
   AlertTriangle, RotateCcw, LogOut, Users, Edit3,
-  Award, Briefcase, GraduationCap, Compass, Layers, Landmark, ChevronRight, Info, ChevronDown, ChevronUp
+  Award, Briefcase, GraduationCap, Compass, Layers, Landmark, ChevronRight, Info, ShoppingBag,
+  Volume2, VolumeX, Lightbulb, Flame, Crown
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useRouter, router } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useProgress } from "@/contexts/ProgressContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/services/supabaseClient";
+import { FeedbackFormModal } from "@/components/FeedbackFormModal";
+import { MessageSquare } from "lucide-react-native";
+import { audioService } from "@/services/audioService";
 
 const TAB_HEIGHT = Platform.OS === "ios" ? 88 : 64;
 
-const LOCAL_FALLBACK_CLASSES = [
-  "ADS - 5º Termo",
-  "Engenharia de Software",
-  "Ciência da Computação",
-  "Administração",
-  "Direito",
-  "Marketing"
-];
+// Local Fallback removed for simplicity in pilot
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "?";
@@ -38,16 +35,13 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const { progress, resetProgress } = useProgress();
-  const { profile, loading, profileLoading, refreshProfile, signOut } = useAuth();
+  const { progress, resetProgress, buyStreakFreeze } = useProgress();
+  const { profile, loading, profileLoading, refreshProfile, signOut, isGuest } = useAuth();
   const router = useRouter();
 
   // Edit Profile States
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editClass, setEditClass] = useState("");
-  const [classList, setClassList] = useState<{ id: string; name: string }[]>([]);
-  const [isClassListDropdownOpen, setIsClassListDropdownOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
@@ -55,6 +49,18 @@ export default function ProfileScreen() {
   // Custom Modal States
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // Toggle de som
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Carrega estado de som
+  useEffect(() => {
+    setSoundEnabled(!audioService.isMuted());
+    audioService.refreshSoundState().then(() => {
+      setSoundEnabled(!audioService.isMuted());
+    });
+  }, []);
 
   // Admin summary state
   const [adminStats, setAdminStats] = useState<{
@@ -70,28 +76,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (profile) {
       setEditName(profile.name || "");
-      setEditClass(profile.class_name || "");
     }
   }, [profile, isEditing]);
-
-  // Load Classes for Dropdown
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const { data, error } = await supabase.from("classes").select("id, name");
-        if (error) throw new Error(error.message);
-        if (data && data.length > 0) {
-          setClassList(data.map(d => ({ id: String(d.id), name: d.name })));
-        } else {
-          setClassList(LOCAL_FALLBACK_CLASSES.map((c, i) => ({ id: String(i), name: c })));
-        }
-      } catch (err) {
-        console.warn("Failed to load classes in profile edit:", err);
-        setClassList(LOCAL_FALLBACK_CLASSES.map((c, i) => ({ id: String(i), name: c })));
-      }
-    };
-    fetchClasses();
-  }, []);
 
   // Load Admin Stats
   useEffect(() => {
@@ -156,7 +142,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (!profile) {
+  if (!profile && !isGuest) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 20 }]}>
         <Users size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />
@@ -177,10 +163,10 @@ export default function ProfileScreen() {
     );
   }
 
-  const isAdmin = profile.role === "admin";
-  const displayName = profile.name || "Usuário";
-  const initials = getInitials(profile.name);
-  const email = profile.email || "Sem e-mail";
+  const isAdmin = profile?.role === "admin";
+  const displayName = profile?.name || "Visitante";
+  const initials = getInitials(profile?.name || "?");
+  const email = profile?.email || "Sem e-mail";
 
   // Student specific parameters
   const completedCount = progress.completedModules.length;
@@ -192,6 +178,8 @@ export default function ProfileScreen() {
 
   // Save profile updates
   const handleSaveProfile = async () => {
+    if (!profile) return;
+
     const cleanName = editName.trim().replace(/\s+/g, " ");
     if (!cleanName) {
       setUpdateError("O nome é obrigatório.");
@@ -199,10 +187,6 @@ export default function ProfileScreen() {
     }
     if (cleanName.length < 3) {
       setUpdateError("O nome deve ter no mínimo 3 caracteres.");
-      return;
-    }
-    if (!isAdmin && !editClass) {
-      setUpdateError("Selecione sua turma.");
       return;
     }
 
@@ -215,9 +199,6 @@ export default function ProfileScreen() {
       const updates: any = {
         name: cleanName,
       };
-      if (!isAdmin) {
-        updates.class_name = editClass;
-      }
 
       const { error } = await supabase
         .from("profiles")
@@ -226,7 +207,9 @@ export default function ProfileScreen() {
 
       if (error) throw new Error(error.message);
 
-      await refreshProfile(profile.id);
+      if (profile) {
+        await refreshProfile(profile.id);
+      }
       setUpdateSuccess("Perfil atualizado com sucesso.");
       setIsEditing(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -246,7 +229,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_HEIGHT + insets.bottom + 20 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {updateSuccess && (
@@ -261,8 +244,35 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* MODO DE EDIÇÃO INLINE */}
-        {isEditing ? (
+        {isGuest ? (
+          <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.avatar, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
+              <Text style={[styles.avatarText, { color: colors.primary }]}>?</Text>
+            </View>
+            <View style={styles.userCardInfo}>
+              <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>Visitante</Text>
+              <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>Modo teste sem login</Text>
+              
+              <Text style={[styles.userSubtitle, { color: colors.mutedForeground, marginTop: 4, marginBottom: 8 }]}>
+                Seu progresso atual é temporário e não será salvo na nuvem. Crie uma conta para salvar e liberar a trilha completa!
+              </Text>
+
+              <View style={{ flexDirection: 'column', gap: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity style={{ flex: 1, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={() => router.replace('/sign-up' as any)}>
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>Criar conta</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={() => router.replace('/sign-in' as any)}>
+                    <Text style={{ color: colors.primary, fontSize: 13, fontWeight: 'bold' }}>Entrar</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={async () => { await signOut(); router.replace('/sign-in' as any); }}>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: 'bold' }}>Sair do modo teste</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : isEditing ? (
           <View style={[styles.editFormContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.editFormTitle, { color: colors.foreground }]}>Editar Informações do Perfil</Text>
 
@@ -279,62 +289,11 @@ export default function ProfileScreen() {
 
             {!isAdmin && (
               <View style={styles.editFormField}>
-                <Text style={[styles.editFormLabel, { color: colors.mutedForeground }]}>Sua Turma *</Text>
-                
-                {/* AVISO DO IMPACTO DE ALTERAR TURMA */}
-                <View style={[styles.infoWarningBox, { backgroundColor: colors.primary + "09", borderColor: colors.primary + "20" }]}>
-                  <Info size={14} color={colors.primary} />
-                  <Text style={[styles.infoWarningText, { color: colors.primary }]}>
-                    Alterar sua turma também atualiza sua posição nos rankings.
-                  </Text>
+                <Text style={[styles.readOnlyLabel, { color: colors.mutedForeground }]}>Turma</Text>
+                <View style={[styles.readOnlyField, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[styles.readOnlyText, { color: colors.mutedForeground }]}>{profile?.class_name || "Sem Turma"}</Text>
                 </View>
-
-                <TouchableOpacity
-                  style={[styles.inlineSelectBtn, { backgroundColor: colors.input, borderColor: colors.border }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setIsClassListDropdownOpen((o) => !o);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={{ color: editClass ? colors.foreground : colors.mutedForeground, fontSize: 14, fontFamily: "Inter_500Medium" }}>
-                    {editClass || "Selecione uma turma"}
-                  </Text>
-                  {isClassListDropdownOpen ? (
-                    <ChevronUp size={16} color={colors.mutedForeground} />
-                  ) : (
-                    <ChevronDown size={16} color={colors.mutedForeground} />
-                  )}
-                </TouchableOpacity>
-
-                {isClassListDropdownOpen && (
-                  <View style={[styles.dropdownScroll, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled={true}>
-                      {classList.map((cls) => {
-                        const isSelected = editClass === cls.name;
-                        return (
-                          <TouchableOpacity
-                            key={cls.id}
-                            style={[
-                              styles.dropdownRowBtn,
-                              isSelected && { backgroundColor: colors.primary + "15" },
-                              { borderBottomWidth: 1, borderBottomColor: colors.border + "40" }
-                            ]}
-                            onPress={() => {
-                              Haptics.selectionAsync();
-                              setEditClass(cls.name);
-                              setIsClassListDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={[styles.dropdownRowText, { color: colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_400Regular" }]}>
-                              {cls.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
-                )}
+                <Text style={[styles.readOnlyHelper, { color: colors.mutedForeground }]}>A turma não pode ser alterada pelo app.</Text>
               </View>
             )}
 
@@ -398,7 +357,11 @@ export default function ProfileScreen() {
               </View>
 
               <Text style={[styles.userSubtitle, { color: colors.mutedForeground }]}>
-                {isAdmin ? "Professor/Admin Unimar" : `Aluno — ${profile.class_name || "Sem Turma"}`}
+                {isAdmin ? "Professor/Admin Unimar" : (
+                  profile?.course && profile?.term && profile?.room 
+                    ? `${profile.course} • ${profile.term} Sala ${profile.room}`
+                    : `Aluno — ${profile?.class_name || "Sem Turma"}`
+                )}
               </Text>
 
               {/* BOTÃO DE EDITAR PERFIL */}
@@ -488,14 +451,244 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* CAIXA DE ERROS / MISTAKES INBOX */}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REVISÃO E APRENDIZADO</Text>
+            <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <AlertTriangle size={20} color={progress.failedQuestionIds && progress.failedQuestionIds.length > 0 ? "#EF4444" : colors.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Caixa de Erros</Text>
+                <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
+                  {!progress.failedQuestionIds || progress.failedQuestionIds.length === 0
+                    ? "Nenhum erro pendente. Ótimo trabalho!"
+                    : `${progress.failedQuestionIds.length} ${progress.failedQuestionIds.length === 1 ? "conceito incorreto" : "conceitos incorretos"} para revisar`}
+                </Text>
+              </View>
+              {progress.failedQuestionIds && progress.failedQuestionIds.length > 0 && (
+                <TouchableOpacity
+                  style={{ backgroundColor: "#EF4444", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push({ pathname: "/lesson", params: { moduleId: "mistakes" } } as any);
+                  }}
+                >
+                  <Text style={{ color: "#FFF", fontSize: 12, fontFamily: "Inter_700Bold" }}>Revisar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* LOJA DO ALUNO */}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LOJA DO ALUNO</Text>
+            <View style={[styles.trilhaCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 0, overflow: "hidden" }]}>
+              {/* Header da loja */}
+              <View style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}>
+                  <ShoppingBag size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: colors.foreground }}>Loja de Itens</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>Use XP para desbloquear vantagens</Text>
+                </View>
+                <View style={{ backgroundColor: "#F59E0B15", borderRadius: 6, borderWidth: 1, borderColor: "#F59E0B40", paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: "#F59E0B", letterSpacing: 0.5 }}>EM BREVE</Text>
+                </View>
+              </View>
+              {/* Items da loja */}
+              {[
+                { icon: Zap, color: "#F59E0B", name: "Protetor de Ofensiva", desc: "Proteja seu streak por 1 dia", cost: 100 },
+                { icon: Lightbulb, color: "#3B82F6", name: "Dica Extra", desc: "Uma dica gratuita em qualquer questão", cost: 50 },
+                { icon: CheckCircle2, color: "#10B981", name: "Segunda Chance", desc: "Continue o módulo com vidas cheias", cost: 75 },
+                { icon: Star, color: "#8B5CF6", name: "Cosméticos", desc: "Personalize seu perfil", cost: 0 },
+              ].map((item, idx, arr) => (
+                <View
+                  key={item.name}
+                  style={[
+                    { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+                    idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                  ]}
+                >
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: item.color + "15", alignItems: "center", justifyContent: "center" }}>
+                    <item.icon size={18} color={item.color} strokeWidth={2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{item.name}</Text>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>{item.desc}</Text>
+                    {item.cost > 0 && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 }}>
+                        <Zap size={10} color="#F59E0B" />
+                        <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#F59E0B" }}>{item.cost} XP</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ backgroundColor: colors.input, borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: colors.mutedForeground }}>Em breve</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* CONQUISTAS E EMBLEMAS */}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONQUISTAS E EMBLEMAS</Text>
+            <View style={[styles.trilhaCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 14 }]}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between" }}>
+                {[
+                  {
+                    id: "first_steps",
+                    title: "Primeiros Passos",
+                    desc: "Concluiu 1 módulo",
+                    icon: Award,
+                    color: "#3B82F6",
+                  },
+                  {
+                    id: "master_match",
+                    title: "Mestre do Match",
+                    desc: "20 acertos no app",
+                    icon: Target,
+                    color: "#10B981",
+                  },
+                  {
+                    id: "invincible",
+                    title: "Invencível",
+                    desc: "Acumulou 100 XP",
+                    icon: Star,
+                    color: "#F59E0B",
+                  },
+                  {
+                    id: "constant_fire",
+                    title: "Fogo Constante",
+                    desc: "Ofensiva de 3 dias",
+                    icon: Flame,
+                    color: "#EF4444",
+                  },
+                  {
+                    id: "no_fear_of_error",
+                    title: "Sem Medo de Errar",
+                    desc: "Errou 5+ questões",
+                    icon: Zap,
+                    color: "#8B5CF6",
+                  },
+                  {
+                    id: "helper_used",
+                    title: "Usou a Cabeça",
+                    desc: "Usou 3+ dicas",
+                    icon: Lightbulb,
+                    color: "#06B6D4",
+                  },
+                  {
+                    id: "legendary_guardian",
+                    title: "Guardião Lendário",
+                    desc: "Concluiu o curso",
+                    icon: Crown,
+                    color: "#D97706",
+                  },
+                ].map((badge) => {
+                  const unlocked = progress.achievements && progress.achievements.includes(badge.id);
+                  const BadgeIcon = badge.icon;
+                  return (
+                    <View
+                      key={badge.id}
+                      style={{
+                        width: "47%",
+                        alignItems: "center",
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: unlocked ? badge.color + "40" : colors.border,
+                        backgroundColor: unlocked ? badge.color + "08" : colors.background,
+                        opacity: unlocked ? 1 : 0.45,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 21,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: unlocked ? badge.color + "18" : colors.border,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <BadgeIcon size={20} color={unlocked ? badge.color : colors.mutedForeground} />
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontFamily: "Inter_700Bold",
+                          color: unlocked ? colors.foreground : colors.mutedForeground,
+                          textAlign: "center",
+                        }}
+                      >
+                        {badge.title}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          fontFamily: "Inter_500Medium",
+                          color: colors.mutedForeground,
+                          textAlign: "center",
+                          marginTop: 2,
+                        }}
+                      >
+                        {badge.desc}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+            {/* CONFIGURAÇÕES */}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONFIGURAÇÕES</Text>
+            <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.academicRow}>
+                {soundEnabled
+                  ? <Volume2 size={16} color={colors.primary} strokeWidth={2} />
+                  : <VolumeX size={16} color={colors.mutedForeground} strokeWidth={2} />
+                }
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Efeitos Sonoros</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>
+                    {soundEnabled ? "Sons ativados" : "Sons desativados"}
+                  </Text>
+                </View>
+                <Switch
+                  value={soundEnabled}
+                  onValueChange={async (val) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSoundEnabled(val);
+                    await audioService.setMuted(!val);
+                  }}
+                  trackColor={{ false: colors.border, true: colors.primary + "80" }}
+                  thumbColor={soundEnabled ? colors.primary : colors.mutedForeground}
+                />
+              </View>
+            </View>
+
             {/* DADOS ACADÊMICOS */}
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS ACADÊMICOS</Text>
             <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
                 <Landmark size={15} color={colors.mutedForeground} />
                 <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Turma</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.class_name || "Sem Turma"}</Text>
+                <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.class_name || "Sem Turma"}</Text>
               </View>
+              {profile?.course && (
+                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Curso</Text>
+                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.course}</Text>
+                </View>
+              )}
+              {profile?.term && (
+                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Termo</Text>
+                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.term}</Text>
+                </View>
+              )}
+              {profile?.room && (
+                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Sala</Text>
+                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.room}</Text>
+                </View>
+              )}
               <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
                 <Award size={15} color={colors.mutedForeground} />
                 <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Tipo de Conta</Text>
@@ -654,10 +847,44 @@ export default function ProfileScreen() {
           </>
         )}
 
+        {/* SEÇÃO DE FEEDBACK */}
+        {!isAdmin && !isGuest && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>AJUDE A MELHORAR O ACK-ADMY</Text>
+            <View style={[styles.feedbackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.feedbackHeader}>
+                <MessageSquare size={20} color={colors.primary} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.feedbackTitle, { color: colors.foreground }]}>Feedback da experiência</Text>
+                  <Text style={[styles.feedbackSub, { color: colors.mutedForeground }]}>
+                    Depois de concluir o primeiro módulo, envie sua opinião sobre a experiência.
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.feedbackBtn,
+                  completedCount === 0 ? { backgroundColor: colors.input, borderColor: colors.border } : { backgroundColor: colors.primary }
+                ]}
+                disabled={completedCount === 0}
+                onPress={() => setShowFeedbackModal(true)}
+              >
+                <Text style={[
+                  styles.feedbackBtnText,
+                  completedCount === 0 ? { color: colors.mutedForeground } : { color: "#fff" }
+                ]}>
+                  {completedCount === 0 ? "Conclua o primeiro módulo para liberar o feedback" : "Enviar feedback"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
         {/* AÇÕES DA CONTA */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>AÇÕES DA CONTA</Text>
         <View style={[styles.actionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {!isAdmin ? (
+          {!isAdmin && !isGuest ? (
             <TouchableOpacity
               style={[styles.actionRowBtn, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}
               onPress={() => {
@@ -674,14 +901,14 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-          ) : (
+          ) : !isGuest ? (
             <View style={[styles.actionInfoContainer, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
               <Info size={16} color={colors.mutedForeground} />
               <Text style={[styles.actionInfoText, { color: colors.mutedForeground }]}>
                 Contas administrativas não possuem progresso de trilha.
               </Text>
             </View>
-          )}
+          ) : null}
 
           <TouchableOpacity
             style={styles.actionRowBtn}
@@ -771,6 +998,23 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* FEEDBACK MODAL */}
+      <FeedbackFormModal
+        visible={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        userId={profile?.id || ""}
+        userName={profile?.name || ""}
+        userEmail={profile?.email || ""}
+        course={profile?.course || null}
+        term={profile?.term || null}
+        room={profile?.room || null}
+        className={profile?.class_name || null}
+        onSuccess={() => {
+          // You could optionally set a state here to show "Feedback já enviado" instead of the button.
+          // For now, it just closes.
+        }}
+      />
     </View>
   );
 }
@@ -882,4 +1126,12 @@ const styles = StyleSheet.create({
   modalBtnCancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   modalBtnDestructive: { height: 38, borderRadius: 8, paddingHorizontal: 14, justifyContent: "center", alignItems: "center" },
   modalBtnDestructiveText: { color: "#FFF", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+
+  // FEEDBACK
+  feedbackCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 12 },
+  feedbackHeader: { flexDirection: "row", alignItems: "flex-start" },
+  feedbackTitle: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  feedbackSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2, lineHeight: 16 },
+  feedbackBtn: { height: 44, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  feedbackBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });
