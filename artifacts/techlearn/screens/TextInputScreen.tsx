@@ -94,6 +94,7 @@ export function TextInputScreen({ exercise, onAnswer, feedbackVisible = false, p
               editable={!locked}
               autoCapitalize="none"
               autoCorrect={false}
+              autoFocus={true}
               onSubmitEditing={handleCheck}
               returnKeyType="done"
             />

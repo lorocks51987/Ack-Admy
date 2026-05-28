@@ -26,7 +26,6 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
   );
 
   const [arranged, setArranged] = useState<{ item: string; origIdx: number }[]>([]);
-  const [pool, setPool] = useState(initialPool);
   const [checked, setChecked] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -41,14 +40,12 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
         const next = prev.filter(e => e.origIdx !== correctIdx);
         return [{ item: correctItem, origIdx: correctIdx }, ...next];
       });
-      setPool(p => p.filter(e => e.origIdx !== correctIdx));
     }
   }, [powerUpUsed, exercise]);
 
   const addToArranged = (entry: { item: string; origIdx: number }) => {
     if (locked) return;
     Haptics.selectionAsync();
-    setPool((p) => p.filter((e) => e.origIdx !== entry.origIdx));
     setArranged((a) => [...a, entry]);
   };
 
@@ -56,7 +53,6 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
     if (locked || (powerUpUsed && entry.origIdx === exercise.correctOrder[0])) return;
     Haptics.selectionAsync();
     setArranged((a) => a.filter((e) => e.origIdx !== entry.origIdx));
-    setPool((p) => [...p, entry]);
   };
 
   const handleCheck = () => {
@@ -76,8 +72,6 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
       >
-
-
         <View style={[styles.instructionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
         </View>
@@ -133,17 +127,38 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
         {/* Pool */}
         <Text style={[styles.poolLabel, { color: colors.mutedForeground }]}>ITENS DISPONÍVEIS</Text>
         <View style={styles.pool}>
-          {pool.map((entry) => (
-            <TouchableOpacity
-              key={entry.origIdx}
-              style={[styles.poolChip, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => addToArranged(entry)}
-              activeOpacity={locked ? 1 : 0.7}
-              disabled={locked}
-            >
-              <Text style={[styles.poolText, { color: colors.foreground }]}>{entry.item}</Text>
-            </TouchableOpacity>
-          ))}
+          {initialPool.map((entry) => {
+            const isUsed = arranged.some((a) => a.origIdx === entry.origIdx);
+            const isPowerUpReserved = powerUpUsed && entry.origIdx === exercise.correctOrder[0];
+
+            return (
+              <TouchableOpacity
+                key={entry.origIdx}
+                style={[
+                  styles.poolChip,
+                  {
+                    backgroundColor: isUsed ? colors.background : colors.card,
+                    borderColor: isUsed ? colors.border : colors.primary,
+                    borderStyle: isUsed ? "dashed" : "solid",
+                    borderWidth: 1.5,
+                  },
+                ]}
+                onPress={() => {
+                  if (isUsed) {
+                    removeFromArranged(entry);
+                  } else {
+                    addToArranged(entry);
+                  }
+                }}
+                activeOpacity={locked || isPowerUpReserved ? 1 : 0.7}
+                disabled={locked || isPowerUpReserved}
+              >
+                <Text style={[styles.poolText, { color: isUsed ? "transparent" : colors.primary }]}>
+                  {entry.item}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -167,13 +182,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, gap: 16, paddingBottom: 32 },
-  tagRow: { flexDirection: "row" },
-  tag: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: 20, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 6,
-  },
-  tagText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2 },
   instructionCard: { borderRadius: 16, borderWidth: 1, padding: 20 },
   instruction: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   dropZone: {

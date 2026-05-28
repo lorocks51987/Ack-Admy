@@ -764,7 +764,7 @@ function FeedbackPanel({
         }
         <View style={{ flex: 1 }}>
           <Text style={[fb.statusTitle, { color: accent }]}>
-            {feedback.incentive || (feedback.correct ? "Boa!" : "Quase!")}
+            {feedback.correct ? "Boa!" : "Quase."}
           </Text>
           <Text style={[fb.statusMsg, { color: colors.foreground }]}>
             {feedback.message}

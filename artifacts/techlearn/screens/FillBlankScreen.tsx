@@ -16,11 +16,21 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
   const colors = useColors();
   const [filled, setFilled] = useState<(string | null)[]>(exercise.blanks.map(() => null));
   const [usedWords, setUsedWords] = useState<string[]>([]);
+  const [selectedBlankIdx, setSelectedBlankIdx] = useState<number>(0);
   const [checked, setChecked] = useState(false);
   const insets = useSafeAreaInsets();
 
   const locked = checked || feedbackVisible;
-  const nextBlankIdx = filled.findIndex((f) => f === null);
+
+  const getNextEmptyIndex = (currentFilled: (string | null)[], currentTarget: number) => {
+    for (let i = currentTarget + 1; i < currentFilled.length; i++) {
+      if (currentFilled[i] === null) return i;
+    }
+    for (let i = 0; i < currentTarget; i++) {
+      if (currentFilled[i] === null) return i;
+    }
+    return -1;
+  };
 
   React.useEffect(() => {
     if (powerUpUsed && filled[0] !== exercise.blanks[0]) {
@@ -31,37 +41,73 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
         return next;
       });
       setUsedWords(u => Array.from(new Set([...u, word])));
+      setSelectedBlankIdx(prev => prev === 0 ? 1 : prev);
     }
   }, [powerUpUsed, exercise]);
 
   const handleWordPress = (word: string) => {
     if (locked) return;
+
     if (usedWords.includes(word)) {
-      const idx = filled.findIndex((f) => f === word);
-      if (idx === -1) return;
-      Haptics.selectionAsync();
+      const idx = filled.indexOf(word);
+      if (idx !== -1) {
+        Haptics.selectionAsync();
+        const nf = [...filled];
+        nf[idx] = null;
+        setFilled(nf);
+        setUsedWords((u) => u.filter((w) => w !== word));
+        setSelectedBlankIdx(idx);
+      }
+      return;
+    }
+
+    let targetIdx = selectedBlankIdx;
+    if (targetIdx === -1 || targetIdx >= filled.length || filled[targetIdx] !== null) {
+      targetIdx = filled.findIndex((f) => f === null);
+    }
+
+    if (targetIdx === -1) {
+      if (selectedBlankIdx !== -1 && selectedBlankIdx < filled.length) {
+        targetIdx = selectedBlankIdx;
+      } else {
+        return;
+      }
+    }
+
+    Haptics.selectionAsync();
+
+    const nf = [...filled];
+    const oldWord = nf[targetIdx];
+    let newUsedWords = [...usedWords];
+
+    if (oldWord) {
+      newUsedWords = newUsedWords.filter((w) => w !== oldWord);
+    }
+
+    nf[targetIdx] = word;
+    newUsedWords.push(word);
+
+    setFilled(nf);
+    setUsedWords(newUsedWords);
+
+    const nextEmpty = getNextEmptyIndex(nf, targetIdx);
+    setSelectedBlankIdx(nextEmpty);
+  };
+
+  const handleBlankPress = (idx: number) => {
+    if (locked || (powerUpUsed && idx === 0)) return;
+
+    Haptics.selectionAsync();
+    const word = filled[idx];
+
+    if (word) {
       const nf = [...filled];
       nf[idx] = null;
       setFilled(nf);
       setUsedWords((u) => u.filter((w) => w !== word));
-      return;
     }
-    if (nextBlankIdx === -1) return;
-    Haptics.selectionAsync();
-    const nf = [...filled];
-    nf[nextBlankIdx] = word;
-    setFilled(nf);
-    setUsedWords((u) => [...u, word]);
-  };
 
-  const handleBlankPress = (idx: number) => {
-    if (!filled[idx] || locked || (powerUpUsed && idx === 0)) return;
-    Haptics.selectionAsync();
-    const word = filled[idx]!;
-    const nf = [...filled];
-    nf[idx] = null;
-    setFilled(nf);
-    setUsedWords((u) => u.filter((w) => w !== word));
+    setSelectedBlankIdx(idx);
   };
 
   const handleCheck = () => {
@@ -87,19 +133,35 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
       }
       if (i < exercise.blanks.length) {
         const val = filled[i];
-        let blankBg = val ? colors.primary + "1A" : colors.input;
+        const isSelected = selectedBlankIdx === i && !checked && !feedbackVisible;
+
+        let blankBg = val ? colors.primary + "0A" : colors.input;
         let blankBorder = val ? colors.primary : colors.border;
-        let blankTextColor = val ? colors.primary : colors.mutedForeground;
+        let blankTextColor = val ? colors.foreground : colors.mutedForeground;
+        let borderWidth = 1.5;
+        let borderStyle: "solid" | "dashed" = "solid";
+
+        if (isSelected) {
+          blankBg = colors.primary + "14";
+          blankBorder = colors.primary;
+          borderWidth = 2.5;
+        } else if (!val) {
+          borderStyle = "dashed";
+        }
 
         if (checked) {
           const ok = val === exercise.blanks[i];
           blankBg = ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)";
           blankBorder = ok ? colors.success : colors.error;
           blankTextColor = ok ? colors.success : colors.error;
+          borderWidth = 2;
+          borderStyle = "solid";
         } else if (powerUpUsed && i === 0) {
           blankBg = colors.success + "12";
           blankBorder = colors.success;
           blankTextColor = colors.success;
+          borderWidth = 2;
+          borderStyle = "solid";
         }
 
         nodes.push(
@@ -110,15 +172,23 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
               {
                 borderColor: blankBorder,
                 backgroundColor: blankBg,
-                minWidth: Math.max(70, (val?.length ?? 5) * 9),
+                borderWidth: borderWidth,
+                borderStyle: borderStyle,
+                minWidth: Math.max(80, (val?.length ?? 5) * 11),
               },
             ]}
             onPress={() => handleBlankPress(i)}
             activeOpacity={locked || (powerUpUsed && i === 0) ? 1 : 0.7}
             disabled={locked || (powerUpUsed && i === 0)}
           >
-            <Text style={[styles.blankText, { color: blankTextColor }]}>
-              {val ?? "...."}
+            <Text style={[
+              styles.blankText,
+              {
+                color: isSelected && !val ? colors.primary : blankTextColor,
+                fontFamily: val ? "Inter_700Bold" : "Inter_500Medium"
+              }
+            ]}>
+              {val ?? "____"}
             </Text>
           </TouchableOpacity>
         );
@@ -134,8 +204,6 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 150 }]}
         showsVerticalScrollIndicator={false}
       >
-
-
         <View style={[styles.instructionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.instruction, { color: colors.foreground }]}>{exercise.instruction}</Text>
         </View>
@@ -149,22 +217,25 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
         <View style={styles.wordsPool}>
           {exercise.words.map((word) => {
             const used = usedWords.includes(word);
+            const isPowerUpReserved = powerUpUsed && word === exercise.blanks[0];
+
             return (
               <TouchableOpacity
                 key={word}
                 style={[
                   styles.wordChip,
-                  { 
-                    backgroundColor: used ? colors.card : colors.primary + "14", 
-                    borderColor: used ? colors.border : colors.primary, 
-                    opacity: used || (powerUpUsed && word === exercise.blanks[0]) ? 0.4 : 1 
+                  {
+                    backgroundColor: used ? colors.background : colors.card,
+                    borderColor: used ? colors.border : colors.primary,
+                    borderStyle: used ? "dashed" : "solid",
+                    borderWidth: 1.5,
                   },
                 ]}
                 onPress={() => handleWordPress(word)}
-                activeOpacity={locked || used || (powerUpUsed && word === exercise.blanks[0]) ? 1 : 0.7}
-                disabled={locked || used || (powerUpUsed && word === exercise.blanks[0])}
+                activeOpacity={locked || isPowerUpReserved ? 1 : 0.7}
+                disabled={locked || isPowerUpReserved}
               >
-                <Text style={[styles.wordText, { color: used ? colors.mutedForeground : colors.primary }]}>
+                <Text style={[styles.wordText, { color: used ? "transparent" : colors.primary }]}>
                   {word}
                 </Text>
               </TouchableOpacity>
@@ -174,9 +245,7 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
 
         {!checked && (
           <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-            {nextBlankIdx !== -1
-              ? `Preencha a lacuna ${nextBlankIdx + 1} de ${exercise.blanks.length}`
-              : "Toque numa palavra para removê-la"}
+            Dica: Toque em uma lacuna para selecioná-la ou toque nas palavras para preencher.
           </Text>
         )}
       </ScrollView>
@@ -189,7 +258,7 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
             activeOpacity={0.85}
             disabled={!canCheck}
           >
-            <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]}>Confirmar resposta</Text>
+            <Text style={[styles.btnText, { color: canCheck ? "#FFFFFF" : colors.mutedForeground }]} adjustsFontSizeToFit={true} numberOfLines={1}>Confirmar resposta</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -201,13 +270,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, gap: 16, paddingBottom: 32 },
-  tagRow: { flexDirection: "row" },
-  tag: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: 20, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 6,
-  },
-  tagText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2 },
   instructionCard: { borderRadius: 16, borderWidth: 1, padding: 20 },
   instruction: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   sentenceBox: { borderRadius: 16, borderWidth: 1, padding: 24 },

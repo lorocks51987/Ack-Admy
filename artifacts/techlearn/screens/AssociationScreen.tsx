@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { CheckCircle2, XCircle } from "lucide-react-native";
+import { CheckCircle2 } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import type { AssociationExercise } from "@/constants/lessons";
 import { audioService } from "@/services/audioService";
@@ -17,6 +17,7 @@ interface Props {
 export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false, powerUpUsed = false }: Props) {
   const colors = useColors();
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+  const [selectedRight, setSelectedRight] = useState<number | null>(null);
   const [wrongLeft, setWrongLeft] = useState<number | null>(null);
   const [wrongRight, setWrongRight] = useState<number | null>(null);
   const [matched, setMatched] = useState<Record<number, number>>({});
@@ -40,6 +41,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
       const newMatched = { ...matched, 0: 0 };
       setMatched(newMatched);
       if (selectedLeft === 0) setSelectedLeft(null);
+      if (selectedRight === 0) setSelectedRight(null);
       if (Object.keys(newMatched).length === exercise.pairs.length) {
         setTimeout(() => {
           onAnswer(true);
@@ -55,6 +57,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
       const newMatched = { ...matched, [lIdx]: rIdx };
       setMatched(newMatched);
       setSelectedLeft(null);
+      setSelectedRight(null);
       
       // Check if all matched
       if (Object.keys(newMatched).length === exercise.pairs.length) {
@@ -69,6 +72,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
       setWrongLeft(lIdx);
       setWrongRight(rIdx);
       setSelectedLeft(null);
+      setSelectedRight(null);
       
       // Clear wrong flash after 600ms
       setTimeout(() => {
@@ -81,17 +85,30 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
   const handleSelectLeft = useCallback((idx: number) => {
     if (locked || matched[idx] !== undefined) return;
     Haptics.selectionAsync();
-    setSelectedLeft(prev => prev === idx ? null : idx);
-  }, [locked, matched]);
+
+    if (selectedLeft === idx) {
+      setSelectedLeft(null);
+    } else {
+      setSelectedLeft(idx);
+      if (selectedRight !== null) {
+        evaluateMatch(idx, selectedRight);
+      }
+    }
+  }, [locked, matched, selectedLeft, selectedRight, evaluateMatch]);
 
   const handleSelectRight = useCallback((origIdx: number) => {
     if (locked || Object.values(matched).includes(origIdx)) return;
-    if (selectedLeft === null) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      return;
+    Haptics.selectionAsync();
+
+    if (selectedRight === origIdx) {
+      setSelectedRight(null);
+    } else {
+      setSelectedRight(origIdx);
+      if (selectedLeft !== null) {
+        evaluateMatch(selectedLeft, origIdx);
+      }
     }
-    evaluateMatch(selectedLeft, origIdx);
-  }, [locked, matched, selectedLeft, evaluateMatch]);
+  }, [locked, matched, selectedLeft, selectedRight, evaluateMatch]);
 
   // Filtra itens ainda pendentes para conexão
   const pendingConcepts = useMemo(() => {
@@ -123,9 +140,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
         {/* Instrução Dinâmica */}
         <View style={[s.instructionBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[s.instructionText, { color: colors.foreground }]}>
-            {selectedLeft === null 
-              ? "Escolha um conceito abaixo." 
-              : "Agora escolha a definição correspondente."}
+            {exercise.instruction || "Conecte os conceitos à sua definição correspondente."}
           </Text>
         </View>
 
@@ -153,6 +168,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
                           : isWrong 
                           ? colors.error 
                           : colors.border,
+                        borderWidth: isSelected ? 2.5 : 1.5,
                       }
                     ]}
                     onPress={() => handleSelectLeft(c.originalIdx)}
@@ -174,6 +190,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
             <Text style={[s.sectionTitle, { color: colors.mutedForeground }]}>DEFINIÇÕES DISPONÍVEIS</Text>
             <View style={s.list}>
               {pendingDefinitions.map((d) => {
+                const isSelected = selectedRight === d.originalIdx;
                 const isWrong = wrongRight === d.originalIdx;
                 return (
                   <TouchableOpacity
@@ -181,15 +198,23 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
                     style={[
                       s.cardItem,
                       {
-                        backgroundColor: isWrong ? colors.error + "12" : colors.card,
-                        borderColor: isWrong ? colors.error : colors.border,
-                        opacity: selectedLeft === null ? 0.6 : 1,
+                        backgroundColor: isSelected
+                          ? colors.primary + "12"
+                          : isWrong
+                          ? colors.error + "12"
+                          : colors.card,
+                        borderColor: isSelected
+                          ? colors.primary
+                          : isWrong
+                          ? colors.error
+                          : colors.border,
+                        borderWidth: isSelected ? 2.5 : 1.5,
                       }
                     ]}
                     onPress={() => handleSelectRight(d.originalIdx)}
-                    activeOpacity={selectedLeft === null ? 1 : 0.75}
+                    activeOpacity={0.75}
                   >
-                    <Text style={[s.cardText, { color: colors.foreground }]}>
+                    <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
                       {d.label}
                     </Text>
                   </TouchableOpacity>
@@ -209,7 +234,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
                   key={`done-${idx}`}
                   style={[s.doneItem, { backgroundColor: colors.success + "08", borderColor: colors.success + "30" }]}
                 >
-                  <CheckCircle2 size={16} color={colors.success} strokeWidth={2.5} />
+                  <Text style={{ fontSize: 13, color: colors.success, fontFamily: "Inter_700Bold" }}>✓</Text>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={[s.doneLeftText, { color: colors.foreground }]}>{p.left}</Text>
                     <Text style={[s.doneRightText, { color: colors.mutedForeground }]}>{p.right}</Text>
@@ -223,6 +248,9 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
 
       {!feedbackVisible && (
         <View style={[s.footer, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <Text style={[s.hintText, { color: colors.mutedForeground, textAlign: "center", fontStyle: "italic", marginBottom: 8, fontSize: 12 }]}>
+            Dica: Toque em um item de cada lista em qualquer ordem para conectá-los.
+          </Text>
           <Text style={[s.footerMessage, { color: colors.mutedForeground }]}>
             {completedPairs.length < exercise.pairs.length
               ? `Progresso: ${completedPairs.length} de ${exercise.pairs.length} pares conectados`
@@ -291,5 +319,6 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   footer: { paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: 1 },
+  hintText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   footerMessage: { fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingVertical: 6 },
 });
