@@ -34,6 +34,8 @@ interface AdminClassSummary {
   averageCompleted: number;
   averageAccuracy: number;
   engagementScore: number;
+  course?: string;
+  term?: string;
 }
 
 interface AdminStudent {
@@ -97,175 +99,198 @@ function AdminDashboard() {
   const fetchAdminData = async () => {
     setAdminLoading(true);
     setAdminError(null);
+
+    let studentProfiles: any[] = [];
+    let progressData: any[] = [];
+
+    // Core data fetch
     try {
-      // 1. Buscar perfis com role = 'student' contendo nome, email e turma
-      const { data: studentProfiles, error: profilesErr } = await supabase
+      const { data: profiles, error: profilesErr } = await supabase
         .from("profiles")
         .select("id, name, email, class_name, course, term, room")
         .eq("role", "student");
 
       if (profilesErr) throw new Error(profilesErr.message);
+      studentProfiles = profiles || [];
 
-      // 2. Buscar progresso de todos os alunos (incluindo respostas corretas, exercícios totais e dias ativos)
-      const { data: progressData, error: progressErr } = await supabase
+      const { data: progress, error: progressErr } = await supabase
         .from("user_progress")
         .select("user_id, xp, completed_modules, correct_answers, total_exercises, streak");
 
       if (progressErr) throw new Error(progressErr.message);
+      progressData = progress || [];
+    } catch (err: any) {
+      console.warn("Error fetching core admin data:", err);
+      setAdminError("Não foi possível carregar os indicadores das turmas.");
+      setAdminLoading(false);
+      return;
+    }
 
-      const progressMap = new Map<
-        string,
-        {
-          xp: number;
-          completedCount: number;
-          correctAnswers: number;
-          totalExercises: number;
-          streak: number;
-        }
-      >();
-
-      if (progressData) {
-        progressData.forEach((p) => {
-          progressMap.set(p.user_id, {
-            xp: p.xp || 0,
-            completedCount: Array.isArray(p.completed_modules) ? p.completed_modules.length : 0,
-            correctAnswers: p.correct_answers || 0,
-            totalExercises: p.total_exercises || 0,
-            streak: p.streak || 0,
-          });
-        });
+    const progressMap = new Map<
+      string,
+      {
+        xp: number;
+        completedCount: number;
+        correctAnswers: number;
+        totalExercises: number;
+        streak: number;
       }
+    >();
 
-      const activeStudents = studentProfiles?.length || 0;
-      let totalXp = 0;
-      let totalCompleted = 0;
+    progressData.forEach((p) => {
+      progressMap.set(p.user_id, {
+        xp: p.xp || 0,
+        completedCount: Array.isArray(p.completed_modules) ? p.completed_modules.length : 0,
+        correctAnswers: p.correct_answers || 0,
+        totalExercises: p.total_exercises || 0,
+        streak: p.streak || 0,
+      });
+    });
 
-      const classStats: Record<
-        string,
-        {
-          totalXp: number;
-          totalCompleted: number;
-          correctAnswers: number;
-          totalExercises: number;
-          studentCount: number;
-        }
-      > = {};
+    const activeStudents = studentProfiles.length;
+    let totalXp = 0;
+    let totalCompleted = 0;
 
-      const studentsList: AdminStudent[] = [];
+    const classStats: Record<
+      string,
+      {
+        totalXp: number;
+        totalCompleted: number;
+        correctAnswers: number;
+        totalExercises: number;
+        studentCount: number;
+      }
+    > = {};
 
-      (studentProfiles || []).forEach((p: any) => {
-        const className = (p.course && p.term && p.room) 
-          ? `${p.course} - ${p.term} ${p.room}`
-          : (p.class_name || "Sem Turma");
-        const prog = progressMap.get(p.id) || {
-          xp: 0,
-          completedCount: 0,
+    const studentsList: AdminStudent[] = [];
+
+    studentProfiles.forEach((p: any) => {
+      const className = (p.course && p.term && p.room) 
+        ? `${p.course} - ${p.term} ${p.room}`
+        : (p.class_name || "Sem Turma");
+      const prog = progressMap.get(p.id) || {
+        xp: 0,
+        completedCount: 0,
+        correctAnswers: 0,
+        totalExercises: 0,
+        streak: 0,
+      };
+
+      totalXp += prog.xp;
+      totalCompleted += prog.completedCount;
+
+      if (!classStats[className]) {
+        classStats[className] = {
+          totalXp: 0,
+          totalCompleted: 0,
           correctAnswers: 0,
           totalExercises: 0,
-          streak: 0,
+          studentCount: 0,
         };
+      }
+      classStats[className].totalXp += prog.xp;
+      classStats[className].totalCompleted += prog.completedCount;
+      classStats[className].correctAnswers += prog.correctAnswers;
+      classStats[className].totalExercises += prog.totalExercises;
+      classStats[className].studentCount += 1;
 
-        totalXp += prog.xp;
-        totalCompleted += prog.completedCount;
+      const accuracy =
+        prog.totalExercises > 0 ? Math.round((prog.correctAnswers / prog.totalExercises) * 100) : 0;
 
-        if (!classStats[className]) {
-          classStats[className] = {
-            totalXp: 0,
-            totalCompleted: 0,
-            correctAnswers: 0,
-            totalExercises: 0,
-            studentCount: 0,
-          };
-        }
-        classStats[className].totalXp += prog.xp;
-        classStats[className].totalCompleted += prog.completedCount;
-        classStats[className].correctAnswers += prog.correctAnswers;
-        classStats[className].totalExercises += prog.totalExercises;
-        classStats[className].studentCount += 1;
-
-        const accuracy =
-          prog.totalExercises > 0 ? Math.round((prog.correctAnswers / prog.totalExercises) * 100) : 0;
-
-        studentsList.push({
-          id: p.id,
-          name: p.name || "Aluno",
-          email: p.email || "",
-          className: className,
-          xp: prog.xp,
-          completedCount: prog.completedCount,
-          accuracy: accuracy,
-          streak: prog.streak,
-        });
+      studentsList.push({
+        id: p.id,
+        name: p.name || "Aluno",
+        email: p.email || "",
+        className: className,
+        xp: prog.xp,
+        completedCount: prog.completedCount,
+        accuracy: accuracy,
+        streak: prog.streak,
       });
+    });
 
-      const averageXp = activeStudents > 0 ? Math.round(totalXp / activeStudents) : 0;
+    const averageXp = activeStudents > 0 ? Math.round(totalXp / activeStudents) : 0;
 
-      // Cálculo de Turma Destaque e Resumo das Turmas
-      let highlightClass = "Nenhuma";
-      let highestAvgXp = -1;
-      const classesList: AdminClassSummary[] = [];
-
-      Object.keys(classStats).forEach((className) => {
-        const stats = classStats[className];
-        const avgXp = stats.studentCount > 0 ? Math.round(stats.totalXp / stats.studentCount) : 0;
-
-        if (avgXp > highestAvgXp) {
-          highestAvgXp = avgXp;
-          highlightClass = className;
-        }
-
-        const avgCompleted =
-          stats.studentCount > 0 ? Math.round((stats.totalCompleted / stats.studentCount) * 10) / 10 : 0;
-        const avgAccuracy =
-          stats.totalExercises > 0 ? Math.round((stats.correctAnswers / stats.totalExercises) * 100) : 0;
-
-        // Formula interna simples de engajamento do MVP: averageXp + averageCompleted * 5 + averageAccuracy * 2
-        const engagementScore = Math.round(avgXp + avgCompleted * 5 + avgAccuracy * 2);
-
-        classesList.push({
-          name: className,
-          studentCount: stats.studentCount,
-          averageXp: avgXp,
-          averageCompleted: avgCompleted,
-          averageAccuracy: avgAccuracy,
-          engagementScore: engagementScore,
-        });
-      });
-
-      // Ordenar turmas por pontuação de engajamento decrescente
-      classesList.sort((a, b) => b.engagementScore - a.engagementScore);
-
-      // 3. Buscar todas as turmas cadastradas para Gestão
+    // 3. Buscar todas as turmas cadastradas para Gestão
+    let fetchedClasses: any[] = [];
+    try {
       const { data: dbClasses, error: dbClassesErr } = await supabase
         .from("classes")
         .select("id, name, course, term");
+      if (dbClassesErr) throw dbClassesErr;
+      fetchedClasses = dbClasses || [];
+    } catch (classErr) {
+      console.warn("Supabase fetch classes error:", classErr);
+    }
 
-      let fetchedClasses = dbClasses || [];
-      if (fetchedClasses.length === 0) {
-        // Fallback local caso não tenha nada ou falhe
-        fetchedClasses = Object.keys(classStats).map((name, idx) => ({
-          id: `profile-${idx}`,
-          name,
-          course: "Trilha Geral",
-          term: "Unimar"
-        }));
+    if (fetchedClasses.length === 0) {
+      // Fallback local caso não tenha nada ou falhe
+      fetchedClasses = Object.keys(classStats).map((name, idx) => ({
+        id: `profile-${idx}`,
+        name,
+        course: "Trilha Geral",
+        term: "Unimar"
+      }));
+    }
+
+    setRawClasses(fetchedClasses.map(c => ({
+      id: String(c.id),
+      name: c.name || "",
+      course: c.course || "",
+      term: c.term || ""
+    })));
+
+    // Cálculo de Turma Destaque e Resumo das Turmas
+    let highlightClass = "Nenhuma";
+    let highestAvgXp = -1;
+    const classesList: AdminClassSummary[] = [];
+
+    Object.keys(classStats).forEach((className) => {
+      const stats = classStats[className];
+      const avgXp = stats.studentCount > 0 ? Math.round(stats.totalXp / stats.studentCount) : 0;
+
+      if (avgXp > highestAvgXp) {
+        highestAvgXp = avgXp;
+        highlightClass = className;
       }
 
-      setRawClasses(fetchedClasses.map(c => ({
-        id: String(c.id),
-        name: c.name || "",
-        course: c.course || "",
-        term: c.term || ""
-      })));
+      const avgCompleted =
+        stats.studentCount > 0 ? Math.round((stats.totalCompleted / stats.studentCount) * 10) / 10 : 0;
+      const avgAccuracy =
+        stats.totalExercises > 0 ? Math.round((stats.correctAnswers / stats.totalExercises) * 100) : 0;
 
-      // 4. Fetch feedbacks
+      // Formula interna simples de engajamento do MVP: averageXp + averageCompleted * 5 + averageAccuracy * 2
+      const engagementScore = Math.round(avgXp + avgCompleted * 5 + avgAccuracy * 2);
+
+      const matchedDbClass = fetchedClasses.find(
+        (c) => String(c.name).trim().toLowerCase() === className.trim().toLowerCase()
+      );
+
+      classesList.push({
+        name: className,
+        studentCount: stats.studentCount,
+        averageXp: avgXp,
+        averageCompleted: avgCompleted,
+        averageAccuracy: avgAccuracy,
+        engagementScore: engagementScore,
+        course: matchedDbClass?.course || "Trilha Geral",
+        term: matchedDbClass?.term || "",
+      });
+    });
+
+    // Ordenar turmas por pontuação de engajamento decrescente
+    classesList.sort((a, b) => b.engagementScore - a.engagementScore);
+
+    // 4. Fetch feedbacks com try/catch isolado
+    let feedbackStats = { total: 0, usability: 0, clarity: 0, exercises: 0, feedback: 0, returnIntention: 0, recommendationYesPct: 0 };
+    let recentFeedbacks: any[] = [];
+    try {
       const { data: feedbackData, error: feedbackErr } = await supabase
         .from("feedbacks")
         .select("*")
         .order("created_at", { ascending: false });
 
-      let feedbackStats = { total: 0, usability: 0, clarity: 0, exercises: 0, feedback: 0, returnIntention: 0, recommendationYesPct: 0 };
-      let recentFeedbacks: any[] = [];
+      if (feedbackErr) throw feedbackErr;
 
       if (feedbackData && feedbackData.length > 0) {
         let recYes = 0;
@@ -290,34 +315,36 @@ function AdminDashboard() {
         };
         recentFeedbacks = feedbackData.slice(0, 3);
       }
+    } catch (fbErr) {
+      console.warn("Supabase fetch feedbacks error:", fbErr);
+    }
 
-      // 5. Fetch question reports (contestations)
-      const { data: reportsData, error: reportsErr } = await supabase
+    // 5. Fetch question reports (contestations) com try/catch isolado
+    let reportsData: any[] = [];
+    try {
+      const { data: reports, error: reportsErr } = await supabase
         .from("question_reports")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (reportsErr) {
-        console.warn("Supabase fetch question reports error:", reportsErr.message);
-      }
-
-      setAdminData({
-        activeStudents,
-        averageXp,
-        completedModulesCount: totalCompleted,
-        highlightClass,
-        classes: classesList,
-        students: studentsList,
-        feedbackStats,
-        recentFeedbacks,
-        reports: reportsData || [],
-      });
-    } catch (err: any) {
-      console.warn("Error fetching admin dashboard data:", err);
-      setAdminError("Não foi possível carregar os indicadores das turmas.");
-    } finally {
-      setAdminLoading(false);
+      if (reportsErr) throw reportsErr;
+      reportsData = reports || [];
+    } catch (repErr) {
+      console.warn("Supabase fetch question reports error:", repErr);
     }
+
+    setAdminData({
+      activeStudents,
+      averageXp,
+      completedModulesCount: totalCompleted,
+      highlightClass,
+      classes: classesList,
+      students: studentsList,
+      feedbackStats,
+      recentFeedbacks,
+      reports: reportsData,
+    });
+    setAdminLoading(false);
   };
 
   React.useEffect(() => {
@@ -414,11 +441,20 @@ function AdminDashboard() {
 
   const handleResolveReport = async (reportId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const oldHidden = hiddenReportIds;
     setHiddenReportIds(prev => [...prev, reportId]);
     try {
-      await supabase.from("question_reports").delete().eq("id", reportId);
+      const { error } = await supabase.from("question_reports").delete().eq("id", reportId);
+      if (error) throw error;
     } catch (err) {
       console.warn("Error deleting question report:", err);
+      setHiddenReportIds(oldHidden);
+      if (Platform.OS === 'web') {
+        window.alert("Não foi possível resolver a contestação agora. Tente novamente.");
+      } else {
+        const { Alert } = require("react-native");
+        Alert.alert("Erro", "Não foi possível resolver a contestação agora. Tente novamente.");
+      }
     }
   };
 
@@ -579,7 +615,7 @@ function AdminDashboard() {
             </TouchableOpacity>
           </View>
           <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
-            Acompanhamento analítico de desempenho individual dos alunos
+            Acompanhe o desempenho individual dos alunos.
           </Text>
         </View>
 
@@ -687,7 +723,11 @@ function AdminDashboard() {
                         )}
                       </View>
                       {student.email ? (
-                        <Text style={[styles.studentEmail, { color: colors.mutedForeground }]}>
+                        <Text 
+                          style={[styles.studentEmail, { color: colors.mutedForeground }]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
                           {student.email}
                         </Text>
                       ) : null}
@@ -756,13 +796,13 @@ function AdminDashboard() {
         ]}
       >
         <View style={styles.headerTitleRow}>
-          <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel Professor/Admin</Text>
+          <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel do Professor</Text>
           <View style={[styles.gestionBadge, { backgroundColor: colors.primary }]}>
             <Text style={styles.gestionBadgeText}>Visão de gestão</Text>
           </View>
         </View>
         <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
-          Acompanhe o desempenho das turmas na Trilha de Segurança da Informação
+          Acompanhe turmas, progresso e feedbacks.
         </Text>
       </View>
 
@@ -775,34 +815,20 @@ function AdminDashboard() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>INDICADORES PRINCIPAIS</Text>
         <View style={styles.metricsGrid}>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + "15" }]}>
-              <Users size={18} color={colors.primary} />
-            </View>
             <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.activeStudents}</Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>alunos cadastrados</Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Alunos ativos</Text>
           </View>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.metricIconWrap, { backgroundColor: "#F59E0B" + "15" }]}>
-              <Star size={18} color="#F59E0B" />
-            </View>
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.classes.length}</Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Turmas</Text>
+          </View>
+          <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.averageXp}</Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>média geral</Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>XP médio</Text>
           </View>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.metricIconWrap, { backgroundColor: colors.success + "15" }]}>
-              <CheckCircle2 size={18} color={colors.success} />
-            </View>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.completedModulesCount}</Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>conclusões registradas</Text>
-          </View>
-          <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + "15" }]}>
-              <Presentation size={18} color={colors.primary} />
-            </View>
-            <Text style={[styles.metricValue, { color: colors.primary, fontSize: 13 }]} numberOfLines={1}>
-              {adminData.highlightClass}
-            </Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>maior engajamento</Text>
+            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.feedbackStats.total}</Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Feedbacks</Text>
           </View>
         </View>
 
@@ -826,7 +852,6 @@ function AdminDashboard() {
             </View>
           ) : (
             adminData.classes.map((cls) => {
-              const capValue = Math.min(100, Math.max(10, Math.round(cls.engagementScore / 4)));
               return (
                 <View
                   key={cls.name}
@@ -835,7 +860,12 @@ function AdminDashboard() {
                   <View style={styles.cohortHeaderRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.cohortTitleText, { color: colors.foreground }]}>{cls.name}</Text>
-                      <Text style={[styles.cohortSubtitleText, { color: colors.mutedForeground }]}>
+                      {cls.course ? (
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.primary, marginTop: 2 }}>
+                          {cls.course} {cls.term ? `• ${cls.term}` : ""}
+                        </Text>
+                      ) : null}
+                      <Text style={[styles.cohortSubtitleText, { color: colors.mutedForeground, marginTop: 2 }]}>
                         {cls.studentCount} {cls.studentCount === 1 ? "aluno matriculado" : "alunos matriculados"}
                       </Text>
                     </View>
@@ -856,17 +886,6 @@ function AdminDashboard() {
                     <View style={styles.cohortStatGridCell}>
                       <Text style={[styles.cohortGridVal, { color: colors.foreground }]}>{cls.averageAccuracy}%</Text>
                       <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Precisão média</Text>
-                    </View>
-                  </View>
-
-                  {/* Barra de Engajamento */}
-                  <View style={styles.engageBarArea}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                      <Text style={[styles.engageBarLabel, { color: colors.mutedForeground }]}>Nível de engajamento</Text>
-                      <Text style={[styles.engageBarValue, { color: colors.primary }]}>{capValue}%</Text>
-                    </View>
-                    <View style={[styles.engageBarTrack, { backgroundColor: colors.muted }]}>
-                      <View style={[styles.engageBarFill, { backgroundColor: colors.primary, width: `${capValue}%` }]} />
                     </View>
                   </View>
 
@@ -892,39 +911,51 @@ function AdminDashboard() {
         <View style={{ marginBottom: 24, gap: 12 }}>
           {adminData.feedbackStats.total === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <MessageSquare size={24} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Os feedbacks aparecerão aqui após os alunos concluírem o primeiro módulo.
+                Os feedbacks aparecerão aqui após os alunos concluírem a primeira aula.
               </Text>
             </View>
           ) : (
             <>
-              {/* Feedback Resumo */}
-              <View style={[styles.feedbackSummaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.feedbackSummaryHeader}>
-                  <Text style={[styles.feedbackTotalText, { color: colors.foreground }]}>{adminData.feedbackStats.total} avaliações</Text>
-                  <View style={[styles.feedbackRecBadge, { backgroundColor: colors.success + "15" }]}>
-                    <ThumbsUp size={12} color={colors.success} />
-                    <Text style={[styles.feedbackRecText, { color: colors.success }]}>{adminData.feedbackStats.recommendationYesPct}% recomendam</Text>
+              {/* Feedback Resumo Simplificado */}
+              <View style={[styles.feedbackSummaryCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 16 }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                  <View style={{ gap: 4 }}>
+                    <Text style={[styles.feedbackTotalText, { color: colors.foreground }]}>
+                      {adminData.feedbackStats.total} {adminData.feedbackStats.total === 1 ? "avaliação" : "avaliações"}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
+                      <Text style={{ fontSize: 28, fontFamily: "Inter_800ExtraBold", color: colors.foreground }}>
+                        {adminData.feedbackStats.usability || "0.0"}
+                      </Text>
+                      <View style={{ gap: 2 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                          {[1, 2, 3, 4, 5].map((num) => {
+                            const avgVal = adminData.feedbackStats.usability || 0;
+                            const active = num <= Math.round(avgVal);
+                            return (
+                              <Shield
+                                key={num}
+                                size={12}
+                                color={active ? colors.primary : colors.border}
+                                fill={active ? colors.primary : "transparent"}
+                                strokeWidth={1.5}
+                              />
+                            );
+                          })}
+                        </View>
+                        <Text style={{ fontSize: 10, color: colors.mutedForeground, fontFamily: "Inter_500Medium" }}>Nota média geral</Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-                
-                <View style={styles.feedbackAveragesGrid}>
-                  <View style={styles.feedbackAvgItem}>
-                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.usability}</Text>
-                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Usabilidade</Text>
-                  </View>
-                  <View style={styles.feedbackAvgItem}>
-                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.clarity}</Text>
-                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Clareza</Text>
-                  </View>
-                  <View style={styles.feedbackAvgItem}>
-                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.exercises}</Text>
-                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Exercícios</Text>
-                  </View>
-                  <View style={styles.feedbackAvgItem}>
-                    <Text style={[styles.feedbackAvgVal, { color: colors.foreground }]}>{adminData.feedbackStats.feedback}</Text>
-                    <Text style={[styles.feedbackAvgLbl, { color: colors.mutedForeground }]}>Dicas</Text>
+
+                  <View style={{ gap: 4, alignItems: "flex-end" }}>
+                    <Text style={{ fontSize: 20, fontFamily: "Inter_800ExtraBold", color: colors.success }}>
+                      {adminData.feedbackStats.recommendationYesPct}%
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, fontFamily: "Inter_500Medium", textAlign: "right" }}>
+                      Recomendam o app
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -934,26 +965,41 @@ function AdminDashboard() {
                 <View style={{ gap: 8, marginTop: 4 }}>
                   <Text style={[styles.feedbackRecentTitle, { color: colors.foreground }]}>Comentários recentes</Text>
                   {adminData.recentFeedbacks.map(f => (
-                    <View key={f.id} style={[styles.feedbackItemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                        <Text style={[styles.feedbackItemName, { color: colors.foreground }]}>{f.user_name || "Aluno anônimo"}</Text>
-                        <Text style={[styles.feedbackItemRec, { color: f.recommendation === 'Sim' ? colors.success : colors.mutedForeground }]}>
-                          Rec: {f.recommendation}
+                    <View key={f.id} style={[styles.feedbackItemCard, { backgroundColor: colors.card, borderColor: colors.border, gap: 4 }]}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={[styles.feedbackItemName, { color: colors.foreground, fontSize: 13, fontFamily: "Inter_700Bold" }]}>
+                          {f.user_name || "Aluno anônimo"}
                         </Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                          {[1, 2, 3, 4, 5].map((num) => {
+                            const active = num <= (f.rating_usability ?? 5);
+                            return (
+                              <Shield
+                                key={num}
+                                size={12}
+                                color={active ? colors.primary : colors.border}
+                                fill={active ? colors.primary : "transparent"}
+                                strokeWidth={1.5}
+                              />
+                            );
+                          })}
+                        </View>
                       </View>
-                      <Text style={[styles.feedbackItemClass, { color: colors.mutedForeground }]}>{f.class_name}</Text>
+                      <Text style={[styles.feedbackItemClass, { color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_500Medium" }]}>
+                        {f.class_name || "Sem turma"}
+                      </Text>
                       
                       {f.liked_most ? (
-                        <View style={{ marginTop: 8 }}>
-                          <Text style={[styles.feedbackQ, { color: colors.foreground }]}>O que mais gostou?</Text>
-                          <Text style={[styles.feedbackA, { color: colors.mutedForeground }]}>{f.liked_most}</Text>
+                        <View style={{ marginTop: 6 }}>
+                          <Text style={[styles.feedbackQ, { color: colors.foreground, fontSize: 11, fontFamily: "Inter_600SemiBold" }]}>O que gostou</Text>
+                          <Text style={[styles.feedbackA, { color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }]} numberOfLines={3}>{f.liked_most}</Text>
                         </View>
                       ) : null}
                       
                       {f.improvement_suggestion ? (
-                        <View style={{ marginTop: 6 }}>
-                          <Text style={[styles.feedbackQ, { color: colors.foreground }]}>O que melhoraria?</Text>
-                          <Text style={[styles.feedbackA, { color: colors.mutedForeground }]}>{f.improvement_suggestion}</Text>
+                        <View style={{ marginTop: 4 }}>
+                          <Text style={[styles.feedbackQ, { color: colors.foreground, fontSize: 11, fontFamily: "Inter_600SemiBold" }]}>O que melhoraria</Text>
+                          <Text style={[styles.feedbackA, { color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }]} numberOfLines={3}>{f.improvement_suggestion}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -965,17 +1011,19 @@ function AdminDashboard() {
         </View>
 
         {/* CENTRAL DE CONTESTAÇÕES */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>CENTRAL DE CONTESTAÇÕES</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>CONTESTAÇÕES</Text>
+        <Text style={[styles.cohortSubtitleText, { color: colors.mutedForeground, marginTop: -8, marginBottom: 12 }]}>
+          Respostas que os alunos pediram revisão.
+        </Text>
         <View style={{ marginBottom: 24, gap: 12 }}>
           {(!adminData.reports || adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).length === 0) ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AlertTriangle size={24} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Nenhuma contestação ativa no momento. Bom trabalho!
+                Nenhuma contestação pendente.
               </Text>
             </View>
           ) : (
-            adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).map((report) => (
+            adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).slice(0, 5).map((report) => (
               <View key={report.id} style={[styles.feedbackItemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                   <View style={{ flex: 1, marginRight: 8 }}>
@@ -1209,15 +1257,10 @@ function AdminDashboard() {
         </View>
 
         {/* ROADMAP / RECURSOS FUTUROS */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>ROADMAPP DE DESENVOLVIMENTO</Text>
-        <View style={[styles.roadmapCard, { backgroundColor: colors.primary + "06", borderColor: colors.primary + "18" }]}>
-          <BarChart3 size={22} color={colors.primary} />
-          <View style={styles.roadmapInfo}>
-            <Text style={[styles.roadmapTitle, { color: colors.primary }]}>Recursos futuros</Text>
-            <Text style={[styles.roadmapDesc, { color: colors.foreground }]}>
-              Em breve: relatórios analíticos aprofundados, exportações completas de turmas e criador dinâmico de trilhas de segurança.
-            </Text>
-          </View>
+        <View style={{ paddingVertical: 24, alignItems: "center" }}>
+          <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: "center" }}>
+            Em breve: relatórios analíticos, exportações completas e criação dinâmica de trilhas.
+          </Text>
         </View>
       </ScrollView>
     </View>
