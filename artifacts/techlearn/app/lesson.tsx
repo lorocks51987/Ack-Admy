@@ -99,7 +99,9 @@ export function LessonScreenInternal() {
   // Se for o Exame Final (Módulo 6) ou Caixa de Erros, reestruturamos o moduleSlice de forma inteligente
   const moduleSlice = React.useMemo(() => {
     if (isMistakesReview) {
-      return (progress?.failedQuestionIds ?? []).map((idx) => LESSONS[idx]).filter(Boolean);
+      // Prioriza os erros mais recentes (últimos adicionados no array) e limita a no máximo 8 por sessão (SRS)
+      const reversedIds = [...(progress?.failedQuestionIds ?? [])].reverse();
+      return reversedIds.slice(0, 8).map((idx) => LESSONS[idx]).filter(Boolean);
     }
     
     if (moduleId === 6) {
@@ -793,7 +795,7 @@ function FeedbackPanel({
             activeOpacity={0.8}
           >
             <BookOpen size={13} color={colors.mutedForeground} strokeWidth={2} />
-            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]}>
+            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]} adjustsFontSizeToFit={true} numberOfLines={1}>
               {feedback.showLearnMore 
                 ? "Ocultar explicação" 
                 : feedback.correct 
@@ -810,7 +812,7 @@ function FeedbackPanel({
             activeOpacity={0.8}
           >
             <AlertCircle size={13} color={colors.mutedForeground} strokeWidth={2} />
-            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]}>
+            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]} adjustsFontSizeToFit={true} numberOfLines={1}>
               Confrontar resposta
             </Text>
           </TouchableOpacity>
@@ -832,7 +834,7 @@ function FeedbackPanel({
         onPress={onContinue}
         activeOpacity={0.85}
       >
-        <Text style={fb.primaryBtnText}>
+        <Text style={fb.primaryBtnText} adjustsFontSizeToFit={true} numberOfLines={1}>
           {feedback.correct ? "Continuar" : (retryTextInput ? "Tentar novamente" : "Continuar")}
         </Text>
         <ChevronRight size={18} color="#FFF" strokeWidth={2.5} />

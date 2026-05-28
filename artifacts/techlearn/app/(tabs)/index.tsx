@@ -843,6 +843,39 @@ function AdminDashboard() {
           </Text>
         </View>
 
+        {/* VISÃO COMPARATIVA DE XP */}
+        {adminData.classes.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>VISÃO COMPARATIVA DE XP</Text>
+            <View style={[styles.feedbackSummaryCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 16, marginBottom: 8, gap: 14 }]}>
+              <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground }}>
+                Média de XP por turma:
+              </Text>
+              <View style={{ gap: 12 }}>
+                {adminData.classes.map((cls) => {
+                  const maxAvgXp = Math.max(...adminData.classes.map(c => c.averageXp), 1);
+                  const pct = Math.min(100, Math.max(10, Math.round((cls.averageXp / maxAvgXp) * 100)));
+                  return (
+                    <View key={cls.name} style={{ gap: 4 }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: colors.foreground }} numberOfLines={1}>
+                          {cls.name}
+                        </Text>
+                        <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: colors.primary }}>
+                          {cls.averageXp} XP
+                        </Text>
+                      </View>
+                      <View style={{ height: 8, backgroundColor: colors.border + "40", borderRadius: 4, overflow: "hidden" }}>
+                        <View style={{ height: "100%", width: `${pct}%`, backgroundColor: colors.primary, borderRadius: 4 }} />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        )}
+
         {/* RESUMO DAS TURMAS */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>RESUMO DAS TURMAS</Text>
         <View style={{ gap: 12, marginBottom: 24 }}>

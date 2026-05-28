@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity,
-  TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform
+  TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
+  Animated
 } from "react-native";
 import { X, Shield } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
@@ -30,30 +31,49 @@ function ShieldRatingRow({
   onChange: (v: number) => void;
 }) {
   const colors = useColors();
+  const scaleAnims = useRef(
+    [1, 2, 3, 4, 5].map(() => new Animated.Value(1))
+  ).current;
+
+  const animateShield = (num: number) => {
+    const idx = num - 1;
+    scaleAnims[idx].setValue(1.35);
+    Animated.spring(scaleAnims[idx], {
+      toValue: 1.0,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <View style={s.ratingField}>
-      <Text style={[s.label, { color: colors.foreground, textAlign: "center", marginBottom: 6 }]}>
+      <Text style={[s.label, { color: colors.foreground, textAlign: "center", marginBottom: 6 }]} adjustsFontSizeToFit={true} numberOfLines={1}>
         Como você avalia sua experiência?
       </Text>
       <View style={s.shieldsRow}>
         {[1, 2, 3, 4, 5].map((num) => {
           const active = num <= (value ?? 0);
+          const idx = num - 1;
           return (
             <TouchableOpacity
               key={num}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                animateShield(num);
                 onChange(num);
               }}
               hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               activeOpacity={0.7}
             >
-              <Shield
-                size={36}
-                color={active ? colors.primary : colors.border}
-                fill={active ? colors.primary : "transparent"}
-                strokeWidth={1.8}
-              />
+              <Animated.View style={{ transform: [{ scale: scaleAnims[idx] }] }}>
+                <Shield
+                  size={36}
+                  color={active ? colors.primary : colors.border}
+                  fill={active ? colors.primary : "transparent"}
+                  strokeWidth={1.8}
+                />
+              </Animated.View>
             </TouchableOpacity>
           );
         })}
@@ -223,7 +243,7 @@ export function FeedbackFormModal({
                     onPress={onClose}
                     disabled={loading}
                   >
-                    <Text style={[s.btnCancelText, { color: colors.foreground }]}>Cancelar</Text>
+                    <Text style={[s.btnCancelText, { color: colors.foreground }]} adjustsFontSizeToFit={true} numberOfLines={1}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -237,7 +257,7 @@ export function FeedbackFormModal({
                     {loading ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={s.btnSubmitText}>Enviar feedback</Text>
+                      <Text style={s.btnSubmitText} adjustsFontSizeToFit={true} numberOfLines={1}>Enviar feedback</Text>
                     )}
                   </TouchableOpacity>
                 </View>
