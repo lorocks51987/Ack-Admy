@@ -1305,36 +1305,50 @@ export default function HomeScreen() {
       >
         {/* Card de Destaque / Ação Rápida */}
         <View style={{ marginBottom: 24 }}>
-          <TouchableOpacity
-            style={{
-              backgroundColor: colors.primary,
-              borderRadius: 16,
-              padding: 20,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-            activeOpacity={0.9}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
-              router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
-            }}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
-                {completedCount === 0 ? "Começar do Início" : "Continuar Aprendizado"}
-              </Text>
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
-                {completedCount === 0 
-                  ? "Inicie sua jornada de segurança defensiva." 
-                  : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
-              </Text>
-            </View>
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
-              <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
-            </View>
-          </TouchableOpacity>
+          {(() => {
+            const isAllCompleted = completedCount === totalModules;
+            return (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: isAllCompleted ? "#D97706" : colors.primary,
+                  borderRadius: 16,
+                  padding: 20,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+                activeOpacity={isAllCompleted ? 1 : 0.9}
+                disabled={isAllCompleted}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
+                  router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
+                }}
+              >
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
+                    {isAllCompleted 
+                      ? "Em breve novas trilhas" 
+                      : completedCount === 0 
+                      ? "Começar do Início" 
+                      : "Continuar Aprendizado"}
+                  </Text>
+                  <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
+                    {isAllCompleted
+                      ? "Você concluiu toda a jornada de segurança! Prepare-se para os próximos desafios."
+                      : completedCount === 0 
+                      ? "Inicie sua jornada de segurança defensiva." 
+                      : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
+                  </Text>
+                </View>
+                {!isAllCompleted && (
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+                    <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })()}
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUA JORNADA</Text>
