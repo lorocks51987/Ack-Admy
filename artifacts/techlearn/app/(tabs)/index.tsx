@@ -1,6 +1,7 @@
 import React from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator, TextInput,
+  Modal, Pressable,
 } from "react-native";
 import { router } from "expo-router";
 import {
@@ -1260,6 +1261,10 @@ export default function HomeScreen() {
     return <AdminDashboard />;
   }
 
+  // Estados para modal de revisar aula
+  const [reviewModalVisible, setReviewModalVisible] = React.useState(false);
+  const [selectedModuleToReview, setSelectedModuleToReview] = React.useState<typeof MODULE_DEFINITIONS[0] | null>(null);
+
   const completedCount = progress.completedModules.length;
   const totalModules = MODULE_DEFINITIONS.length;
   const progressPct = completedCount / totalModules;
@@ -1304,52 +1309,41 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Card de Destaque / Ação Rápida */}
-        <View style={{ marginBottom: 24 }}>
-          {(() => {
-            const isAllCompleted = completedCount === totalModules;
-            return (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: isAllCompleted ? "#D97706" : colors.primary,
-                  borderRadius: 16,
-                  padding: 20,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-                activeOpacity={isAllCompleted ? 1 : 0.9}
-                disabled={isAllCompleted}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
-                  router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
-                }}
-              >
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
-                    {isAllCompleted 
-                      ? "Em breve novas trilhas" 
-                      : completedCount === 0 
-                      ? "Começar do Início" 
-                      : "Continuar Aprendizado"}
-                  </Text>
-                  <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
-                    {isAllCompleted
-                      ? "Você concluiu toda a jornada de segurança! Prepare-se para os próximos desafios."
-                      : completedCount === 0 
-                      ? "Inicie sua jornada de segurança defensiva." 
-                      : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
-                  </Text>
-                </View>
-                {!isAllCompleted && (
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
-                    <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })()}
-        </View>
+        {/* Card de Destaque / Ação Rápida */}
+        {completedCount < totalModules && (
+          <View style={{ marginBottom: 24 }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                borderRadius: 16,
+                padding: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+              activeOpacity={0.9}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
+                router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
+              }}
+            >
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
+                  {completedCount === 0 ? "Começar do Início" : "Continuar Aprendizado"}
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
+                  {completedCount === 0 
+                    ? "Inicie sua jornada de segurança defensiva." 
+                    : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
+                </Text>
+              </View>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+                <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUA JORNADA</Text>
 
@@ -1377,43 +1371,12 @@ export default function HomeScreen() {
                   borderColor: isCompleted ? colors.success + "60" : isLocked ? colors.border : mod.accentColor + "40",
                   opacity: isLocked ? 0.45 : 1,
                 }]}
-                onPress={async () => {
+                onPress={() => {
                   if (isLocked) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   if (isCompleted) {
-                    if (Platform.OS === 'web') {
-                      const confirm = window.confirm("Deseja revisar esta aula?");
-                      if (confirm) {
-                        const AsyncStorage = require("@react-native-async-storage/async-storage").default;
-                        const userKey = isGuest ? "guest" : (profile?.id ?? "anon");
-                        const sessionKey = `@ackadmy:lesson_session:${userKey}:${mod.id}`;
-                        try {
-                          await AsyncStorage.removeItem(sessionKey);
-                        } catch {}
-                        router.push({ pathname: "/lesson", params: { moduleId: mod.id, isRevision: "true" } });
-                      }
-                    } else {
-                      const { Alert } = require("react-native");
-                      Alert.alert(
-                        "Revisar aula",
-                        "Deseja revisar esta aula?",
-                        [
-                          { text: "Cancelar", style: "cancel" },
-                          { 
-                            text: "Revisar do início", 
-                            onPress: async () => {
-                              const AsyncStorage = require("@react-native-async-storage/async-storage").default;
-                              const userKey = isGuest ? "guest" : (profile?.id ?? "anon");
-                              const sessionKey = `@ackadmy:lesson_session:${userKey}:${mod.id}`;
-                              try {
-                                await AsyncStorage.removeItem(sessionKey);
-                              } catch {}
-                              router.push({ pathname: "/lesson", params: { moduleId: mod.id, isRevision: "true" } });
-                            }
-                          }
-                        ]
-                      );
-                    }
+                    setSelectedModuleToReview(mod);
+                    setReviewModalVisible(true);
                   } else {
                     router.push({ pathname: "/lesson", params: { moduleId: mod.id } });
                   }
@@ -1442,7 +1405,87 @@ export default function HomeScreen() {
             </View>
           );
         })}
+        {completedCount === totalModules && (
+          <View style={{
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: 28,
+            marginBottom: 8,
+            paddingVertical: 12,
+          }}>
+            <Text style={{
+              fontSize: 13,
+              fontFamily: "Inter_600SemiBold",
+              color: colors.mutedForeground,
+              letterSpacing: 0.5,
+              fontStyle: "italic",
+              textAlign: "center",
+            }}>
+              Em breve novas trilhas...
+            </Text>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Modal de Revisar Aula Customizado */}
+      <Modal
+        visible={reviewModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReviewModalVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setReviewModalVisible(false)}
+        >
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Revisar aula</Text>
+            </View>
+            
+            <View style={{ gap: 14 }}>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, lineHeight: 20, textAlign: "center" }}>
+                Deseja refazer os exercícios desta atividade do início? Seu progresso e pontuação de XP atual não serão afetados.
+              </Text>
+              
+              <View style={styles.modalActionsRow}>
+                <TouchableOpacity
+                  style={[styles.modalCancelBtn, { borderColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setReviewModalVisible(false);
+                    setSelectedModuleToReview(null);
+                  }}
+                >
+                  <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalSubmitBtn, { backgroundColor: colors.primary }]}
+                  onPress={async () => {
+                    if (!selectedModuleToReview) return;
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setReviewModalVisible(false);
+                    
+                    const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+                    const userKey = isGuest ? "guest" : (profile?.id ?? "anon");
+                    const sessionKey = `@ackadmy:lesson_session:${userKey}:${selectedModuleToReview.id}`;
+                    try {
+                      await AsyncStorage.removeItem(sessionKey);
+                    } catch {}
+                    
+                    router.push({ pathname: "/lesson", params: { moduleId: selectedModuleToReview.id, isRevision: "true" } });
+                    setSelectedModuleToReview(null);
+                  }}
+                >
+                  <Text style={{ color: "#FFFFFF", fontFamily: "Inter_700Bold" }}>Revisar do início</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1608,4 +1651,48 @@ const styles = StyleSheet.create({
   feedbackItemRec: { fontSize: 11, fontFamily: "Inter_700Bold" },
   feedbackQ: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   feedbackA: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
+
+  // Modal de Revisar Aula
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    gap: 14,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  modalTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  modalActionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 8,
+  },
+  modalCancelBtn: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  modalSubmitBtn: {
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
