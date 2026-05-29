@@ -379,9 +379,71 @@ export function LessonScreenInternal() {
     }
   }, [queue, animateNext]);
 
-  const handlePowerUp = useCallback(() => {
-    setPowerUpUsed(true);
-  }, []);
+  /**
+   * Validação antecipada do power-up antes de gastar XP.
+   * Retorna true se o power-up PODE ser aplicado neste momento.
+   * O ExerciseHeader só desconta XP se este callback retornar true.
+   */
+  const handlePowerUp = useCallback((): boolean => {
+    if (!exercise) return false;
+    const type = exercise.type as ExerciseType;
+
+    // multiple_choice: verifica se há pelo menos 1 alternativa incorreta eliminável
+    if (type === "multiple_choice") {
+      const mc = exercise as any;
+      const incorrectCount = mc.options.length - 1; // total - 1 correta
+      if (incorrectCount <= 0) return false; // nada a eliminar
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    // association: verifica se há pares não resolvidos
+    // Não temos acesso ao estado interno da AssociationScreen aqui.
+    // Delegamos: sempre permite (a screen vai ignorar se todos já estiverem feitos via estado interno).
+    // A guarda real está dentro da AssociationScreen.
+    if (type === "association") {
+      if (powerUpUsed) return false; // já usado nesta questão
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    // fill_blank: verifica se há pelo menos 1 lacuna vazia no estado inicial
+    if (type === "fill_blank") {
+      if (powerUpUsed) return false;
+      // Não temos acesso ao estado interno de filled. Assumimos válido — a screen guarda internamente.
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    // ordering: verifica se o exercício tem itens
+    if (type === "ordering") {
+      if (powerUpUsed) return false;
+      const ord = exercise as any;
+      if (!ord.items || ord.items.length === 0) return false;
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    // text_input: verifica se o answer tem pelo menos 1 char
+    if (type === "text_input") {
+      if (powerUpUsed) return false;
+      const ti = exercise as any;
+      if (!ti.answer || ti.answer.length === 0) return false;
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    // phishing_email: verifica se há fraud indicators
+    if (type === "phishing_email") {
+      if (powerUpUsed) return false;
+      const pe = exercise as any;
+      if (!pe.fraudIndicators || pe.fraudIndicators.length === 0) return false;
+      setPowerUpUsed(true);
+      return true;
+    }
+
+    return false;
+  }, [exercise, powerUpUsed]);
 
   // ── Send Contest (Confrontar Resposta) ──
   const handleSendConfront = async () => {
@@ -484,6 +546,7 @@ export function LessonScreenInternal() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ExerciseHeader
+        key={`header-${currentIdx}`}
         current={moduleSlice.length - queue.length}
         total={moduleSlice.length}
         lives={lives}

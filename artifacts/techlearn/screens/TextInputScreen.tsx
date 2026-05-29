@@ -67,8 +67,6 @@ export function TextInputScreen({ exercise, onAnswer, feedbackVisible = false, p
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-
-
           <View style={[styles.questionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.question, { color: colors.foreground }]}>{exercise.question}</Text>
           </View>
@@ -166,13 +164,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, gap: 16, paddingBottom: 32 },
-  tagRow: { flexDirection: "row" },
-  tag: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: 20, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 6,
-  },
-  tagText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2 },
   questionCard: { borderRadius: 16, borderWidth: 1, padding: 20 },
   question: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 28 },
   inputWrapper: {

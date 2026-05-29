@@ -185,8 +185,10 @@ export default function RankingScreen() {
         });
 
         const studentCount = classStudents.length;
-        const averageXp = studentCount > 0 ? Math.round(totalXp / studentCount) : 0;
-        const averageAccuracy = studentCount > 0 ? Math.round(totalAccuracySum / studentCount) : 0;
+        const rawAvgXp = studentCount > 0 ? totalXp / studentCount : 0;
+        const averageXp = isFinite(rawAvgXp) ? Math.round(rawAvgXp) : 0;
+        const rawAvgAccuracy = studentCount > 0 ? totalAccuracySum / studentCount : 0;
+        const averageAccuracy = isFinite(rawAvgAccuracy) ? Math.round(rawAvgAccuracy) : 0;
 
         return {
           className: cName,
@@ -336,8 +338,13 @@ export default function RankingScreen() {
                   {student.xp} XP
                 </Text>
                 <Text style={[styles.subStudentStats, { color: colors.mutedForeground }]}>
-                  {student.completedCount} mód • {student.accuracy}% prec • {student.streak}d
+                  {student.completedCount} mód{student.accuracy > 0 ? ` • ${student.accuracy}%` : ""}
                 </Text>
+                {student.streak > 0 && (
+                  <Text style={[styles.subStudentStats, { color: colors.mutedForeground }]}>
+                    {student.streak}d streak
+                  </Text>
+                )}
               </View>
             </View>
           );
@@ -507,7 +514,7 @@ export default function RankingScreen() {
                           <Text style={[styles.cohortName, { 
                             color: isMyClass ? colors.primary : colors.foreground, 
                             fontFamily: isMyClass || isTop3 ? "Inter_700Bold" : "Inter_600SemiBold" 
-                          }]}>
+                          }]} numberOfLines={2}>
                             {cls.className}
                           </Text>
                           {isMyClass && (
@@ -697,7 +704,7 @@ const styles = StyleSheet.create({
   subStudentEmail: { fontSize: 10, fontFamily: "Inter_400Regular" },
   subListRight: { alignItems: "flex-end", gap: 4 },
   subStudentXp: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  subStudentStats: { fontSize: 9, fontFamily: "Inter_500Medium" },
+  subStudentStats: { fontSize: 10, fontFamily: "Inter_500Medium", textAlign: "right" },
 
   badgeRowContainer: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
   statusBadge: { borderWidth: 1, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },

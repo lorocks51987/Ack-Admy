@@ -54,7 +54,7 @@ interface ExerciseHeaderProps {
   showHintIcon?: boolean;
   // Power-up props
   powerUpUsed?: boolean;
-  onPowerUp?: () => void;
+  onPowerUp?: () => boolean;   // retorna true = power-up aplicado; false = não aplicável
   onSkip?: () => void;
   // XP moeda
   currentXP?: number;
@@ -72,7 +72,7 @@ const POWER_UP_LABELS: Record<string, string> = {
   phishing_email: "Destacar sinal suspeito",
 };
 
-type ViewState = "menu" | "hint" | "confirm_hint" | "confirm_powerup" | "insufficient_xp";
+type ViewState = "menu" | "hint" | "confirm_hint" | "confirm_powerup" | "insufficient_xp" | "powerup_unavailable";
 
 export function ExerciseHeader({
   current, total, lives, xp, onClose, phaseInfo, isBriefing, moduleName,
@@ -156,12 +156,21 @@ export function ExerciseHeader({
   /** Confirma gasto de XP e ativa power-up */
   const confirmPowerUp = () => {
     if (!onSpendXP || !onPowerUp) return;
+    // IMPORTANTE: chama onPowerUp PRIMEIRO para verificar se é aplicável.
+    // Só desconta XP se o power-up for realmente aplicado.
+    const applied = onPowerUp();
+    if (!applied) {
+      // Power-up não pôde ser aplicado (todos os itens já resolvidos, etc.)
+      setViewState("powerup_unavailable");
+      return;
+    }
+    // Aplica foi bem-sucedido — agora debita o XP
     const success = onSpendXP(POWERUP_COST);
     if (success) {
       audioService.playXpSpent();
       setHintModalOpen(false);
-      onPowerUp();
     } else {
+      // Isso só acontece em race condition extrema (XP mudou entre confirm e spend)
       setViewState("insufficient_xp");
     }
   };
@@ -498,6 +507,41 @@ export function ExerciseHeader({
                 >
                   <Text style={styles.modalBtnText}>Entendido</Text>
                 </TouchableOpacity>
+              </>
+            )}
+
+            {/* ── POWER-UP NÃO DISPONÍVEL (sem custo de XP) ── */}
+            {viewState === "powerup_unavailable" && (
+              <>
+                <View style={styles.modalHeader}>
+                  <View style={[styles.modalIconWrap, { backgroundColor: colors.success + "18" }]}>
+                    <AlertCircle size={20} color={colors.success} strokeWidth={2} />
+                  </View>
+                  <Text style={[styles.modalTitle, { color: colors.foreground }]}>Já resolvido!</Text>
+                  <TouchableOpacity onPress={closeModal} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <X size={18} color={colors.mutedForeground} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.foreground, lineHeight: 22 }}>
+                  Não há mais itens disponíveis para esta ajuda nesta questão.{"\n\n"}
+                  <Text style={{ color: colors.mutedForeground }}>Seu XP não foi debitado.</Text>
+                </Text>
+
+                <View style={styles.confirmRow}>
+                  <TouchableOpacity
+                    style={[styles.confirmCancelBtn, { borderColor: colors.border }]}
+                    onPress={() => setViewState("menu")}
+                  >
+                    <Text style={[styles.confirmCancelText, { color: colors.foreground }]}>Ver opções</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.confirmOkBtn, { backgroundColor: colors.primary }]}
+                    onPress={closeModal}
+                  >
+                    <Text style={styles.confirmOkText}>Fechar</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 

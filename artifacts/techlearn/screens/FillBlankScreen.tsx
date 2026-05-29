@@ -18,6 +18,8 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
   const [usedWords, setUsedWords] = useState<string[]>([]);
   const [selectedBlankIdx, setSelectedBlankIdx] = useState<number>(0);
   const [checked, setChecked] = useState(false);
+  // Rastreia qual lacuna foi preenchida pelo power-up (para proteger de remoção pelo aluno)
+  const [powerUpFilledIdx, setPowerUpFilledIdx] = useState<number | null>(null);
   const insets = useSafeAreaInsets();
 
   const locked = checked || feedbackVisible;
@@ -33,17 +35,27 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
   };
 
   React.useEffect(() => {
-    if (powerUpUsed && filled[0] !== exercise.blanks[0]) {
-      const word = exercise.blanks[0];
-      setFilled(prev => {
-        const next = [...prev];
-        next[0] = word;
-        return next;
-      });
-      setUsedWords(u => Array.from(new Set([...u, word])));
-      setSelectedBlankIdx(prev => prev === 0 ? 1 : prev);
+    if (!powerUpUsed) return;
+
+    // Encontra a PRIMEIRA lacuna ainda vazia (null) — não sobrescreve o que o aluno digitou
+    const firstEmptyIdx = filled.findIndex((f) => f === null);
+    if (firstEmptyIdx === -1) {
+      // Nenhuma lacuna vazia disponível — não faz nada (XP não foi debitado)
+      return;
     }
-  }, [powerUpUsed, exercise]);
+
+    const word = exercise.blanks[firstEmptyIdx];
+    setFilled((prev) => {
+      const next = [...prev];
+      next[firstEmptyIdx] = word;
+      return next;
+    });
+    setUsedWords((u) => Array.from(new Set([...u, word])));
+    // Registra qual índice foi preenchido pelo power-up (protegido de remoção)
+    setPowerUpFilledIdx(firstEmptyIdx);
+    // Move seleção para próxima lacuna vazia após a preenchida
+    setSelectedBlankIdx((prev) => (prev === firstEmptyIdx ? firstEmptyIdx + 1 : prev));
+  }, [powerUpUsed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleWordPress = (word: string) => {
     if (locked) return;
@@ -95,7 +107,8 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
   };
 
   const handleBlankPress = (idx: number) => {
-    if (locked || (powerUpUsed && idx === 0)) return;
+    // Bloqueia remoção da lacuna preenchida pelo power-up
+    if (locked || (powerUpFilledIdx !== null && idx === powerUpFilledIdx)) return;
 
     Haptics.selectionAsync();
     const word = filled[idx];

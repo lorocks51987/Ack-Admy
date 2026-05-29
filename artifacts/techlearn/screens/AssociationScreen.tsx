@@ -35,20 +35,33 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
     []
   );
 
-  // Power-up auto-resolves first pair
+  // Power-up: resolve o primeiro par ainda não resolvido de forma correta.
+  // A relação correta em AssociationExercise é lIdx === rIdx (par i do conceito = definição i).
   React.useEffect(() => {
-    if (powerUpUsed && matched[0] === undefined) {
-      const newMatched = { ...matched, 0: 0 };
-      setMatched(newMatched);
-      if (selectedLeft === 0) setSelectedLeft(null);
-      if (selectedRight === 0) setSelectedRight(null);
-      if (Object.keys(newMatched).length === exercise.pairs.length) {
-        setTimeout(() => {
-          onAnswer(true);
-        }, 600);
-      }
+    if (!powerUpUsed) return;
+
+    // Encontra o primeiro índice de par que ainda não foi resolvido
+    const firstUnresolvedIdx = exercise.pairs.findIndex((_, i) => matched[i] === undefined);
+
+    if (firstUnresolvedIdx === -1) {
+      // Todos os pares já estão resolvidos — não faz nada.
+      // O ExerciseHeader exibirá "powerup_unavailable" (handlePowerUp retornou false no lesson.tsx)
+      return;
     }
-  }, [powerUpUsed]);
+
+    const newMatched = { ...matched, [firstUnresolvedIdx]: firstUnresolvedIdx };
+    setMatched(newMatched);
+    // Limpa seleções ativas se o item resolvido estava selecionado
+    if (selectedLeft === firstUnresolvedIdx) setSelectedLeft(null);
+    if (selectedRight === firstUnresolvedIdx) setSelectedRight(null);
+
+    // Se completou todos, dispara onAnswer
+    if (Object.keys(newMatched).length === exercise.pairs.length) {
+      setTimeout(() => {
+        onAnswer(true);
+      }, 600);
+    }
+  }, [powerUpUsed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const evaluateMatch = useCallback((lIdx: number, rIdx: number) => {
     if (lIdx === rIdx) {

@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Platform } from "react-native";
 import { Shield } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import type { BriefingExercise } from "@/constants/lessons";
 
@@ -12,6 +13,7 @@ interface Props {
 
 export function BriefingScreen({ exercise, onStart }: Props) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const native = Platform.OS !== "web";
 
@@ -30,7 +32,7 @@ export function BriefingScreen({ exercise, onStart }: Props) {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 100, 120) }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.title, { color: colors.foreground }]}>{exercise.scenarioTitle}</Text>
@@ -49,7 +51,7 @@ export function BriefingScreen({ exercise, onStart }: Props) {
       </ScrollView>
 
       {/* Footer containing the primary action button */}
-      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity
             style={[styles.startBtn, { backgroundColor: colors.primary }]}

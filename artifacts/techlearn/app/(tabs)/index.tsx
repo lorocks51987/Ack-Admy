@@ -247,20 +247,26 @@ function AdminDashboard() {
 
     Object.keys(classStats).forEach((className) => {
       const stats = classStats[className];
-      const avgXp = stats.studentCount > 0 ? Math.round(stats.totalXp / stats.studentCount) : 0;
+      // Guarda explícita: nunca retorna NaN ou undefined
+      const rawAvgXp = stats.studentCount > 0 ? stats.totalXp / stats.studentCount : 0;
+      const avgXp = isFinite(rawAvgXp) ? Math.round(rawAvgXp) : 0;
 
       if (avgXp > highestAvgXp) {
         highestAvgXp = avgXp;
         highlightClass = className;
       }
 
-      const avgCompleted =
-        stats.studentCount > 0 ? Math.round((stats.totalCompleted / stats.studentCount) * 10) / 10 : 0;
-      const avgAccuracy =
-        stats.totalExercises > 0 ? Math.round((stats.correctAnswers / stats.totalExercises) * 100) : 0;
+      const rawAvgCompleted = stats.studentCount > 0 ? stats.totalCompleted / stats.studentCount : 0;
+      const avgCompleted = isFinite(rawAvgCompleted) ? Math.round(rawAvgCompleted * 10) / 10 : 0;
 
-      // Formula interna simples de engajamento do MVP: averageXp + averageCompleted * 5 + averageAccuracy * 2
-      const engagementScore = Math.round(avgXp + avgCompleted * 5 + avgAccuracy * 2);
+      const rawAvgAccuracy = stats.totalExercises > 0
+        ? (stats.correctAnswers / stats.totalExercises) * 100
+        : 0;
+      const avgAccuracy = isFinite(rawAvgAccuracy) ? Math.round(rawAvgAccuracy) : 0;
+
+      // Formula interna simples de engajamento: XP médio + módulos * 5 + precisão * 2
+      const rawEngagement = avgXp + avgCompleted * 5 + avgAccuracy * 2;
+      const engagementScore = isFinite(rawEngagement) ? Math.round(rawEngagement) : 0;
 
       const matchedDbClass = fetchedClasses.find(
         (c) => String(c.name).trim().toLowerCase() === className.trim().toLowerCase()
@@ -631,33 +637,37 @@ function AdminDashboard() {
                 <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + "15" }]}>
                   <Users size={16} color={colors.primary} />
                 </View>
-                <Text style={[styles.metricValue, { color: colors.foreground }]}>{classInfo.studentCount}</Text>
-                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>alunos na turma</Text>
+                <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {classInfo.studentCount}
+                </Text>
+                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>alunos</Text>
               </View>
               <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIconWrap, { backgroundColor: "#F59E0B" + "15" }]}>
                   <Star size={16} color="#F59E0B" />
                 </View>
-                <Text style={[styles.metricValue, { color: colors.foreground }]}>{classInfo.averageXp}</Text>
+                <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {classInfo.studentCount > 0 ? classInfo.averageXp : 0}
+                </Text>
                 <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>XP médio</Text>
               </View>
               <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIconWrap, { backgroundColor: colors.success + "15" }]}>
                   <CheckCircle2 size={16} color={colors.success} />
                 </View>
-                <Text style={[styles.metricValue, { color: colors.foreground }]}>
-                  {classInfo.averageCompleted}
+                <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {classInfo.studentCount > 0 ? classInfo.averageCompleted : 0}
                 </Text>
-                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>mód. concluídos (méd.)</Text>
+                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Módulos (méd.)</Text>
               </View>
               <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + "15" }]}>
                   <Target size={16} color={colors.primary} />
                 </View>
-                <Text style={[styles.metricValue, { color: colors.foreground }]}>
-                  {classInfo.averageAccuracy}%
+                <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {classInfo.studentCount > 0 ? `${classInfo.averageAccuracy}%` : "—"}
                 </Text>
-                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>precisão média</Text>
+                <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Precisão média</Text>
               </View>
             </View>
           )}
@@ -832,49 +842,21 @@ function AdminDashboard() {
           </View>
         </View>
 
-        {/* INSIGHT CARD */}
+        {/* INSIGHT CARD — turma destaque + alerta de engajamento baixo */}
         <View style={[styles.insightCard, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "20" }]}>
           <View style={styles.insightHeader}>
             <Info size={16} color={colors.primary} />
-            <Text style={[styles.insightTitle, { color: colors.primary }]}>Insight Pedagógico</Text>
+            <Text style={[styles.insightTitle, { color: colors.primary }]}>Destaque</Text>
           </View>
           <Text style={[styles.insightDesc, { color: colors.foreground }]}>
-            Turma com melhor engajamento: <Text style={{ fontFamily: "Inter_700Bold" }}>{bestClass}</Text> com <Text style={{ fontFamily: "Inter_700Bold" }}>{bestScore} pts</Text>. {lowestClass ? `Orientação: A turma "${lowestClass.name}" apresenta menor média de XP (${lowestClass.averageXp}). Considere realizar uma abordagem de fixação em sala.` : "Dica: Monitore o ranking de turmas para identificar alunos que precisam de reforço."}
+            {adminData.classes.length === 0
+              ? "Nenhuma turma cadastrada ainda. Cadastre turmas em Gestão de Turmas."
+              : lowestClass
+              ? `🏆 Mais engajada: ${bestClass} (${bestScore} pts).\n⚠️ Menor engajamento: "${lowestClass.name}" (${lowestClass.averageXp} XP médio). Considere atenção especial.`
+              : `🏆 Turma destaque: ${bestClass} com ${bestScore} pts de engajamento.`
+            }
           </Text>
         </View>
-
-        {/* VISÃO COMPARATIVA DE XP */}
-        {adminData.classes.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>VISÃO COMPARATIVA DE XP</Text>
-            <View style={[styles.feedbackSummaryCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 16, marginBottom: 8, gap: 14 }]}>
-              <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground }}>
-                Média de XP por turma:
-              </Text>
-              <View style={{ gap: 12 }}>
-                {adminData.classes.map((cls) => {
-                  const maxAvgXp = Math.max(...adminData.classes.map(c => c.averageXp), 1);
-                  const pct = Math.min(100, Math.max(10, Math.round((cls.averageXp / maxAvgXp) * 100)));
-                  return (
-                    <View key={cls.name} style={{ gap: 4 }}>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                        <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: colors.foreground }} numberOfLines={1}>
-                          {cls.name}
-                        </Text>
-                        <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: colors.primary }}>
-                          {cls.averageXp} XP
-                        </Text>
-                      </View>
-                      <View style={{ height: 8, backgroundColor: colors.border + "40", borderRadius: 4, overflow: "hidden" }}>
-                        <View style={{ height: "100%", width: `${pct}%`, backgroundColor: colors.primary, borderRadius: 4 }} />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          </>
-        )}
 
         {/* RESUMO DAS TURMAS */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>RESUMO DAS TURMAS</Text>
@@ -908,17 +890,23 @@ function AdminDashboard() {
                   </View>
 
                   <View style={styles.cohortStatsGrid}>
-                    <View style={styles.cohortStatGridCell}>
-                      <Text style={[styles.cohortGridVal, { color: colors.foreground }]}>{cls.averageXp}</Text>
+                    <View style={[styles.cohortStatGridCell, { backgroundColor: colors.primary + "08" }]}>
+                      <Text style={[styles.cohortGridVal, { color: colors.primary }]} numberOfLines={1} adjustsFontSizeToFit>
+                        {cls.studentCount > 0 ? `${cls.averageXp}` : "0"}
+                      </Text>
                       <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>XP médio</Text>
                     </View>
-                    <View style={styles.cohortStatGridCell}>
-                      <Text style={[styles.cohortGridVal, { color: colors.foreground }]}>{cls.averageCompleted}</Text>
-                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Mód. concluídos</Text>
+                    <View style={[styles.cohortStatGridCell, { backgroundColor: colors.success + "08" }]}>
+                      <Text style={[styles.cohortGridVal, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit>
+                        {cls.studentCount > 0 ? `${cls.averageCompleted}` : "0"}
+                      </Text>
+                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Módulos</Text>
                     </View>
-                    <View style={styles.cohortStatGridCell}>
-                      <Text style={[styles.cohortGridVal, { color: colors.foreground }]}>{cls.averageAccuracy}%</Text>
-                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Precisão média</Text>
+                    <View style={[styles.cohortStatGridCell, { backgroundColor: "#F59E0B" + "08" }]}>
+                      <Text style={[styles.cohortGridVal, { color: "#F59E0B" }]} numberOfLines={1} adjustsFontSizeToFit>
+                        {cls.studentCount > 0 ? `${cls.averageAccuracy}%` : "—"}
+                      </Text>
+                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Precisão</Text>
                     </View>
                   </View>
 
