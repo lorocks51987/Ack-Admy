@@ -1372,64 +1372,72 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scroll, { padding: 20, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Card de Destaque / Ação Rápida */}
-        {/* Card de Destaque / Ação Rápida */}
-        {completedCount < totalModules && (
-          <View style={{ marginBottom: 24 }}>
+        {/* Banner de convidado — compacto, linha única */}
+        {isGuest && (
+          <View style={{
+            backgroundColor: colors.muted,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            marginBottom: 20,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}>
+            <Info size={14} color={colors.mutedForeground} strokeWidth={2} />
+            <Text style={{ flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
+              Modo visitante — progresso não salvo
+            </Text>
             <TouchableOpacity
-              style={{
-                backgroundColor: colors.primary,
-                borderRadius: 16,
-                padding: 20,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-              activeOpacity={0.9}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const nextPending = MODULE_DEFINITIONS.find(m => !progress.completedModules.includes(m.id)) ?? MODULE_DEFINITIONS[0];
-                router.push({ pathname: "/lesson", params: { moduleId: nextPending.id } });
-              }}
+              style={{ paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.primary, borderRadius: 6 }}
+              onPress={() => router.push("/sign-up" as any)}
+              activeOpacity={0.85}
             >
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" }}>
-                  {completedCount === 0 ? "Começar do Início" : "Continuar Aprendizado"}
-                </Text>
-                <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 }}>
-                  {completedCount === 0 
-                    ? "Inicie sua jornada de segurança defensiva." 
-                    : `Você concluiu ${completedCount} de ${totalModules} atividades.`}
-                </Text>
-              </View>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
-                <ChevronRight size={20} color="#FFF" strokeWidth={2.5} />
-              </View>
+              <Text style={{ color: "#FFF", fontSize: 11, fontFamily: "Inter_700Bold" }}>Criar conta</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUA JORNADA</Text>
+
 
         {MODULE_DEFINITIONS.map((mod, index) => {
           let { isCompleted, isLocked } = getModuleState(mod);
+          const isNext = !isCompleted && !isLocked;
+          // "currentNext" = primeiro módulo disponível que não foi concluído
+          const isCurrentNext = isNext && !MODULE_DEFINITIONS.slice(0, index).some(m => {
+            const s = getModuleState(m);
+            return !s.isCompleted && !s.isLocked;
+          });
 
           const IconComp = ICON_MAP[mod.iconName];
-          const accentColor = isCompleted ? colors.success : isLocked ? colors.mutedForeground : mod.accentColor;
+          const accentColor = isCompleted
+            ? colors.success
+            : isLocked
+            ? colors.mutedForeground
+            : mod.accentColor;
 
           return (
             <View key={mod.id}>
               {index > 0 && (
                 <View style={[styles.connector, {
-                  backgroundColor: progress.completedModules.includes(mod.id - 1) ? colors.primary : colors.border,
+                  backgroundColor: progress.completedModules.includes(mod.id - 1) ? colors.primary + "50" : colors.border,
                   marginLeft: 37,
                 }]} />
               )}
               <TouchableOpacity
                 style={[styles.card, {
                   backgroundColor: colors.card,
-                  borderColor: isCompleted ? colors.success + "60" : isLocked ? colors.border : mod.accentColor + "40",
-                  opacity: isLocked ? 0.45 : 1,
+                  borderColor: isCompleted
+                    ? colors.success + "40"
+                    : isCurrentNext
+                    ? mod.accentColor + "50"
+                    : colors.border,
+                  opacity: isLocked ? 0.38 : 1,
+                  // Sutil destaque à esquerda no módulo atual
+                  borderLeftWidth: isCurrentNext ? 3 : 1,
+                  borderLeftColor: isCurrentNext ? mod.accentColor : (isCompleted ? colors.success + "40" : colors.border),
                 }]}
                 onPress={() => {
                   if (isLocked) return;
@@ -1445,12 +1453,30 @@ export default function HomeScreen() {
               >
                 <View style={[styles.iconWrap, {
                   backgroundColor: accentColor + "12",
-                  borderColor: accentColor + "30",
+                  borderColor: accentColor + "25",
                 }]}>
                   <IconComp size={20} color={accentColor} strokeWidth={2} />
                 </View>
                 <View style={styles.cardInfo}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{mod.title}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Text style={[styles.cardTitle, { color: isLocked ? colors.mutedForeground : colors.foreground }]}>
+                      {mod.title}
+                    </Text>
+                    {isCurrentNext && (
+                      <View style={{
+                        backgroundColor: mod.accentColor + "18",
+                        borderRadius: 4,
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderWidth: 1,
+                        borderColor: mod.accentColor + "35",
+                      }}>
+                        <Text style={{ fontSize: 9, fontFamily: "Inter_700Bold", color: mod.accentColor, letterSpacing: 0.3 }}>
+                          CONTINUAR
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>
                     {mod.subtitle}
                   </Text>

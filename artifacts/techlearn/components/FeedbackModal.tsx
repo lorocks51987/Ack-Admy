@@ -2,6 +2,7 @@ import React from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, Platform,
 } from "react-native";
+import Animated, { FadeInDown, ZoomIn, useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { CheckCircle, XCircle, ChevronRight } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
@@ -27,13 +28,14 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Pro
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       statusBarTranslucent
       onRequestClose={handleContinue}
     >
-      <View style={styles.overlay}>
+      <Animated.View style={styles.overlay} entering={FadeInDown.duration(200)}>
         <TouchableOpacity style={styles.backdrop} onPress={handleContinue} activeOpacity={1} />
-        <View
+        <Animated.View
+          entering={FadeInDown.springify().damping(16).stiffness(150)}
           style={[
             styles.sheet,
             { backgroundColor: colors.card, borderTopColor: accent },
@@ -41,10 +43,12 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Pro
         >
           {/* Status row */}
           <View style={[styles.statusRow, { backgroundColor: bg, borderRadius: 10, padding: 14 }]}>
-            {correct
-              ? <CheckCircle size={28} color={colors.success} strokeWidth={2} />
-              : <XCircle    size={28} color={colors.error}   strokeWidth={2} />
-            }
+            <Animated.View entering={ZoomIn.delay(150).springify().damping(12)}>
+              {correct
+                ? <CheckCircle size={28} color={colors.success} strokeWidth={2} />
+                : <XCircle    size={28} color={colors.error}   strokeWidth={2} />
+              }
+            </Animated.View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.statusTitle, { color: accent }]}>
                 {correct ? "Correto!" : "Incorreto"}
@@ -57,7 +61,8 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Pro
 
           {/* Explanation */}
           {!!explanation && (
-            <View
+            <Animated.View
+              entering={FadeInDown.delay(200)}
               style={[
                 styles.explanationBox,
                 { backgroundColor: colors.background, borderColor: colors.border },
@@ -69,20 +74,22 @@ export function FeedbackModal({ visible, correct, explanation, onContinue }: Pro
               <Text style={[styles.explanationText, { color: colors.foreground }]}>
                 {explanation}
               </Text>
-            </View>
+            </Animated.View>
           )}
 
           {/* Continue button */}
-          <TouchableOpacity
-            style={[styles.continueBtn, { backgroundColor: accent }]}
-            onPress={handleContinue}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.continueBtnText}>Continuar</Text>
-            <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-      </View>
+          <Animated.View entering={FadeInDown.delay(300)}>
+            <TouchableOpacity
+              style={[styles.continueBtn, { backgroundColor: accent }]}
+              onPress={handleContinue}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.continueBtnText}>Continuar</Text>
+              <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }

@@ -8,7 +8,7 @@ import type { MultipleChoiceExercise } from "@/constants/lessons";
 
 interface Props {
   exercise: MultipleChoiceExercise;
-  onAnswer: (correct: boolean) => void;
+  onAnswer: (correct: boolean, userAnswer?: any) => void;
   feedbackVisible?: boolean;
   powerUpUsed?: boolean;
   isMistakesReview?: boolean;
@@ -50,7 +50,7 @@ export function MultipleChoiceScreen({ exercise, onAnswer, feedbackVisible = fal
     setChecked(true);
     const correct = selected === exercise.correct;
     Haptics.impactAsync(correct ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-    onAnswer(correct);
+    onAnswer(correct, exercise.options[selected]);
   };
 
   const getOptionStyle = (idx: number) => {

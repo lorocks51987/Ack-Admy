@@ -11,7 +11,7 @@ import type { TextInputExercise } from "@/constants/lessons";
 
 interface Props {
   exercise: TextInputExercise;
-  onAnswer: (correct: boolean) => void;
+  onAnswer: (correct: boolean, userAnswer?: any) => void;
   feedbackVisible?: boolean;
   powerUpUsed?: boolean;
   isMistakesReview?: boolean;
@@ -53,7 +53,7 @@ export function TextInputScreen({ exercise, onAnswer, feedbackVisible = false, p
     // Aceita sinônimos separados por "|", normaliza acentos/case/espaços em ambos os lados
     const correctAnswers = exercise.answer.split("|").map((ans) => normalizeAnswer(ans));
     const correct = correctAnswers.includes(normalizeAnswer(value));
-    onAnswer(correct);
+    onAnswer(correct, value);
   };
 
   const canCheck = value.trim().length > 0 && !locked;

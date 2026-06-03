@@ -33,7 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [isGuest, setIsGuest] = useState(false);
+  // Começa como true: se não houver sessão, o usuário entra como convidado automaticamente.
+  // Será definido como false assim que uma sessão autenticada for detectada.
+  const [isGuest, setIsGuest] = useState(true);
+  
   const loginAsGuest = () => setIsGuest(true);
   const lastUserRef = useRef<string | null>(null);
 
@@ -100,8 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    setIsGuest(false);
     await supabase.auth.signOut();
+    // Volta para modo convidado após sair — não redireciona para login
+    setIsGuest(true);
   };
 
   return (

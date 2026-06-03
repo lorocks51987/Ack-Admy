@@ -8,7 +8,7 @@ import type { OrderingExercise } from "@/constants/lessons";
 
 interface Props {
   exercise: OrderingExercise;
-  onAnswer: (correct: boolean) => void;
+  onAnswer: (correct: boolean, userAnswer?: any) => void;
   feedbackVisible?: boolean;
   powerUpUsed?: boolean;
 }
@@ -46,7 +46,10 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
   const addToArranged = (entry: { item: string; origIdx: number }) => {
     if (locked) return;
     Haptics.selectionAsync();
-    setArranged((a) => [...a, entry]);
+    setArranged((a) => {
+      if (a.some(e => e.origIdx === entry.origIdx)) return a;
+      return [...a, entry];
+    });
   };
 
   const removeFromArranged = (entry: { item: string; origIdx: number }) => {
@@ -60,7 +63,7 @@ export function OrderingScreen({ exercise, onAnswer, feedbackVisible = false, po
     setChecked(true);
     const correct = arranged.every((entry, i) => entry.origIdx === exercise.correctOrder[i]);
     Haptics.impactAsync(correct ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-    onAnswer(correct);
+    onAnswer(correct, arranged.map(a => a.item));
   };
 
   const canCheck = arranged.length === exercise.items.length && !locked;

@@ -7,7 +7,7 @@ import type { FillBlankExercise } from "@/constants/lessons";
 
 interface Props {
   exercise: FillBlankExercise;
-  onAnswer: (correct: boolean) => void;
+  onAnswer: (correct: boolean, userAnswer?: any) => void;
   feedbackVisible?: boolean;
   powerUpUsed?: boolean;
 }
@@ -128,7 +128,7 @@ export function FillBlankScreen({ exercise, onAnswer, feedbackVisible = false, p
     setChecked(true);
     const correct = filled.every((f, i) => f === exercise.blanks[i]);
     Haptics.impactAsync(correct ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-    onAnswer(correct);
+    onAnswer(correct, filled);
   };
 
   const canCheck = !filled.includes(null) && !locked;

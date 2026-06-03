@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-nati
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { CheckCircle2 } from "lucide-react-native";
+import Reanimated, { FadeIn, LinearTransition, ZoomIn } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
 import type { AssociationExercise } from "@/constants/lessons";
 import { audioService } from "@/services/audioService";
@@ -162,35 +163,32 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
           <View style={s.section}>
             <Text style={[s.sectionTitle, { color: colors.mutedForeground }]}>CONCEITOS DISPONÍVEIS</Text>
             <View style={s.list}>
-              {pendingConcepts.map((c) => {
+              {pendingConcepts.map((c, idx) => {
                 const isSelected = selectedLeft === c.originalIdx;
                 const isWrong = wrongLeft === c.originalIdx;
                 return (
-                  <TouchableOpacity
+                  <Reanimated.View 
                     key={`concept-${c.originalIdx}`}
-                    style={[
-                      s.cardItem,
-                      {
-                        backgroundColor: isSelected 
-                          ? colors.primary + "12" 
-                          : isWrong 
-                          ? colors.error + "12" 
-                          : colors.card,
-                        borderColor: isSelected 
-                          ? colors.primary 
-                          : isWrong 
-                          ? colors.error 
-                          : colors.border,
-                        borderWidth: isSelected ? 2.5 : 1.5,
-                      }
-                    ]}
-                    onPress={() => handleSelectLeft(c.originalIdx)}
-                    activeOpacity={0.75}
+                    entering={FadeIn.duration(300).delay(idx * 50)}
+                    layout={LinearTransition.duration(300)}
                   >
-                    <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
-                      {c.left}
-                    </Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        s.cardItem,
+                        {
+                          backgroundColor: isSelected ? colors.primary + "12" : isWrong ? colors.error + "12" : colors.card,
+                          borderColor: isSelected ? colors.primary : isWrong ? colors.error : colors.border,
+                          borderWidth: isSelected ? 2.5 : 1.5,
+                        }
+                      ]}
+                      onPress={() => handleSelectLeft(c.originalIdx)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
+                        {c.left}
+                      </Text>
+                    </TouchableOpacity>
+                  </Reanimated.View>
                 );
               })}
             </View>
@@ -202,35 +200,32 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
           <View style={s.section}>
             <Text style={[s.sectionTitle, { color: colors.mutedForeground }]}>DEFINIÇÕES DISPONÍVEIS</Text>
             <View style={s.list}>
-              {pendingDefinitions.map((d) => {
+              {pendingDefinitions.map((d, idx) => {
                 const isSelected = selectedRight === d.originalIdx;
                 const isWrong = wrongRight === d.originalIdx;
                 return (
-                  <TouchableOpacity
+                  <Reanimated.View
                     key={`def-${d.originalIdx}`}
-                    style={[
-                      s.cardItem,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.primary + "12"
-                          : isWrong
-                          ? colors.error + "12"
-                          : colors.card,
-                        borderColor: isSelected
-                          ? colors.primary
-                          : isWrong
-                          ? colors.error
-                          : colors.border,
-                        borderWidth: isSelected ? 2.5 : 1.5,
-                      }
-                    ]}
-                    onPress={() => handleSelectRight(d.originalIdx)}
-                    activeOpacity={0.75}
+                    entering={FadeIn.duration(300).delay(idx * 50)}
+                    layout={LinearTransition.duration(300)}
                   >
-                    <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
-                      {d.label}
-                    </Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        s.cardItem,
+                        {
+                          backgroundColor: isSelected ? colors.primary + "12" : isWrong ? colors.error + "12" : colors.card,
+                          borderColor: isSelected ? colors.primary : isWrong ? colors.error : colors.border,
+                          borderWidth: isSelected ? 2.5 : 1.5,
+                        }
+                      ]}
+                      onPress={() => handleSelectRight(d.originalIdx)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[s.cardText, { color: isSelected ? colors.primary : colors.foreground, fontFamily: isSelected ? "Inter_700Bold" : "Inter_500Medium" }]}>
+                        {d.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Reanimated.View>
                 );
               })}
             </View>
@@ -243,8 +238,10 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
             <Text style={[s.sectionTitle, { color: colors.success }]}>CONEXÕES FEITAS</Text>
             <View style={s.list}>
               {completedPairs.map((p, idx) => (
-                <View
+                <Reanimated.View
                   key={`done-${idx}`}
+                  entering={FadeIn.duration(300)}
+                  layout={LinearTransition.duration(300)}
                   style={[s.doneItem, { backgroundColor: colors.success + "08", borderColor: colors.success + "30" }]}
                 >
                   <Text style={{ fontSize: 13, color: colors.success, fontFamily: "Inter_700Bold" }}>✓</Text>
@@ -252,7 +249,7 @@ export function AssociationScreen({ exercise, onAnswer, feedbackVisible = false,
                     <Text style={[s.doneLeftText, { color: colors.foreground }]}>{p.left}</Text>
                     <Text style={[s.doneRightText, { color: colors.mutedForeground }]}>{p.right}</Text>
                   </View>
-                </View>
+                </Reanimated.View>
               ))}
             </View>
           </View>

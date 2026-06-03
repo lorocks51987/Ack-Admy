@@ -7,7 +7,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,8 +15,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProgressProvider } from "@/contexts/ProgressContext";
-
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ExplanationProvider } from "@/contexts/ExplanationContext";
 
 import { AppState, AppStateStatus } from "react-native";
 import { notificationService } from "@/services/notificationService";
@@ -59,9 +59,14 @@ function AppCore() {
         <AuthProvider>
             <ProgressProvider>
               <QueryClientProvider client={queryClient}>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <Slot />
-                </GestureHandlerRootView>
+                <ExplanationProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="explanation" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+                    </Stack>
+                  </GestureHandlerRootView>
+                </ExplanationProvider>
               </QueryClientProvider>
             </ProgressProvider>
         </AuthProvider>

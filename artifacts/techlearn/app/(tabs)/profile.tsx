@@ -176,6 +176,21 @@ export default function ProfileScreen() {
     ? Math.round((progress.correctAnswers / progress.totalExercises) * 100)
     : 0;
 
+  // Lógica de Revisão Espaçada (Spaced Repetition)
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const pendingReviewsCount = Object.values(progress.spacedRepetition || {}).filter(
+    (item) => item.nextReviewDate <= todayDateStr
+  ).length;
+  const legacyErrorsCount = (progress.failedQuestionIds || []).filter(
+    id => !progress.spacedRepetition?.[id]
+  ).length;
+  const totalPendingReviews = pendingReviewsCount + legacyErrorsCount;
+  const hasPendingReviews = totalPendingReviews > 0;
+  
+  const totalMastered = Object.values(progress.spacedRepetition || {}).filter(
+    (item) => item.level >= 3
+  ).length; // Just in case we want to show it, though it gets removed when mastered in our logic.
+
   // Save profile updates
   const handleSaveProfile = async () => {
     if (!profile) return;
@@ -266,7 +281,7 @@ export default function ProfileScreen() {
                     <Text style={{ color: colors.primary, fontSize: 13, fontWeight: 'bold' }}>Entrar</Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={async () => { await signOut(); router.replace('/sign-in' as any); }}>
+                <TouchableOpacity style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={async () => { await signOut(); }}>
                   <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: 'bold' }}>Sair do modo teste</Text>
                 </TouchableOpacity>
               </View>
@@ -454,16 +469,16 @@ export default function ProfileScreen() {
             {/* CAIXA DE ERROS / MISTAKES INBOX */}
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REVISÃO E APRENDIZADO</Text>
             <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AlertTriangle size={20} color={progress.failedQuestionIds && progress.failedQuestionIds.length > 0 ? "#EF4444" : colors.mutedForeground} />
+              <AlertTriangle size={20} color={hasPendingReviews ? "#EF4444" : colors.mutedForeground} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Caixa de Erros</Text>
+                <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Caixa de Erros Inteligente</Text>
                 <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
-                  {!progress.failedQuestionIds || progress.failedQuestionIds.length === 0
-                    ? "Nenhum erro pendente. Ótimo trabalho!"
-                    : `${progress.failedQuestionIds.length} ${progress.failedQuestionIds.length === 1 ? "conceito incorreto" : "conceitos incorretos"} para revisar`}
+                  {!hasPendingReviews
+                    ? "Nenhuma revisão programada para hoje. Ótimo trabalho!"
+                    : `${totalPendingReviews} ${totalPendingReviews === 1 ? "revisão agendada" : "revisões agendadas"} para hoje`}
                 </Text>
               </View>
-              {progress.failedQuestionIds && progress.failedQuestionIds.length > 0 && (
+              {hasPendingReviews && (
                 <TouchableOpacity
                   style={{ backgroundColor: "#EF4444", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
                   onPress={() => {

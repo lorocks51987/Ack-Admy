@@ -74,17 +74,32 @@ export interface BriefingExercise {
 
 export type FraudIndicator = "sender" | "link" | "attachment";
 
+export type PhishingElementCategory = "suspicious" | "neutral" | "trap";
+
+export interface PhishingElementDef {
+  id: string;
+  label: string;
+  category: PhishingElementCategory;
+  feedback: string;
+}
+
 export interface PhishingEmailExercise extends EducationalFields {
   type: "phishing_email";
-  fromDisplay: string;
-  fromEmail: string;
-  to: string;
-  subject: string;
-  body: string;
-  linkText: string;
-  linkRealUrl: string;
-  attachmentName: string;
-  fraudIndicators: FraudIndicator[];
+  fromDisplay?: string;
+  fromEmail?: string;
+  to?: string;
+  subject?: string;
+  greeting?: string;
+  body?: string;
+  urgencyText?: string;
+  buttonText?: string;
+  linkText?: string;
+  linkRealUrl?: string;
+  attachmentName?: string;
+  footerText?: string;
+  fraudIndicators?: FraudIndicator[]; // Legacy
+  phishingElements?: PhishingElementDef[]; // New model
+  correctElementIds?: string[]; // New model
   explanation: string;
   phaseInfo?: PhaseInfo;
 }
@@ -356,62 +371,61 @@ export const LESSONS: Exercise[] = [
     totalPhases: 4,
   },
   {
-    type: "association",
-    instruction: "Associe cada cenário ao conceito correto na cadeia de risco:",
-    pairs: [
-      { left: "Grupo hacker buscando dados de cartões de crédito", right: "Ameaça" },
-      { left: "Servidor sem backup e software desatualizado", right: "Vulnerabilidade" },
-      { left: "Possibilidade real de perda total dos dados", right: "Risco" },
+    type: "multiple_choice",
+    question: "Qual situação representa o maior risco de segurança para uma aplicação web corporativa?",
+    options: [
+      "Validar permissões e dados apenas no frontend",
+      "Utilizar HTTPS em todas as páginas",
+      "Sanitizar e validar todas as entradas do usuário",
+      "Registrar logs de acesso detalhados",
     ],
+    correct: 0,
+    explanation: "Validar dados apenas no frontend é extremamente perigoso, pois um atacante pode facilmente burlar a interface e enviar requisições maliciosas diretamente ao servidor.",
     phaseInfo: { scenario: "Ameaças", phase: 1, total: 4 },
-    hint: "Ameaça é quem ataca, Vulnerabilidade é a fraqueza explorada, Risco é a probabilidade de dano real.",
-    feedbackCorrect: "Exato! Você entende a cadeia: Ameaça + Vulnerabilidade = Risco.",
-    feedbackWrong: "Lembre: Ameaça = agente externo (quem quer atacar). Vulnerabilidade = fraqueza interna (o que pode ser explorado). Risco = combinação dos dois.",
-    learnMore: "A fórmula do risco é: Risco = Ameaça × Vulnerabilidade × Impacto. Reduzir qualquer um desses fatores reduz o risco total. Sistemas atualizados reduzem vulnerabilidades.",
+    hint: "Frontend (navegador) nunca é confiável, pois o usuário tem controle total sobre o que envia.",
+    feedbackCorrect: "Exato! O frontend pode ser manipulado. A validação de segurança e permissões DEVE acontecer no backend (servidor).",
+    feedbackWrong: "Pense em onde o atacante tem controle. Ele pode manipular tudo que acontece no navegador dele. Confiar apenas no navegador (frontend) é o maior risco.",
+    learnMore: "A Regra de Ouro em AppSec é: 'Nunca confie na entrada do usuário'. Se você validar apenas no frontend, basta o atacante usar ferramentas como o Burp Suite para enviar comandos destrutivos direto para o seu servidor.",
+  },
+  {
+    type: "ordering",
+    instruction: "Organize a sequência ideal de resposta inicial a um incidente (ex: detecção de malware):",
+    items: [
+      "Isolar a ameaça suspeita",
+      "Avaliar o impacto gerado",
+      "Corrigir a vulnerabilidade",
+      "Documentar o aprendizado",
+    ],
+    correctOrder: [0, 1, 2, 3],
+    phaseInfo: { scenario: "Ameaças", phase: 2, total: 4 },
+    hint: "Você não pode corrigir antes de isolar, e não pode considerar resolvido sem validar e documentar.",
+    feedbackCorrect: "Excelente! Essa é a sequência clássica de resposta a incidentes: Isolar > Avaliar > Corrigir > Validar > Aprender.",
+    feedbackWrong: "Você não pode corrigir uma falha antes de isolar a ameaça e avaliar o impacto. E o último passo é sempre registrar o aprendizado.",
+    learnMore: "Em cibersegurança, a contenção (isolar) vem antes da erradicação (corrigir). Se você tentar corrigir enquanto o malware ainda se espalha, perderá o controle da situação. O registro final (Post-Mortem) previne que o erro se repita.",
   },
   {
     type: "association",
     instruction: "Associe o comportamento ao tipo correto de malware:",
     pairs: [
-      { left: "Infecta arquivos, precisa de execução pelo usuário", right: "Vírus" },
-      { left: "Propaga-se automaticamente por vulnerabilidades de rede", right: "Worm" },
-      { left: "Disfarça-se como programa legítimo para enganar", right: "Trojan" },
+      { left: "Infecta arquivos, precisa de execução humana", right: "Vírus" },
+      { left: "Propaga-se sozinho por falhas de rede", right: "Worm" },
+      { left: "Disfarçado de programa legítimo", right: "Trojan" },
     ],
-    phaseInfo: { scenario: "Ameaças", phase: 2, total: 4 },
+    phaseInfo: { scenario: "Ameaças", phase: 3, total: 4 },
     hint: "A diferença chave: Vírus precisa de ação humana, Worm é autônomo, Trojan engana fingindo ser legítimo.",
     feedbackCorrect: "Perfeito! Cada tipo de malware tem comportamento distinto e requer resposta diferente.",
-    feedbackWrong: "Lembre: Vírus = precisa de execução humana. Worm = se propaga sozinho. Trojan = disfarçado de software legítimo. São comportamentos distintos!",
+    feedbackWrong: "Lembre: Vírus = precisa de execução humana. Worm = se propaga sozinho. Trojan = disfarçado de software legítimo.",
     learnMore: "Entender o comportamento de cada malware ajuda na defesa: Vírus = não execute arquivos suspeitos. Worm = mantenha sistemas atualizados. Trojan = só instale software de fontes confiáveis.",
   },
   {
-    type: "fill_blank",
-    instruction: "Complete a definição técnica de Ransomware:",
-    sentence:
-      "O ___ é um tipo de malware que realiza a ___ dos arquivos da vítima e exige o pagamento de um ___ para restaurar o acesso.",
-    blanks: ["ransomware", "criptografia", "resgate"],
-    words: ["ransomware", "criptografia", "resgate", "spyware", "compressão", "contrato", "keylogger", "backup"],
-    phaseInfo: { scenario: "Ameaças", phase: 3, total: 4 },
-    hint: "Ransomware usa criptografia para 'sequestrar' arquivos e pede pagamento (resgate) para liberar.",
-    feedbackCorrect: "Correto! Ransomware = criptografar arquivos + exigir resgate. Nunca pague o resgate — não há garantia de recuperação.",
-    feedbackWrong: "Lembre: o nome 'ransom' significa resgate em inglês. O malware usa criptografia para bloquear arquivos e exige pagamento.",
-    learnMore: "Ransomware é hoje o ataque mais lucrativo para criminosos. A melhor defesa é backup regular offline e atualização de sistemas. Pagar o resgate não garante recuperação e financia mais ataques.",
-  },
-  {
-    type: "multiple_choice",
-    question: "Um atacante infectou milhares de dispositivos para realizar um ataque DDoS. Qual o nome dado a essa rede de zumbis controlados remotamente?",
-    options: [
-      "Spyware — monitora o usuário secretamente",
-      "Botnet — rede de bots controlada por servidor C&C",
-      "Keylogger — captura tudo que o usuário digita",
-      "Adware — exibe publicidade não solicitada",
-    ],
-    correct: 1,
-    explanation: "Uma Botnet é controlada por servidor C&C. Cada dispositivo age como zumbi para ataques em larga escala como DDoS, spam ou roubo de credenciais.",
+    type: "text_input",
+    question: "Um atacante infectou milhares de dispositivos para realizar um ataque DDoS. Qual o nome dado a essa rede de dispositivos controlados remotamente?",
+    answer: "botnet|rede zumbi|rede de bots",
     phaseInfo: { scenario: "Ameaças", phase: 4, total: 4 },
-    hint: "Pense: 'bot' = robô, 'net' = rede. Uma rede de dispositivos controlados remotamente como zumbis.",
-    feedbackCorrect: "Exato! Botnet is a network of compromised devices controlled by a Command and Control server (C&C).",
-    feedbackWrong: "Spyware monitors, Keylogger captures keys, Adware shows ads. A zombie network for DDoS is a Botnet.",
-    learnMore: "Botnets can contain millions of infected devices without their owners' knowledge. They are used for DDoS, spam, and credential theft. Keeping an updated antivirus helps prevent your device from becoming a zombie.",
+    hint: "A palavra é a junção de 'robot' e 'network'.",
+    feedbackCorrect: "Exato! Uma Botnet é usada para ataques em massa, como derrubar sites (DDoS) ou minerar criptomoedas.",
+    feedbackWrong: "Lembre-se da junção das palavras robot (robô) e network (rede): Botnet.",
+    learnMore: "Botnets modernas infectam roteadores, câmeras e lâmpadas inteligentes. Mudar a senha padrão dos seus dispositivos IoT é a melhor forma de não virar um 'zumbi'.",
   },
 
   // ══════════════════════════════════════════════════════════════════
@@ -523,21 +537,52 @@ export const LESSONS: Exercise[] = [
   },
   {
     type: "phishing_email",
-    fromDisplay: "Segurança Corporativa TI",
-    fromEmail: "security@empresa-corp.net.br",
-    to: "voce@empresa.com.br",
     subject: "🔴 URGENTE: Sua conta será bloqueada em 24 horas",
-    body: "Detectamos acesso suspeito à sua conta corporativa. Para evitar o bloqueio imediato, verifique suas credenciais clicando no link abaixo. Esta ação é obrigatória e deve ser realizada em menos de 24 horas.",
-    linkText: "Verificar minha conta agora",
-    linkRealUrl: "http://empresa-corp.net.br/verify-acc0unt-secure",
-    attachmentName: "Comprovante_Acesso_Suspeito.exe",
-    fraudIndicators: ["sender", "link", "attachment"],
-    explanation: "Três red flags: (1) Domínio do remetente é .net.br, não .com.br; (2) Link usa 'acc0unt' com zero no lugar do 'o'; (3) Anexo .exe nunca deve ser aberto em ambiente corporativo.",
+    phishingElements: [
+      {
+        id: "sender",
+        label: "Segurança Corporativa TI <security@empresa-corp.net.br>",
+        category: "suspicious",
+        feedback: "O domínio do remetente termina em '.net.br' em vez do domínio oficial '.com.br' da sua empresa. Atacantes costumam registrar domínios parecidos para enganar."
+      },
+      {
+        id: "greeting",
+        label: "Olá funcionário,",
+        category: "neutral",
+        feedback: "Uma saudação impessoal pode ser um indício, mas não é prova definitiva de fraude."
+      },
+      {
+        id: "urgency_text",
+        label: "Detectamos acesso suspeito à sua conta corporativa. Para evitar o bloqueio imediato, verifique suas credenciais clicando no link abaixo. Esta ação é obrigatória e deve ser realizada em menos de 24 horas.",
+        category: "suspicious",
+        feedback: "O texto cria pânico ('bloqueio imediato', 'obrigatória') para forçar você a agir rápido. Serviços de TI não ameaçam bloqueios fulminantes por e-mail."
+      },
+      {
+        id: "attachment",
+        label: "📎 Comprovante_Acesso.exe",
+        category: "suspicious",
+        feedback: "Um anexo executável (.exe) enviado por e-mail é um alerta vermelho absoluto. É muito provável que seja um trojan."
+      },
+      {
+        id: "link",
+        label: "Verificar minha conta agora\n(http://empresa-corp.net.br/verify-acc0unt-secure)",
+        category: "suspicious",
+        feedback: "O link contém caracteres disfarçados (o número '0' no lugar da letra 'o' em 'acc0unt')."
+      },
+      {
+        id: "footer",
+        label: "Atenciosamente,\nTime de Segurança da Informação",
+        category: "neutral",
+        feedback: "A assinatura parece oficial, mas qualquer golpista pode copiar e colar uma assinatura corporativa."
+      }
+    ],
+    correctElementIds: ["sender", "urgency_text", "link", "attachment"],
+    explanation: "Três red flags gravíssimas: (1) Domínio do remetente falsificado; (2) Link usa 'acc0unt' com zero; (3) Anexo .exe nunca deve ser aberto em ambiente corporativo.",
     phaseInfo: { scenario: "Phishing", phase: 2, total: 4 },
     hint: "Examine com cuidado: o remetente é realmente da sua empresa? O link tem algo estranho? O anexo é seguro?",
     feedbackCorrect: "Muito bem! Você identificou todos os indicadores de fraude nesse e-mail.",
-    feedbackWrong: "Procure as irregularidades: domínio do remetente (.net.br vs .com.br), caracteres trocados no link (0 no lugar de 'o') e extensão perigosa do arquivo (.exe).",
-    learnMore: "Protocolo anti-phishing: Não clique → Não abra → Reporte. Se receber um e-mail suspeito, sempre confirme pelo canal oficial (telefone ou chat interno) antes de qualquer ação.",
+    feedbackWrong: "Sua análise falhou. Procure as irregularidades: domínio do remetente (.net.br), caracteres trocados no link (0 no lugar de 'o') e extensão perigosa do arquivo (.exe).",
+    learnMore: "Protocolo anti-phishing: Não clique → Não abra → Reporte. Se receber um e-mail suspeito, sempre confirme pelo canal oficial antes de qualquer ação.",
   },
   {
     type: "ordering",

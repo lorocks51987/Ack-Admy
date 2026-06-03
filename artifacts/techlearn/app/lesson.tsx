@@ -22,8 +22,13 @@ import { OrderingScreen } from "@/screens/OrderingScreen";
 import { FillBlankScreen } from "@/screens/FillBlankScreen";
 import { BriefingScreen } from "@/screens/BriefingScreen";
 import { PhishingSimulatorScreen } from "@/screens/PhishingSimulatorScreen";
+import { MistakesIntroScreen } from "@/screens/MistakesIntroScreen";
+import { FeedbackPanel } from "@/components/FeedbackPanel";
+import Reanimated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useExplanation } from "@/contexts/ExplanationContext";
+import { formatAnswerForDisplay } from "@/utils/formatAnswer";
 import type { ExerciseType } from "@/constants/lessons";
 import { supabase } from "@/services/supabaseClient";
 import { audioService } from "@/services/audioService";
@@ -38,6 +43,7 @@ type FeedbackState = {
   learnMore?: string;
   showLearnMore: boolean;
   incentive?: string;
+  userAnswer?: string;
 };
 
 const CORRECT_INCENTIVES = [
@@ -75,7 +81,26 @@ export function LessonScreenInternal() {
   const colors = useColors();
   const { session, loading, isGuest, user, profile } = useAuth();
   const { moduleId: moduleIdParam, isRevision } = useLocalSearchParams<{ moduleId?: string; isRevision?: string }>();
-  const { completeModule, recordAnswer, addFailedQuestion, clearFailedQuestion, progress, spendXP, incrementHintUsed } = useProgress();
+  const insets = useSafeAreaInsets();
+  const { completeModule, recordAnswer, addFailedQuestion, recordReviewAnswer, progress, spendXP, incrementHintUsed, loaded: progressLoaded } = useProgress();
+
+  // Lista congelada de questões para revisão — setada uma única vez quando o progresso carrega
+  // Evita desync entre queue e moduleSlice ao limpar erros durante a sessão
+  const [frozenReviewQuestions, setFrozenReviewQuestions] = useState<any[] | null>(null);
+
+  // Popula a lista congelada quando o progresso carrega (somente na revisão)
+  React.useEffect(() => {
+    if (
+      moduleIdParam === "mistakes" &&
+      progressLoaded &&
+      frozenReviewQuestions === null
+    ) {
+      const ids = [...(progress?.failedQuestionIds ?? [])].reverse();
+      const questions = ids.slice(0, 8).map((idx) => LESSONS[idx]).filter(Boolean);
+      setFrozenReviewQuestions(questions);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressLoaded, moduleIdParam]);
 
   if (loading) {
     return (
@@ -89,6 +114,7 @@ export function LessonScreenInternal() {
     return <Redirect href="/sign-in" />;
   }
 
+  // Define se é revisão de erros (não precisa mais da ref)
   const isMistakesReview = moduleIdParam === "mistakes";
   const moduleId = isMistakesReview ? -1 : parseInt(moduleIdParam ?? "1", 10);
 
@@ -97,11 +123,14 @@ export function LessonScreenInternal() {
     : (MODULE_DEFINITIONS.find((m) => m.id === moduleId) ?? MODULE_DEFINITIONS[0]);
 
   // Se for o Exame Final (Módulo 6) ou Caixa de Erros, reestruturamos o moduleSlice de forma inteligente
+  // Para revisão de erros, usamos um snapshot dos IDs ao iniciar a sessão
+  // Isso evita que o moduleSlice recompute (e desincronize o queue) ao limpar erros
+
   const moduleSlice = React.useMemo(() => {
     if (isMistakesReview) {
-      // Prioriza os erros mais recentes (últimos adicionados no array) e limita a no máximo 8 por sessão (SRS)
-      const reversedIds = [...(progress?.failedQuestionIds ?? [])].reverse();
-      return reversedIds.slice(0, 8).map((idx) => LESSONS[idx]).filter(Boolean);
+      // Usa a lista congelada se já disponível (evita desync ao remover erros durante a sessão)
+      // Se ainda não carregou, retorna array vazio temporariamente
+      return frozenReviewQuestions ?? [];
     }
     
     if (moduleId === 6) {
@@ -117,19 +146,32 @@ export function LessonScreenInternal() {
     }
     
     return LESSONS.slice(moduleDef?.startIdx ?? 0, (moduleDef?.startIdx ?? 0) + (moduleDef?.length ?? 0));
-  }, [isMistakesReview, moduleId, progress?.failedQuestionIds, moduleDef]);
+  }, [isMistakesReview, moduleId, moduleDef, frozenReviewQuestions]);
+
+  // Revisão ainda carregando = lista congelada ainda não foi populada
+  const isReviewAndLoading = isMistakesReview && frozenReviewQuestions === null;
 
   const userKey = isGuest ? "guest" : (user?.id ?? "anon");
   const sessionKey = getSessionKey(userKey, isMistakesReview ? "mistakes" : String(moduleId));
 
-  const insets = useSafeAreaInsets();
+  const [queue, setQueue] = useState<number[]>(() =>
+    Array.from({ length: moduleSlice?.length ?? 0 }, (_, i) => i)
+  );
 
-  const [queue, setQueue] = useState<number[]>(Array.from({ length: moduleSlice?.length ?? 0 }, (_, i) => i));
+  // Quando a lista congelada de revisão ficar pronta, inicializar a fila
+  // Isso corrige o bug onde queue começa como [] porque frozenReviewQuestions ainda é null
+  React.useEffect(() => {
+    if (isMistakesReview && frozenReviewQuestions && frozenReviewQuestions.length > 0 && queue.length === 0) {
+      setQueue(Array.from({ length: frozenReviewQuestions.length }, (_, i) => i));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frozenReviewQuestions]);
   const [lives, setLives] = useState(moduleId === 6 ? 2 : MAX_LIVES);
   const [xp, setXp] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [showResume, setShowResume] = useState(false);
+  const [showMistakesIntro, setShowMistakesIntro] = useState(isMistakesReview);
   const [savedSession, setSavedSession] = useState<SessionState | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [powerUpUsed, setPowerUpUsed] = useState(false);
@@ -143,6 +185,7 @@ export function LessonScreenInternal() {
   const [confrontModalVisible, setConfrontModalVisible] = useState(false);
   const [confrontReason, setConfrontReason] = useState("");
   const [isSendingConfront, setIsSendingConfront] = useState(false);
+  const { setExplanationData } = useExplanation();
 
   const [feedback, setFeedback] = useState<FeedbackState>({
     visible: false,
@@ -221,7 +264,8 @@ export function LessonScreenInternal() {
     if (queue.length <= 1) {
       clearSession();
       if (isMistakesReview) {
-        router.replace({ pathname: "/complete", params: { xp: currentXp, moduleId: -1 } });
+        // Revisão de erros: NÃO dá XP para evitar farm infinito
+        router.replace({ pathname: "/complete", params: { xp: 0, moduleId: -1 } });
       } else {
         completeModule(moduleId, currentXp);
         router.replace({ pathname: "/complete", params: { xp: currentXp, moduleId } });
@@ -235,19 +279,21 @@ export function LessonScreenInternal() {
   }, [queue, moduleId, animateNext, completeModule, clearSession, saveSession, isMistakesReview]);
 
   // ── Handle answer ─────────────────────────────────────────────────────────────
-  const handleAnswer = useCallback((correct: boolean) => {
-    recordAnswer(correct);
+  const handleAnswer = useCallback((correct: boolean, userAnswerRaw?: any) => {
     const ex = moduleSlice[currentIdx];
     const hasFields = ex && "feedbackCorrect" in ex;
     const absIdx = LESSONS.indexOf(ex);
     const isTextInput = ex?.type === "text_input";
+    const formattedUserAnswer = formatAnswerForDisplay(userAnswerRaw);
 
     // Captura achievements antes para detectar novos desbloqueios
     const prevAchievements = prevAchievementsRef.current;
 
     if (correct) {
-      if (isMistakesReview && absIdx !== -1) {
-        clearFailedQuestion(absIdx);
+      recordAnswer(true);
+      if (isMistakesReview) {
+        // Acertou na revisão de erros => recorda como certo para subir de nível
+        recordReviewAnswer(absIdx, true);
       }
       audioService.playCorrect();
       // Limpa o retry de text_input ao acertar
@@ -266,6 +312,7 @@ export function LessonScreenInternal() {
         learnMore: hasFields ? (ex as any).learnMore : undefined,
         showLearnMore: false,
         incentive: randIncentive,
+        userAnswer: formattedUserAnswer,
       });
       // Verifica novos badges após atualização de estado (via setTimeout para aguardar setState)
       setTimeout(() => {
@@ -277,7 +324,11 @@ export function LessonScreenInternal() {
         }
       }, 300);
     } else {
-      if (!isMistakesReview && absIdx !== -1) {
+      // Adicionamos no final da fila (para repetir mais tarde na mesma sessão)
+      setQueue((prev) => [...prev, ex]);
+      if (isMistakesReview) {
+        recordReviewAnswer(absIdx, false);
+      } else {
         addFailedQuestion(absIdx);
       }
       audioService.playWrong();
@@ -299,6 +350,7 @@ export function LessonScreenInternal() {
           learnMore: hasFields ? (ex as any).learnMore : undefined,
           showLearnMore: false,
           incentive: randIncentive,
+          userAnswer: formattedUserAnswer,
         });
       } else {
         const remaining = lives - 1;
@@ -315,12 +367,13 @@ export function LessonScreenInternal() {
             learnMore: hasFields ? (ex as any).learnMore : undefined,
             showLearnMore: false,
             incentive: randIncentive,
+            userAnswer: formattedUserAnswer,
           });
           saveSession(queue, remaining, xp);
         }
       }
     }
-  }, [moduleSlice, currentIdx, xp, lives, progress.achievements, recordAnswer, saveSession, queue, isMistakesReview, addFailedQuestion, clearFailedQuestion]);
+  }, [moduleSlice, currentIdx, xp, lives, progress.achievements, recordAnswer, saveSession, queue, isMistakesReview, addFailedQuestion, recordReviewAnswer]);
 
   // ── Continue / Retry ──────────────────────────────────────────────────────────
   const handleContinue = useCallback(() => {
@@ -493,6 +546,38 @@ export function LessonScreenInternal() {
     );
   }
 
+  // Aguardando carregamento do progresso na revisão de erros
+  if (isReviewAndLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  // Revisão de erros sem questões disponíveis (progresso carregou mas não há erros)
+  if (isMistakesReview && frozenReviewQuestions !== null && frozenReviewQuestions.length === 0) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <AlertTriangle size={56} color="#10B981" strokeWidth={1.5} style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 20, fontFamily: "Inter_700Bold", color: colors.foreground, textAlign: "center", marginBottom: 8 }}>
+          Nenhum erro para revisar!
+        </Text>
+        <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
+          Você não tem questões erradas pendentes. Continue praticando para manter sua pontuação impecável! 🏆
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8 }}
+          onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+          activeOpacity={0.85}
+        >
+          <ArrowLeft size={16} color="#FFF" strokeWidth={2.5} />
+          <Text style={{ color: "#FFF", fontFamily: "Inter_700Bold", fontSize: 15 }}>Voltar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (!exercise) return null;
 
   // ── Resume screen ─────────────────────────────────────────────────────────────
@@ -543,6 +628,18 @@ export function LessonScreenInternal() {
     );
   }
 
+  // ── Mistakes Intro Overlay ──
+  if (showMistakesIntro && isMistakesReview) {
+    return (
+      <MistakesIntroScreen
+        count={frozenReviewQuestions?.length ?? 0}
+        onStart={() => setShowMistakesIntro(false)}
+      />
+    );
+  }
+
+  if (!exercise) return null;
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ExerciseHeader
@@ -551,7 +648,7 @@ export function LessonScreenInternal() {
         total={moduleSlice.length}
         lives={lives}
         xp={xp}
-        onClose={() => router.back()}
+        onClose={() => router.canGoBack() ? router.back() : router.replace("/")}
         phaseInfo={phaseInfo}
         isBriefing={isBriefing}
         moduleName={moduleDef?.title ?? ""}
@@ -647,9 +744,19 @@ export function LessonScreenInternal() {
           insets={insets}
           onContinue={handleContinue}
           retryTextInput={retryTextInput}
-          onToggleLearnMore={() =>
-            setFeedback((f) => ({ ...f, showLearnMore: !f.showLearnMore }))
-          }
+          onToggleLearnMore={() => {
+            const currentEx = moduleSlice[currentIdx];
+            setExplanationData({
+              title: currentEx?.title || "Explicação",
+              question: "question" in currentEx ? currentEx.question : currentEx.instruction,
+              userAnswer: feedback.userAnswer,
+              correctAnswer: "answer" in currentEx ? String(currentEx.answer) : undefined,
+              explanation: "explanation" in currentEx ? (currentEx as any).explanation : undefined,
+              learnMore: feedback.learnMore,
+              mode: feedback.correct ? "success" : "error",
+            });
+            router.push("/explanation");
+          }}
           onConfront={() => setConfrontModalVisible(true)}
         />
       )}
@@ -675,7 +782,7 @@ export function LessonScreenInternal() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.backBtn, { borderColor: colors.border }]}
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
               activeOpacity={0.75}
             >
               <ChevronLeft size={14} color={colors.mutedForeground} strokeWidth={2} />
@@ -796,113 +903,6 @@ export default function LessonScreen() {
     <ErrorBoundary FallbackComponent={LessonErrorFallback}>
       <LessonScreenInternal />
     </ErrorBoundary>
-  );
-}
-
-// ── Feedback Panel ─────────────────────────────────────────────────────────────
-function FeedbackPanel({
-  feedback, colors, lives, maxLives, insets, onContinue, onToggleLearnMore, onConfront, retryTextInput,
-}: {
-  feedback: FeedbackState;
-  colors: any;
-  lives: number;
-  maxLives: number;
-  insets: any;
-  retryTextInput?: boolean;
-  onContinue: () => void;
-  onToggleLearnMore: () => void;
-  onConfront?: () => void;
-}) {
-  const accent = feedback.correct ? colors.success : colors.error;
-  const statusBg = feedback.correct ? "rgba(34,197,94,0.09)" : "rgba(239,68,68,0.09)";
-  const safeBottom = Math.max(insets.bottom, 16);
-
-  return (
-    <View style={[fb.panel, { backgroundColor: colors.card, borderTopColor: accent, paddingBottom: safeBottom }]}>
-      {/* Status row */}
-      <View style={[fb.statusRow, { backgroundColor: statusBg, borderRadius: 12, padding: 14 }]}>
-        {feedback.correct
-          ? <CheckCircle size={26} color={colors.success} strokeWidth={2} />
-          : <XCircle size={26} color={colors.error} strokeWidth={2} />
-        }
-        <View style={{ flex: 1 }}>
-          <Text style={[fb.statusTitle, { color: accent }]}>
-            {feedback.correct ? "Boa!" : "Quase."}
-          </Text>
-          <Text style={[fb.statusMsg, { color: colors.foreground }]}>
-            {feedback.message}
-          </Text>
-        </View>
-        {/* Remaining lives on error */}
-        {!feedback.correct && (
-          <View style={fb.livesCol}>
-            {Array.from({ length: maxLives }).map((_, i) => (
-              <Heart
-                key={i}
-                size={12}
-                color={i < lives ? "#EF4444" : colors.border}
-                strokeWidth={2}
-                fill={i < lives ? "#EF4444" : "transparent"}
-              />
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Explanations and Confront block */}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 4 }}>
-        {feedback.learnMore && (
-          <TouchableOpacity
-            style={[fb.learnMoreBtn, { borderColor: colors.border }]}
-            onPress={onToggleLearnMore}
-            activeOpacity={0.8}
-          >
-            <BookOpen size={13} color={colors.mutedForeground} strokeWidth={2} />
-            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]} adjustsFontSizeToFit={true} numberOfLines={1}>
-              {feedback.showLearnMore 
-                ? "Ocultar explicação" 
-                : feedback.correct 
-                ? "Saiba mais" 
-                : "Entender o erro"}
-            </Text>
-          </TouchableOpacity>
-        )}
-        
-        {!feedback.correct && onConfront && (
-          <TouchableOpacity
-            style={[fb.learnMoreBtn, { borderColor: colors.border }]}
-            onPress={onConfront}
-            activeOpacity={0.8}
-          >
-            <AlertCircle size={13} color={colors.mutedForeground} strokeWidth={2} />
-            <Text style={[fb.learnMoreText, { color: colors.mutedForeground }]} adjustsFontSizeToFit={true} numberOfLines={1}>
-              Confrontar resposta
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {feedback.showLearnMore && feedback.learnMore && (
-        <View style={[fb.learnMoreCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[fb.learnMoreLabel, { color: colors.mutedForeground }]}>SAIBA MAIS</Text>
-          <Text style={[fb.learnMoreContent, { color: colors.foreground }]}>
-            {feedback.learnMore}
-          </Text>
-        </View>
-      )}
-
-      {/* Action button */}
-      <TouchableOpacity
-        style={[fb.primaryBtn, { backgroundColor: feedback.correct ? colors.success : colors.primary }]}
-        onPress={onContinue}
-        activeOpacity={0.85}
-      >
-        <Text style={fb.primaryBtnText} adjustsFontSizeToFit={true} numberOfLines={1}>
-          {feedback.correct ? "Continuar" : (retryTextInput ? "Tentar novamente" : "Continuar")}
-        </Text>
-        <ChevronRight size={18} color="#FFF" strokeWidth={2.5} />
-      </TouchableOpacity>
-    </View>
   );
 }
 

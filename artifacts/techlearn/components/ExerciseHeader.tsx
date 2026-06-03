@@ -210,10 +210,10 @@ export function ExerciseHeader({
         <View style={styles.rightCluster}>
           {!isBriefing && (
             <>
-              {/* XP chip */}
+              {/* XP chip — mostra o XP disponível (global, que é debitado) */}
               <View style={[styles.xpChip, { backgroundColor: colors.primary + "14" }]}>
                 <Zap size={11} color={colors.primary} strokeWidth={2.5} />
-                <Text style={[styles.xpText, { color: colors.primary }]}>{xp}</Text>
+                <Text style={[styles.xpText, { color: colors.primary }]}>{availableXP}</Text>
               </View>
 
               {/* Hearts */}

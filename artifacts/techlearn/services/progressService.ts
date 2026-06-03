@@ -49,7 +49,7 @@ export const progressService = {
 
         if (cloudData) {
           const rawModuleXp = cloudData.module_xp || {};
-          const { _failed_question_ids, _achievements, _streak_freezes, ...cleanedModuleXp } = rawModuleXp;
+          const { _failed_question_ids, _spaced_repetition, _achievements, _streak_freezes, ...cleanedModuleXp } = rawModuleXp;
 
           const mappedCloud: ProgressState = {
             xp: cloudData.xp || 0,
@@ -61,6 +61,7 @@ export const progressService = {
             correctAnswers: cloudData.correct_answers || 0,
             moduleXP: cleanedModuleXp || {},
             failedQuestionIds: _failed_question_ids || [],
+            spacedRepetition: _spaced_repetition || {},
             achievements: _achievements || [],
             streakFreezes: _streak_freezes || 0,
             hintUsedCount: rawModuleXp._hint_used_count || 0,
@@ -103,6 +104,7 @@ export const progressService = {
         const moduleXPWithMetadata = {
           ...data.moduleXP,
           _failed_question_ids: data.failedQuestionIds,
+          _spaced_repetition: data.spacedRepetition || {},
           _achievements: data.achievements,
           _streak_freezes: data.streakFreezes,
           _hint_used_count: data.hintUsedCount ?? 0,
@@ -178,6 +180,7 @@ export const progressService = {
             last_activity_date: null,
             module_xp: {
               _failed_question_ids: [],
+              _spaced_repetition: {},
               _achievements: [],
               _streak_freezes: 0,
             },

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { progressService } from "@/services/progressService";
 import { useAuth } from "@/contexts/AuthContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
+import { notificationService } from "@/services/notificationService";
 
 export interface ProgressState {
   xp: number;
@@ -13,6 +14,7 @@ export interface ProgressState {
   correctAnswers: number;
   moduleXP: Record<number, number>;
   failedQuestionIds: number[];
+  spacedRepetition?: Record<number, { level: number, nextReviewDate: string }>;
   achievements: string[];
   streakFreezes: number;
   hintUsedCount: number;
@@ -40,7 +42,7 @@ interface ProgressContextValue {
   recordAnswer: (correct: boolean) => void;
   resetProgress: () => Promise<void>;
   addFailedQuestion: (questionId: number) => void;
-  clearFailedQuestion: (questionId: number) => void;
+  recordReviewAnswer: (questionId: number, correct: boolean) => void;
   buyStreakFreeze: () => Promise<boolean>;
   spendXP: (amount: number) => boolean;
   incrementHintUsed: () => void;
@@ -106,10 +108,17 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   // Usamos uma referência para o userId atual para não precisarmos recriar
   // as funções useCallback (completeModule, recordAnswer, etc) a cada mudança de sessão.
   const userRef = useRef(user?.id);
+  // Referência espelho do progresso para acesso síncrono dentro de callbacks
+  const progressRef = useRef<ProgressState>(DEFAULT);
 
   useEffect(() => {
     userRef.current = user?.id;
   }, [user?.id]);
+
+  // Mantém progressRef sincronizado com o estado atual
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
 
   useEffect(() => {
     // Aguardamos a inicialização do AuthContext para ter certeza do estado do usuário
@@ -126,6 +135,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         setProgress(DEFAULT);
       }
       setLoaded(true);
+      // Agenda a notificação para 24h após abrir o app
+      notificationService.scheduleDailyStreakReminder();
     });
 
     return () => {
@@ -152,6 +163,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       next.achievements = checkAchievements(next);
       // Salva usando o ID guardado na referência
       progressService.saveProgress(next, userRef.current);
+      // Re-agenda a notificação para garantir 24h a partir de agora
+      notificationService.scheduleDailyStreakReminder();
       return next;
     });
   }, []);
@@ -171,10 +184,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const addFailedQuestion = useCallback((questionId: number) => {
     setProgress((prev) => {
-      if (prev.failedQuestionIds.includes(questionId)) return prev;
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+      const sr = prev.spacedRepetition || {};
+      
+      const newSpacedRepetition = {
+        ...sr,
+        [questionId]: { level: 0, nextReviewDate: tomorrow }
+      };
+
+      const newFailedQuestionIds = prev.failedQuestionIds.includes(questionId) 
+        ? prev.failedQuestionIds 
+        : [...prev.failedQuestionIds, questionId];
+
       const next: ProgressState = {
         ...prev,
-        failedQuestionIds: [...prev.failedQuestionIds, questionId],
+        failedQuestionIds: newFailedQuestionIds,
+        spacedRepetition: newSpacedRepetition,
       };
       next.achievements = checkAchievements(next);
       progressService.saveProgress(next, userRef.current);
@@ -182,11 +207,44 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const clearFailedQuestion = useCallback((questionId: number) => {
+  const recordReviewAnswer = useCallback((questionId: number, correct: boolean) => {
     setProgress((prev) => {
+      const sr = prev.spacedRepetition || {};
+      const currentEntry = sr[questionId] || { level: 0, nextReviewDate: "" };
+
+      let nextLevel = currentEntry.level;
+      let nextDate = "";
+      let isMastered = false;
+
+      if (correct) {
+        nextLevel += 1;
+        if (nextLevel >= 3) {
+          isMastered = true; // Acertou 3 vezes espaçadas = dominou
+        } else {
+          // Nível 1: revisa em 3 dias. Nível 2: revisa em 7 dias.
+          const daysToAdd = nextLevel === 1 ? 3 : 7;
+          nextDate = new Date(Date.now() + daysToAdd * 86400000).toISOString().split("T")[0];
+        }
+      } else {
+        // Errou = volta pro nível 0, revisa amanhã.
+        nextLevel = 0;
+        nextDate = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+      }
+
+      const newSpacedRepetition = { ...sr };
+      let newFailedQuestionIds = [...prev.failedQuestionIds];
+
+      if (isMastered) {
+        delete newSpacedRepetition[questionId];
+        newFailedQuestionIds = newFailedQuestionIds.filter((id) => id !== questionId);
+      } else {
+        newSpacedRepetition[questionId] = { level: nextLevel, nextReviewDate: nextDate };
+      }
+
       const next: ProgressState = {
         ...prev,
-        failedQuestionIds: prev.failedQuestionIds.filter((id) => id !== questionId),
+        failedQuestionIds: newFailedQuestionIds,
+        spacedRepetition: newSpacedRepetition,
       };
       next.achievements = checkAchievements(next);
       progressService.saveProgress(next, userRef.current);
@@ -215,21 +273,26 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
    * Gasta XP como moeda. Retorna true se o gasto foi realizado com sucesso.
    * Retorna false se o XP for insuficiente (sem debitar).
    * O XP total diminui e afeta o ranking.
+   * Usa progressRef para acesso síncrono ao XP atual, evitando race conditions.
    */
   const spendXP = useCallback((amount: number): boolean => {
-    let success = false;
+    // Lê o XP atual de forma síncrona via ref
+    const currentXP = progressRef.current.xp;
+    if (currentXP < amount) return false; // XP insuficiente
+
     setProgress((prev) => {
-      if (prev.xp < amount) return prev; // XP insuficiente
-      success = true;
+      // Dupla verificação dentro do updater (por segurança)
+      if (prev.xp < amount) return prev;
       const next: ProgressState = {
         ...prev,
         xp: prev.xp - amount,
       };
       next.achievements = checkAchievements(next);
+      // progressRef será atualizado pelo useEffect acima
       progressService.saveProgress(next, userRef.current);
       return next;
     });
-    return success;
+    return true;
   }, []);
 
   /**
@@ -261,7 +324,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       recordAnswer,
       resetProgress,
       addFailedQuestion,
-      clearFailedQuestion,
+      recordReviewAnswer,
       buyStreakFreeze,
       spendXP,
       incrementHintUsed,

@@ -10,6 +10,8 @@ O **ACK-ADMY** é uma plataforma móvel e web gamificada e de alto impacto visua
 - **Sem Linguagem Interna Complexa**: O vocabulário visual do aplicativo foi limpo de jargões estruturais e administrativos (como "Módulo X", "Briefing", "Aula", "Associação"). A comunicação com o aluno é feita por meio de comandos de ação diretos e focados (ex: *"Escolha a opção mais segura"*, *"Complete a frase"*, *"Toque nos sinais suspeitos"*).
 - **Home em Sequência Linear**: Uma trilha clara e simplificada que responde instantaneamente às três perguntas fundamentais do aluno: *Onde estou?*, *Qual é a próxima atividade?* e *O que eu clico agora?*. Um card primário destacado guia o estudante de forma proeminente com o botão *"Começar do Início"* (novos alunos), *"Continuar Aprendizado"* (progresso ativo), ou exibe **"Em breve novas trilhas"** na cor dourada desabilitando a navegação quando todos os módulos são concluídos (dando o gostinho de quero mais).
 - **Estatísticas como Indicadores**: Métricas de XP, ofensiva (streak) e precisão são exibidas de forma minimalista como status estáticos, eliminando botões adicionais e poluição visual que competem com a trilha de aprendizado.
+- **Revisão Espaçada (Caixa de Erros)**: Sistema inteligente que captura questões erradas e as insere na "Caixa de Erros" com cálculo de retenção. Uma tela de introdução (`MistakesIntroScreen`) prepara o aluno antes da sessão de reforço de memória.
+- **Animações Nativas Premium**: Uso extensivo de `react-native-reanimated` para micro-interações, como `FadeIn` e `LinearTransition`, oferecendo uma experiência imersiva e responsiva (como os textos em cascata nas telas de teoria e a reordenação fluida das opções).
 
 ---
 
