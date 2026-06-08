@@ -13,8 +13,8 @@ export interface ProgressState {
   totalExercises: number;
   correctAnswers: number;
   moduleXP: Record<number, number>;
-  failedQuestionIds: number[];
-  spacedRepetition?: Record<number, { level: number, nextReviewDate: string }>;
+  failedQuestionIds: (string | number)[];
+  spacedRepetition?: Record<string | number, { level: number, nextReviewDate: string }>;
   achievements: string[];
   streakFreezes: number;
   hintUsedCount: number;
@@ -41,8 +41,8 @@ interface ProgressContextValue {
   completeModule: (moduleId: number, xpEarned: number) => void;
   recordAnswer: (correct: boolean) => void;
   resetProgress: () => Promise<void>;
-  addFailedQuestion: (questionId: number) => void;
-  recordReviewAnswer: (questionId: number, correct: boolean) => void;
+  addFailedQuestion: (questionId: string | number) => void;
+  recordReviewAnswer: (questionId: string | number, correct: boolean) => void;
   buyStreakFreeze: () => Promise<boolean>;
   spendXP: (amount: number) => boolean;
   incrementHintUsed: () => void;
@@ -100,6 +100,36 @@ function checkAchievements(state: ProgressState): string[] {
   return Array.from(current);
 }
 
+// Map old numeric indices to new stable string IDs for smooth migration
+const LEGACY_ID_MAP: Record<number, string> = {
+  0: "fsi-01-triade-cid-brief",
+  1: "fsi-01-triade-cid-assoc-01",
+  2: "fsi-01-triade-cid-mc-01",
+  3: "fsi-01-triade-cid-fill-01",
+  4: "fsi-01-triade-cid-mc-02",
+  5: "fsi-01-triade-cid-text-01",
+  6: "fsi-04-iam-brief",
+  7: "fsi-04-iam-order-01",
+  8: "fsi-04-iam-assoc-01",
+  9: "fsi-05-mfa-mc-01",
+  10: "fsi-04-iam-mc-01",
+  11: "fsi-08-malware-brief",
+  12: "fsi-07-ameacas-mc-01",
+  13: "fsi-08-malware-order-01",
+  14: "fsi-08-malware-assoc-01",
+  15: "fsi-08-malware-text-01",
+  16: "fsi-06-privacidade-brief",
+  17: "fsi-06-privacidade-mc-01",
+  18: "fsi-06-privacidade-assoc-01",
+  19: "fsi-06-privacidade-fill-01",
+  20: "fsi-06-privacidade-mc-02",
+  21: "fsi-12-social-brief",
+  22: "fsi-13-phishing-mc-01",
+  23: "fsi-13-phishing-sim-01",
+  24: "fsi-12-social-order-01",
+  25: "fsi-13-phishing-assoc-01",
+};
+
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [progress, setProgress] = useState<ProgressState>(DEFAULT);
@@ -130,7 +160,28 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     progressService.getProgress(user?.id).then((saved) => {
       if (!isMounted) return;
       if (saved) {
-        setProgress({ ...DEFAULT, ...saved });
+        // Migrate old numeric IDs to stable string IDs if present
+        let migratedFailedIds = saved.failedQuestionIds || [];
+        let migratedSpaced = saved.spacedRepetition || {};
+        
+        migratedFailedIds = migratedFailedIds.map(id => typeof id === 'number' && LEGACY_ID_MAP[id] ? LEGACY_ID_MAP[id] : id);
+        
+        const newSpaced: Record<string, { level: number, nextReviewDate: string }> = {};
+        for (const [key, val] of Object.entries(migratedSpaced)) {
+          const numericKey = parseInt(key, 10);
+          if (!isNaN(numericKey) && LEGACY_ID_MAP[numericKey]) {
+            newSpaced[LEGACY_ID_MAP[numericKey]] = val as any;
+          } else {
+            newSpaced[key] = val as any;
+          }
+        }
+
+        setProgress({ 
+          ...DEFAULT, 
+          ...saved, 
+          failedQuestionIds: migratedFailedIds,
+          spacedRepetition: newSpaced 
+        });
       } else {
         setProgress(DEFAULT);
       }
@@ -182,7 +233,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const addFailedQuestion = useCallback((questionId: number) => {
+  const addFailedQuestion = useCallback((questionId: string | number) => {
     setProgress((prev) => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
       const sr = prev.spacedRepetition || {};
@@ -207,7 +258,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const recordReviewAnswer = useCallback((questionId: number, correct: boolean) => {
+  const recordReviewAnswer = useCallback((questionId: string | number, correct: boolean) => {
     setProgress((prev) => {
       const sr = prev.spacedRepetition || {};
       const currentEntry = sr[questionId] || { level: 0, nextReviewDate: "" };

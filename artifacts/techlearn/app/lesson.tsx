@@ -96,7 +96,7 @@ export function LessonScreenInternal() {
       frozenReviewQuestions === null
     ) {
       const ids = [...(progress?.failedQuestionIds ?? [])].reverse();
-      const questions = ids.slice(0, 8).map((idx) => LESSONS[idx]).filter(Boolean);
+      const questions = ids.slice(0, 8).map((id) => LESSONS.find(ex => ex.id === id)).filter(Boolean);
       setFrozenReviewQuestions(questions);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,19 +133,30 @@ export function LessonScreenInternal() {
       return frozenReviewQuestions ?? [];
     }
     
-    if (moduleId === 6) {
-      // Exame Final do ACK-ADMY: misturamos 7 questões práticas chaves sem teoria (briefings)
-      // de todos os módulos pedagógicos anteriores (1 a 5).
-      // Selecionamos 7 índices de questões práticas balanceadas de toda a matéria:
-      // Módulo 1 -> índices 1, 2 | Módulo 2 -> índice 12 | Módulo 3 -> índice 7, 8 | Módulo 5 -> índice 17 | Módulo 4 -> índice 22
-      const selectedIndices = [1, 2, 7, 8, 12, 17, 22];
-      const examLessons = selectedIndices.map(idx => LESSONS[idx]).filter(Boolean);
+    if (moduleId === 15) {
+      // Exame Final do ACK-ADMY balanceado por temas
+      const getPractical = (modIds: number[], count: number) => {
+        const pool = MODULE_DEFINITIONS
+          .filter(m => modIds.includes(m.id))
+          .flatMap(m => m.exercises)
+          .filter(ex => ex.type !== "briefing");
+        return [...pool].sort(() => 0.5 - Math.random()).slice(0, count);
+      };
+
+      const examLessons = [
+        ...getPractical([1, 2], 2),          // Fundamentos
+        ...getPractical([3, 4], 2),          // Acesso e MFA
+        ...getPractical([5, 6], 1),          // Dados e Privacidade
+        ...getPractical([7, 8, 9], 2),       // Ameaças, Malware e Vetores
+        ...getPractical([10], 1),            // Controles de Segurança
+        ...getPractical([11, 12, 13, 14], 2) // Fator Humano e Práticas
+      ];
       
-      // Embaralha determinando uma ordem aleatória a cada tentativa de exame!
-      return [...examLessons].sort(() => 0.5 - Math.random());
+      // Embaralha a prova final inteira
+      return examLessons.sort(() => 0.5 - Math.random());
     }
     
-    return LESSONS.slice(moduleDef?.startIdx ?? 0, (moduleDef?.startIdx ?? 0) + (moduleDef?.length ?? 0));
+    return moduleDef?.exercises ?? [];
   }, [isMistakesReview, moduleId, moduleDef, frozenReviewQuestions]);
 
   // Revisão ainda carregando = lista congelada ainda não foi populada
@@ -166,7 +177,7 @@ export function LessonScreenInternal() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frozenReviewQuestions]);
-  const [lives, setLives] = useState(moduleId === 6 ? 2 : MAX_LIVES);
+  const [lives, setLives] = useState(moduleId === 15 ? 3 : MAX_LIVES);
   const [xp, setXp] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -282,7 +293,7 @@ export function LessonScreenInternal() {
   const handleAnswer = useCallback((correct: boolean, userAnswerRaw?: any) => {
     const ex = moduleSlice[currentIdx];
     const hasFields = ex && "feedbackCorrect" in ex;
-    const absIdx = LESSONS.indexOf(ex);
+    const exId = ex?.id;
     const isTextInput = ex?.type === "text_input";
     const formattedUserAnswer = formatAnswerForDisplay(userAnswerRaw);
 
@@ -293,7 +304,7 @@ export function LessonScreenInternal() {
       recordAnswer(true);
       if (isMistakesReview) {
         // Acertou na revisão de erros => recorda como certo para subir de nível
-        recordReviewAnswer(absIdx, true);
+        if (exId) recordReviewAnswer(exId, true);
       }
       audioService.playCorrect();
       // Limpa o retry de text_input ao acertar
@@ -327,9 +338,9 @@ export function LessonScreenInternal() {
       // Adicionamos no final da fila (para repetir mais tarde na mesma sessão)
       setQueue((prev) => [...prev, ex]);
       if (isMistakesReview) {
-        recordReviewAnswer(absIdx, false);
+        if (exId) recordReviewAnswer(exId, false);
       } else {
-        addFailedQuestion(absIdx);
+        if (exId) addFailedQuestion(exId);
       }
       audioService.playWrong();
       const msg = hasFields && (ex as any).feedbackWrong
@@ -392,7 +403,7 @@ export function LessonScreenInternal() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await clearSession();
     setQueue(Array.from({ length: moduleSlice.length }, (_, i) => i));
-    setLives(moduleId === 6 ? 2 : MAX_LIVES);
+    setLives(moduleId === 15 ? 3 : MAX_LIVES);
     setXp(0);
     setGameOver(false);
     setFeedback({ visible: false, correct: false, message: "", showLearnMore: false });
