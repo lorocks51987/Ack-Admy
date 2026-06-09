@@ -22,7 +22,15 @@
       "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "Ack-Admy",
+      "shortName": "Ack-Admy",
+      "themeColor": "#0A0E1A",
+      "backgroundColor": "#0A0E1A",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       [
