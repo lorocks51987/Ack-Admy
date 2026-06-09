@@ -2,11 +2,56 @@ import { BlurView } from "expo-blur";
 import { Redirect, Tabs } from "expo-router";
 import { House, Trophy, UserCircle } from "lucide-react-native";
 import React from "react";
-import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
+
+function WebCustomTabBar({ state, descriptors, navigation, colors }: BottomTabBarProps & { colors: any }) {
+  return (
+    <View style={{
+      flexDirection: 'row',
+      height: 70,
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+    }}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const label = options.title !== undefined ? options.title : route.name;
+        const isFocused = state.index === index;
+        const color = isFocused ? colors.primary : colors.mutedForeground;
+
+        const onPress = () => {
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        };
+
+        return (
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 4 }}
+          >
+            {options.tabBarIcon && options.tabBarIcon({ focused: isFocused, color, size: 24 })}
+            <Text style={{ color, fontSize: 11, fontFamily: "Inter_600SemiBold", marginTop: 4 }}>
+              {label as string}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function TabLayoutContent() {
   const colors = useColors();
@@ -20,6 +65,9 @@ function TabLayoutContent() {
 
   return (
     <Tabs
+      tabBar={(props) => 
+        isWeb ? <WebCustomTabBar {...props} colors={colors} /> : <BottomTabBar {...props} />
+      }
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
@@ -30,20 +78,16 @@ function TabLayoutContent() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 70 : 64 + safeBottom,
-          paddingBottom: isWeb ? 10 : safeBottom,
-          paddingTop: isWeb ? 10 : 8,
+          height: 64 + safeBottom,
+          paddingBottom: safeBottom,
+          paddingTop: 8,
         },
         tabBarItemStyle: {
-          justifyContent: "center",
-          alignItems: "center",
-          height: isWeb ? 50 : undefined,
         },
         tabBarLabelStyle: {
           fontFamily: "Inter_600SemiBold",
           fontSize: 11,
           marginTop: 2,
-          lineHeight: 20, // Forces the bounding box to be taller than the font metrics to prevent clipping
         },
         tabBarBackground: () =>
           isIOS ? (
