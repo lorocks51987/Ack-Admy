@@ -69,10 +69,19 @@ interface AdminDashboardData {
   reports: any[];
 }
 
+function formatShortName(fullName: string | undefined | null): string {
+  if (!fullName) return "Aluno";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const firstAndSecond = `${parts[0]} ${parts[1]}`;
+  if (firstAndSecond.length > 18) return parts[0];
+  return firstAndSecond;
+}
+
 function AdminDashboard() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
 
   const [adminData, setAdminData] = React.useState<AdminDashboardData | null>(null);
   const [adminLoading, setAdminLoading] = React.useState(true);
@@ -1345,11 +1354,14 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 12, paddingBottom: 12, backgroundColor: colors.card, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+      <View style={[styles.header, { paddingTop: topPad + 8, paddingBottom: 10, backgroundColor: colors.card, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerTop}>
-          <View style={styles.greetingContainer}>
-            <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>Olá, </Text>
-            <Text style={[styles.name, { color: colors.foreground }]}>{isGuest ? "Visitante" : (profile?.name || "Aluno")}</Text>
+          <View style={[styles.greetingContainer, { flex: 1, paddingRight: 8 }]}>
+            <Text style={[styles.greetingText, { color: colors.mutedForeground }]} numberOfLines={1}>
+              Olá, <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1} ellipsizeMode="tail">
+                {isGuest ? "Visitante" : formatShortName(profile?.name)}
+              </Text>
+            </Text>
           </View>
           <View style={styles.badges}>
             <View style={[styles.badgeCompact, { backgroundColor: "#F59E0B" + "10" }]}>
