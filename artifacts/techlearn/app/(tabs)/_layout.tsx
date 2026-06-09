@@ -43,6 +43,7 @@ function TabLayoutContent() {
           fontFamily: "Inter_600SemiBold",
           fontSize: 11,
           marginTop: 2,
+          lineHeight: 20, // Forces the bounding box to be taller than the font metrics to prevent clipping
         },
         tabBarBackground: () =>
           isIOS ? (
