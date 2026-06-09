@@ -15,8 +15,9 @@ function TabLayoutContent() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
 
-  const safeBottom = Math.max(insets.bottom, Platform.OS === 'web' ? 24 : 10);
-  const tabHeight = 64 + safeBottom;
+  const isWeb = Platform.OS === 'web';
+  const safeBottom = Math.max(insets.bottom, isWeb ? 20 : 10);
+  const tabHeight = isWeb ? 85 : 64 + safeBottom;
 
   return (
     <Tabs
@@ -32,12 +33,13 @@ function TabLayoutContent() {
           elevation: 0,
           height: tabHeight,
           paddingBottom: safeBottom,
-          paddingTop: 8,
+          paddingTop: 12,
         },
         tabBarLabelStyle: {
           fontFamily: "Inter_600SemiBold",
-          fontSize: 11,
-          paddingBottom: 4,
+          fontSize: 12,
+          marginTop: 4,
+          paddingBottom: isWeb ? 4 : 0,
         },
         tabBarBackground: () =>
           isIOS ? (
