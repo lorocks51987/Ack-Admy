@@ -4,12 +4,11 @@ import { House, Trophy, UserCircle } from "lucide-react-native";
 import React from "react";
 import { ActivityIndicator, Platform, StyleSheet, View, useColorScheme, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
-function WebCustomTabBar({ state, descriptors, navigation, colors }: BottomTabBarProps & { colors: any }) {
+function WebCustomTabBar({ state, descriptors, navigation, colors }: any) {
   return (
     <View style={{
       flexDirection: 'row',
@@ -23,7 +22,7 @@ function WebCustomTabBar({ state, descriptors, navigation, colors }: BottomTabBa
       right: 0,
       zIndex: 1000,
     }}>
-      {state.routes.map((route, index) => {
+      {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const label = options.title !== undefined ? options.title : route.name;
         const isFocused = state.index === index;
@@ -65,8 +64,8 @@ function TabLayoutContent() {
 
   return (
     <Tabs
-      tabBar={(props) => 
-        isWeb ? <WebCustomTabBar {...props} colors={colors} /> : <BottomTabBar {...props} />
+      tabBar={(props: any) => 
+        isWeb ? <WebCustomTabBar {...props} colors={colors} /> : undefined
       }
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
