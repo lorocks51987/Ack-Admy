@@ -94,7 +94,7 @@ export default function CompleteScreen() {
         ) : isCourseFinished ? (
           <Text style={[styles.modName, { color: "#D97706" }]}>Você é um Guardião Lendário!</Text>
         ) : moduleDef ? (
-          <Text style={[styles.modName, { color: colors.primary }]}>{moduleDef.title}</Text>
+          <Text style={[styles.modName, { color: colors.primary, textAlign: "center" }]} numberOfLines={2} adjustsFontSizeToFit>{moduleDef.title}</Text>
         ) : null}
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           {moduleId === -1

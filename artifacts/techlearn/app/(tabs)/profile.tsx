@@ -361,7 +361,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.userCardInfo}>
               <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>{displayName}</Text>
-              <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{email}</Text>
+              <Text style={[styles.userEmail, { color: colors.mutedForeground, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{email}</Text>
               
               <View style={styles.badgeRow}>
                 <View style={[styles.roleBadge, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
@@ -712,7 +712,7 @@ export default function ProfileScreen() {
               <View style={styles.academicRow}>
                 <Users size={15} color={colors.mutedForeground} />
                 <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>E-mail</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground }]} numberOfLines={1}>{email}</Text>
+                <Text style={[styles.academicValue, { color: colors.foreground, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{email}</Text>
               </View>
             </View>
           </>

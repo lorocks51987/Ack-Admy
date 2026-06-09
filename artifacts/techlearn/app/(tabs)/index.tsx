@@ -883,7 +883,7 @@ function AdminDashboard() {
                 >
                   <View style={styles.cohortHeaderRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.cohortTitleText, { color: colors.foreground }]}>{cls.name}</Text>
+                      <Text style={[styles.cohortTitleText, { color: colors.foreground }]} numberOfLines={2} ellipsizeMode="tail">{cls.name}</Text>
                       {cls.course ? (
                         <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.primary, marginTop: 2 }}>
                           {cls.course} {cls.term ? `• ${cls.term}` : ""}
@@ -1469,9 +1469,13 @@ export default function HomeScreen() {
                 }]}>
                   <IconComp size={20} color={accentColor} strokeWidth={2} />
                 </View>
-                <View style={styles.cardInfo}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Text style={[styles.cardTitle, { color: isLocked ? colors.mutedForeground : colors.foreground }]}>
+                <View style={[styles.cardInfo, { flexShrink: 1 }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
+                    <Text 
+                      style={[styles.cardTitle, { color: isLocked ? colors.mutedForeground : colors.foreground, flexShrink: 1 }]} 
+                      numberOfLines={1} 
+                      ellipsizeMode="tail"
+                    >
                       {mod.title}
                     </Text>
                     {isCurrentNext && (
@@ -1482,6 +1486,7 @@ export default function HomeScreen() {
                         paddingVertical: 2,
                         borderWidth: 1,
                         borderColor: mod.accentColor + "35",
+                        flexShrink: 0,
                       }}>
                         <Text style={{ fontSize: 9, fontFamily: "Inter_700Bold", color: mod.accentColor, letterSpacing: 0.3 }}>
                           CONTINUAR
