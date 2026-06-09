@@ -83,7 +83,7 @@ export function ExerciseHeader({
 }: ExerciseHeaderProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const [hintModalOpen, setHintModalOpen] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("menu");

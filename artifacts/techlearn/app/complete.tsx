@@ -37,7 +37,7 @@ export default function CompleteScreen() {
   const nextModule = MODULE_DEFINITIONS.find((m) => m.id === moduleId + 1);
   const isCourseFinished = !nextModule && moduleId !== -1;
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const scaleAnim = useRef(new Animated.Value(0)).current;

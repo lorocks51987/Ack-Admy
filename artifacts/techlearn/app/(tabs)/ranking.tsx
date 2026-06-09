@@ -45,7 +45,7 @@ const TAB_HEIGHT = Platform.OS === "ios" ? 88 : 64;
 export default function RankingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
 
   const { profile, loading, profileLoading, isGuest } = useAuth();
   const { progress } = useProgress();

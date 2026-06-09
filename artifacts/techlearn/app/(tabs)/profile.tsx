@@ -34,7 +34,7 @@ function getInitials(name: string | null | undefined): string {
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const { progress, resetProgress, buyStreakFreeze } = useProgress();
   const { profile, loading, profileLoading, refreshProfile, signOut, isGuest } = useAuth();
   const router = useRouter();
