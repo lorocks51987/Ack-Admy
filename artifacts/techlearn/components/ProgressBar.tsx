@@ -9,7 +9,7 @@ interface ProgressBarProps {
 
 export function ProgressBar({ progress, total }: ProgressBarProps) {
   const colors = useColors();
-  const pct = Math.min(progress / total, 1);
+  const pct = Math.max(0, Math.min(progress / total, 1));
 
   return (
     <View style={[styles.track, { backgroundColor: colors.muted }]}>

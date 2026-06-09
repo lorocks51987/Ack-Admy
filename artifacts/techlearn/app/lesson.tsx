@@ -120,7 +120,25 @@ export function LessonScreenInternal() {
 
   const moduleDef = isMistakesReview
     ? ({ id: -1, title: "Caixa de Erros", subtitle: "Revisão de conceitos errados", iconName: "AlertTriangle", startIdx: 0, length: 0, accentColor: "#EF4444", category: "awareness", difficulty: "Iniciante" } as any)
-    : (MODULE_DEFINITIONS.find((m) => m.id === moduleId) ?? MODULE_DEFINITIONS[0]);
+    : MODULE_DEFINITIONS.find((m) => m.id === moduleId);
+
+  if (!isMistakesReview && !moduleDef) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <AlertTriangle size={56} color={colors.error} strokeWidth={1.5} style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 20, fontFamily: "Inter_700Bold", color: colors.foreground, textAlign: "center", marginBottom: 8 }}>
+          Módulo não encontrado.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 }}
+          onPress={() => router.replace("/")}
+        >
+          <ArrowLeft size={16} color="#FFF" strokeWidth={2.5} />
+          <Text style={{ color: "#FFF", fontFamily: "Inter_700Bold", fontSize: 15 }}>Voltar para início</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Se for o Exame Final (Módulo 6) ou Caixa de Erros, reestruturamos o moduleSlice de forma inteligente
   // Para revisão de erros, usamos um snapshot dos IDs ao iniciar a sessão
@@ -325,7 +343,7 @@ export function LessonScreenInternal() {
       }, 300);
     } else {
       // Adicionamos no final da fila (para repetir mais tarde na mesma sessão)
-      setQueue((prev) => [...prev, ex]);
+      setQueue((prev) => [...prev, currentIdx]);
       if (isMistakesReview) {
         recordReviewAnswer(absIdx, false);
       } else {
@@ -578,7 +596,7 @@ export function LessonScreenInternal() {
     );
   }
 
-  if (!exercise) return null;
+  if (!exercise) return <LessonErrorFallback />;
 
   // ── Resume screen ─────────────────────────────────────────────────────────────
   if (showResume && savedSession) {
@@ -638,13 +656,13 @@ export function LessonScreenInternal() {
     );
   }
 
-  if (!exercise) return null;
+  if (!exercise) return <LessonErrorFallback />;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ExerciseHeader
         key={`header-${currentIdx}`}
-        current={moduleSlice.length - queue.length}
+        current={Math.max(0, moduleSlice.length - queue.length)}
         total={moduleSlice.length}
         lives={lives}
         xp={xp}
@@ -768,9 +786,9 @@ export function LessonScreenInternal() {
             <View style={[s.gameOverIconBg, { backgroundColor: colors.error + "18" }]}>
               <AlertCircle size={40} color={colors.error} strokeWidth={1.5} />
             </View>
-            <Text style={[s.gameOverTitle, { color: colors.foreground }]}>Suas vidas acabaram!</Text>
+            <Text style={[s.gameOverTitle, { color: colors.foreground }]}>Você perdeu todas as vidas</Text>
             <Text style={[s.gameOverSub, { color: colors.mutedForeground }]}>
-              Revise o conteúdo do briefing e tente novamente. Você consegue!
+              Revise os pontos principais e tente novamente.
             </Text>
             <TouchableOpacity
               style={[s.restartBtn, { backgroundColor: colors.primary }]}
@@ -778,15 +796,15 @@ export function LessonScreenInternal() {
               activeOpacity={0.85}
             >
               <RotateCcw size={16} color="#FFFFFF" strokeWidth={2} />
-              <Text style={s.restartBtnText}>Recomeçar Módulo</Text>
+              <Text style={s.restartBtnText}>Tentar novamente</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.backBtn, { borderColor: colors.border }]}
-              onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+              onPress={() => router.replace("/")}
               activeOpacity={0.75}
             >
               <ChevronLeft size={14} color={colors.mutedForeground} strokeWidth={2} />
-              <Text style={[s.backBtnText, { color: colors.mutedForeground }]}>Voltar ao Início</Text>
+              <Text style={[s.backBtnText, { color: colors.mutedForeground }]}>Voltar para início</Text>
             </TouchableOpacity>
           </View>
         </View>
