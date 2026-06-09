@@ -11,6 +11,7 @@ export type UserProfile = {
   term: string | null;
   room: string | null;
   class_name: string | null;
+  profile_type?: "student" | "external";
 };
 
 type AuthContextType = {

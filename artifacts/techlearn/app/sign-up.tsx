@@ -110,6 +110,7 @@ export default function SignUpScreen() {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedTerm, setSelectedTerm] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
+  const [isExternal, setIsExternal] = useState(false);
 
   // Picker modal state: null = closed, or the picker id
   const [activePicker, setActivePicker] = useState<"course" | "term" | "room" | null>(null);
@@ -128,9 +129,11 @@ export default function SignUpScreen() {
   const validateForm = () => {
     if (!name.trim()) return "Informe seu nome completo.";
     if (!email.trim() || !email.includes("@")) return "E-mail inválido.";
-    if (!selectedCourse) return "Selecione o curso.";
-    if (!selectedTerm) return "Selecione o termo.";
-    if (!selectedRoom) return "Selecione a sala.";
+    if (!isExternal) {
+      if (!selectedCourse) return "Selecione o curso.";
+      if (!selectedTerm) return "Selecione o termo.";
+      if (!selectedRoom) return "Selecione a sala.";
+    }
     if (password.length < 6) return "Senha com no mínimo 6 caracteres.";
     if (password !== confirmPassword) return "As senhas não coincidem.";
     return null;
@@ -165,17 +168,18 @@ export default function SignUpScreen() {
       const user = authData?.user;
 
       if (user) {
-        const className = `${selectedCourse} - ${selectedTerm} ${selectedRoom}`;
+        const className = isExternal ? "Visitante Externo" : `${selectedCourse} - ${selectedTerm} ${selectedRoom}`;
 
         const { error: profileError } = await supabase.from("profiles").insert({
           id: user.id,
           name: name.trim(),
           email: email.trim().toLowerCase(),
           role: "student",
-          course: selectedCourse,
-          term: selectedTerm,
-          room: selectedRoom,
+          course: isExternal ? null : selectedCourse,
+          term: isExternal ? null : selectedTerm,
+          room: isExternal ? null : selectedRoom,
           class_name: className,
+          profile_type: isExternal ? "external" : "student",
         });
 
         if (profileError) {
@@ -238,8 +242,8 @@ export default function SignUpScreen() {
 
   // ── Form screen ──
   const isFormValid =
-    !!name.trim() && !!email.trim() && !!selectedCourse &&
-    !!selectedTerm && !!selectedRoom &&
+    !!name.trim() && !!email.trim() && 
+    (isExternal || (!!selectedCourse && !!selectedTerm && !!selectedRoom)) &&
     password.length >= 6 && password === confirmPassword;
 
   const SelectField = ({
@@ -380,34 +384,53 @@ export default function SignUpScreen() {
               />
             </View>
 
+            {/* Checkbox Visitante */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, marginBottom: 8, paddingHorizontal: 4 }}>
+              <TouchableOpacity
+                onPress={() => setIsExternal(!isExternal)}
+                style={{
+                  width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
+                  borderColor: isExternal ? colors.primary : colors.border,
+                  backgroundColor: isExternal ? colors.primary : "transparent",
+                  alignItems: "center", justifyContent: "center", marginRight: 10
+                }}
+                activeOpacity={0.8}
+              >
+                {isExternal && <Check size={14} color="#FFF" strokeWidth={3} />}
+              </TouchableOpacity>
+              <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: "Inter_500Medium" }}>Não possuo curso (Visitante Externo)</Text>
+            </View>
+
             {/* Dados Acadêmicos */}
-            <View style={s.section}>
-              <Text style={[s.sectionTitle, { color: colors.foreground }]}>Dados Acadêmicos</Text>
-              <SelectField
-                label="Curso"
-                value={selectedCourse}
-                pickerId="course"
-                placeholder="Selecione seu curso"
-              />
-              <View style={s.row}>
-                <View style={{ flex: 1 }}>
-                  <SelectField
-                    label="Termo"
-                    value={selectedTerm}
-                    pickerId="term"
-                    placeholder="Termo"
-                  />
-                </View>
-                <View style={{ width: 96 }}>
-                  <SelectField
-                    label="Sala"
-                    value={selectedRoom}
-                    pickerId="room"
-                    placeholder="Sala"
-                  />
+            {!isExternal && (
+              <View style={s.section}>
+                <Text style={[s.sectionTitle, { color: colors.foreground }]}>Dados Acadêmicos</Text>
+                <SelectField
+                  label="Curso"
+                  value={selectedCourse}
+                  pickerId="course"
+                  placeholder="Selecione seu curso"
+                />
+                <View style={s.row}>
+                  <View style={{ flex: 1 }}>
+                    <SelectField
+                      label="Termo"
+                      value={selectedTerm}
+                      pickerId="term"
+                      placeholder="Termo"
+                    />
+                  </View>
+                  <View style={{ width: 96 }}>
+                    <SelectField
+                      label="Sala"
+                      value={selectedRoom}
+                      pickerId="room"
+                      placeholder="Sala"
+                    />
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
 
             {/* Senha */}
             <View style={s.field}>

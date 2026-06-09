@@ -366,16 +366,18 @@ export default function ProfileScreen() {
               <View style={styles.badgeRow}>
                 <View style={[styles.roleBadge, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
                   <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
-                    {isAdmin ? "Professor/Admin" : "Aluno Unimar"}
+                    {isAdmin ? "Professor/Admin" : (profile?.profile_type === 'external' ? "Visitante Externo" : "Aluno Unimar")}
                   </Text>
                 </View>
               </View>
 
               <Text style={[styles.userSubtitle, { color: colors.mutedForeground }]}>
                 {isAdmin ? "Professor/Admin Unimar" : (
-                  profile?.course && profile?.term && profile?.room 
-                    ? `${profile.course} • ${profile.term} Sala ${profile.room}`
-                    : `Aluno — ${profile?.class_name || "Sem Turma"}`
+                  profile?.profile_type === 'external'
+                    ? "Visitante Externo"
+                    : profile?.course && profile?.term && profile?.room 
+                      ? `${profile.course} • ${profile.term} Sala ${profile.room}`
+                      : `Aluno — ${profile?.class_name || "Sem Turma"}`
                 )}
               </Text>
 
@@ -707,7 +709,7 @@ export default function ProfileScreen() {
               <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
                 <Award size={15} color={colors.mutedForeground} />
                 <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Tipo de Conta</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground }]}>Aluno Unimar</Text>
+                <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.profile_type === 'external' ? "Visitante Externo" : "Aluno Unimar"}</Text>
               </View>
               <View style={styles.academicRow}>
                 <Users size={15} color={colors.mutedForeground} />
