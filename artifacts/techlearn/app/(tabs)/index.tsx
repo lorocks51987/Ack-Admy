@@ -1302,7 +1302,7 @@ function AdminDashboard() {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const { progress } = useProgress();
   const { profile, loading, profileLoading, isGuest } = useAuth();
 
