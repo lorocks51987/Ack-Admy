@@ -51,106 +51,25 @@ import { FloatingLessonCard } from "@/components/home/FloatingLessonCard";
 // ── Constantes ───────────────────────────────────────────────────────────────
 const ICON_MAP = { Shield, Key, AlertTriangle, FileText, Mail, CheckCircle } as const;
 
-const getShape = (id: number): NodeShape => {
-  if (id === 1 || id === 5 || id === 10 || id === 15) return "shield";
-  return "hexagon";
-};
-
 const { width: WINDOW_W } = Dimensions.get("window");
-const MAX_MAP_WIDTH = 600;
-const ACTUAL_WIDTH = Math.min(WINDOW_W, MAX_MAP_WIDTH);
+const MAX_MAP_WIDTH = 480; // Limitado para não estourar no Web
 const TAB_HEIGHT = Platform.OS === "ios" ? 88 : 64;
-const ITEM_HEIGHT = 120; // Estimativa de nó + path
+const ITEM_HEIGHT = 140; // Maior altura para dar sensação de caminho longo e elegante
 
-// Largura disponível para o caminho sinuoso
-const PATH_WIDTH = Math.max(100, ACTUAL_WIDTH - 130);
+const getOffset = (index: number) => {
+  // Caminho sinuoso, ocupando melhor a tela mas ainda central
+  const pattern = [0, -35, -55, -35, 0, 35, 55, 35];
+  return pattern[index % pattern.length];
+};
 
 // ── Background Profundo (Layer 1) ────────────────────────────────────────────
 function AmbientBackground() {
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
       <LinearGradient
-        colors={["#030408", "#070814", "#04050A"]}
+        colors={["#050508", "#080911", "#05060A"]}
         style={StyleSheet.absoluteFillObject}
       />
-    </View>
-  );
-}
-
-// ── Cenário de Regiões (Layer 2 & 3) ─────────────────────────────────────────
-function ZoneScenery({ moduleId, side }: { moduleId: number; side: "left" | "right" }) {
-  const getZoneColor = (id: number) => {
-    const mod = MODULE_DEFINITIONS.find((m) => m.id === id);
-    return mod?.accentColor ?? "#6366F1";
-  };
-  const color = getZoneColor(moduleId);
-  
-  const sceneryType = moduleId % 6;
-
-  return (
-    <View
-      style={{
-        position: "absolute",
-        width: WINDOW_W,
-        height: 350,
-        top: -100,
-        left: -(WINDOW_W - ACTUAL_WIDTH) / 2,
-        zIndex: -1,
-        opacity: 0.9,
-      }}
-      pointerEvents="none"
-    >
-      <Svg width="100%" height="100%" viewBox="0 0 400 350">
-        <Defs>
-          <RadialGradient id={`glow-${moduleId}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={color} stopOpacity="0.08" />
-            <Stop offset="100%" stopColor={color} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#glow-${moduleId})`} />
-
-        {sceneryType === 1 && (
-          <>
-            <Path d="M 0 250 Q 200 240 400 250" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.25" />
-            <Path d="M 0 260 Q 200 255 400 260" stroke={color} strokeWidth="2" fill="none" strokeOpacity="0.1" />
-            <Path d="M 50 270 L 350 270" stroke={color} strokeWidth="4" strokeOpacity="0.05" />
-          </>
-        )}
-        {sceneryType === 2 && (
-          <>
-            <Path d="M 0 200 L 120 180 L 150 210 L 250 190 L 280 220 L 400 180" stroke={color} strokeWidth="1.5" fill="none" strokeOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
-            <Path d="M 50 220 L 150 220 M 200 200 L 300 200" stroke={color} strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.2" fill="none" />
-          </>
-        )}
-        {sceneryType === 3 && (
-          <>
-            <Path d={`M 100 200 A 100 100 0 0 ${side === "left" ? 1 : 0} 300 200`} stroke={color} strokeWidth="1.5" fill="none" strokeOpacity="0.2" />
-            <Path d={`M 120 200 A 80 80 0 0 ${side === "left" ? 1 : 0} 280 200`} stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.1" strokeDasharray="3 3" />
-            <Rect x="180" y="100" width="40" height="100" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.15" rx="4" />
-          </>
-        )}
-        {sceneryType === 4 && (
-          <>
-            <Path d="M 200 200 Q 100 100 50 50" stroke={color} strokeWidth="1.5" fill="none" strokeOpacity="0.2" strokeDasharray="3 4" />
-            <Path d="M 200 200 Q 300 100 350 50" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.25" />
-            <Path d="M 200 200 Q 200 100 250 20" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.1" />
-          </>
-        )}
-        {sceneryType === 5 && (
-          <>
-            <Rect x="100" y="100" width="200" height="100" rx="6" stroke={color} strokeWidth="1.5" fill="none" strokeOpacity="0.15" />
-            <Rect x="120" y="120" width="160" height="60" rx="3" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.1" strokeDasharray="4 2" />
-            <Path d="M 100 150 L 50 150 M 300 150 L 350 150" stroke={color} strokeWidth="1" strokeOpacity="0.2" fill="none" />
-          </>
-        )}
-        {sceneryType === 0 && (
-          <>
-            <Circle cx="200" cy="150" r="80" stroke={color} strokeWidth="1.5" fill="none" strokeOpacity="0.15" />
-            <Circle cx="200" cy="150" r="120" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.08" />
-            <Circle cx="200" cy="150" r="150" stroke={color} strokeWidth="1" fill="none" strokeOpacity="0.05" strokeDasharray="6 6" />
-          </>
-        )}
-      </Svg>
     </View>
   );
 }
@@ -385,125 +304,114 @@ export function StudentJourneyHome() {
             const origIdx = MODULE_DEFINITIONS.findIndex(
               (m) => m.id === mod.id,
             );
-            const side: "left" | "right" = origIdx % 2 === 0 ? "left" : "right";
+            const xOffset = getOffset(origIdx);
+            const isNodeLeft = xOffset < 0;
+            
+            const prevOrigIdx = isLast ? -1 : origIdx - 1;
+            const prevXOffset = getOffset(Math.max(0, prevOrigIdx)); // Base can connect to 0
 
             const IconComp =
               ICON_MAP[mod.iconName as keyof typeof ICON_MAP] ?? Shield;
             const iconColor =
               state === "completed"
                 ? "#4ADE80"
-                : state === "locked"
-                  ? "#A1A1AA"
-                  : mod.accentColor;
+                : state === "current"
+                  ? mod.accentColor
+                  : state === "locked"
+                    ? colors.mutedForeground
+                    : colors.foreground;
 
-            const shape = getShape(mod.id);
             const xpPossible = (mod.exercises?.length ?? 5) * 10;
 
             return (
               <View key={mod.id} style={s.nodeBlock}>
-                {/* Cenário específico desta zona (Layer 2 & 3) */}
-                <ZoneScenery moduleId={mod.id} side={side} />
+                {/* Conjunto do Nó + Labels + Cards transladado para seguir a estrada */}
+                <View style={{ transform: [{ translateX: xOffset }], alignItems: "center", zIndex: isSelected ? 50 : 10 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                    
+                    {/* Card à esquerda do nó (se nó está na direita) */}
+                    {isSelected && !isNodeLeft && (
+                      <View style={{ position: "absolute", right: 48, width: 175, zIndex: 100 }}>
+                        <FloatingLessonCard
+                          module={mod}
+                          state={state}
+                          side="right"
+                          colors={colors}
+                          xpPossible={xpPossible}
+                          onStart={() => handleStartLesson(mod, state)}
+                          onClose={() => setSelectedModuleId(null)}
+                        />
+                      </View>
+                    )}
 
-                {/* Linha do Nó + Card */}
-                <View
-                  style={[
-                    s.nodeRow,
-                    {
-                      justifyContent:
-                        side === "left" ? "flex-start" : "flex-end",
-                      paddingLeft: side === "left" ? 32 : 0,
-                      paddingRight: side === "right" ? 32 : 0,
-                    },
-                  ]}
-                >
-                  {/* Card à esquerda */}
-                  {isSelected && side === "right" && (
-                    <FloatingLessonCard
-                      module={mod}
+                    {/* O Nó Principal */}
+                    <RoadmapNode
                       state={state}
-                      side="right"
-                      colors={colors}
-                      xpPossible={xpPossible}
-                      onStart={() => handleStartLesson(mod, state)}
-                      onClose={() => setSelectedModuleId(null)}
+                      accentColor={mod.accentColor}
+                      icon={
+                        <IconComp
+                          size={state === "current" ? 28 : 20}
+                          color={iconColor}
+                          strokeWidth={2}
+                        />
+                      }
+                      onPress={() => handleNodePress(mod)}
+                      isSelected={isSelected}
                     />
-                  )}
 
-                  {/* O Nó com formato dinâmico */}
-                  <RoadmapNode
-                    state={state}
-                    shape={shape}
-                    accentColor={mod.accentColor}
-                    icon={
-                      <IconComp
-                        size={state === "current" ? 24 : 18}
-                        color={iconColor}
-                        strokeWidth={2.5}
-                      />
-                    }
-                    onPress={() => handleNodePress(mod)}
-                    isSelected={isSelected}
-                  />
+                    {/* Card à direita do nó (se nó está na esquerda) */}
+                    {isSelected && isNodeLeft && (
+                      <View style={{ position: "absolute", left: 48, width: 175, zIndex: 100 }}>
+                        <FloatingLessonCard
+                          module={mod}
+                          state={state}
+                          side="left"
+                          colors={colors}
+                          xpPossible={xpPossible}
+                          onStart={() => handleStartLesson(mod, state)}
+                          onClose={() => setSelectedModuleId(null)}
+                        />
+                      </View>
+                    )}
+                  </View>
 
-                  {/* Card à direita */}
-                  {isSelected && side === "left" && (
-                    <FloatingLessonCard
-                      module={mod}
-                      state={state}
-                      side="left"
-                      colors={colors}
-                      xpPossible={xpPossible}
-                      onStart={() => handleStartLesson(mod, state)}
-                      onClose={() => setSelectedModuleId(null)}
-                    />
-                  )}
+                  {/* Título do Módulo */}
+                  <View style={[s.labelRow, { marginTop: 8 }]}>
+                    <Text
+                      style={[
+                        s.nodeLabel,
+                        {
+                          color:
+                            state === "completed"
+                              ? "#4ADE80"
+                              : state === "current"
+                                ? mod.accentColor
+                                : state === "locked"
+                                  ? colors.mutedForeground
+                                  : colors.foreground,
+                          fontFamily:
+                            state === "current"
+                              ? "Inter_700Bold"
+                              : "Inter_500Medium",
+                          opacity: state === "locked" ? 0.8 : 1,
+                        },
+                      ]}
+                    >
+                      {(mod as any).shortTitle ?? mod.title.split(" ")[0]}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Título do Módulo */}
-                <View
-                  style={[
-                    s.labelRow,
-                    {
-                      justifyContent:
-                        side === "left" ? "flex-start" : "flex-end",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      s.nodeLabel,
-                      {
-                        // Ajusta margem para centralizar aproximadamente com o nó
-                        marginLeft: side === "left" ? 24 : 0,
-                        marginRight: side === "right" ? 24 : 0,
-                        color:
-                          state === "completed"
-                            ? "#4ADE80"
-                            : state === "current"
-                              ? mod.accentColor
-                              : state === "locked"
-                                ? colors.mutedForeground
-                                : colors.foreground,
-                        fontFamily:
-                          state === "current"
-                            ? "Inter_700Bold"
-                            : "Inter_500Medium",
-                        opacity: state === "locked" ? 0.8 : 1,
-                      },
-                    ]}
-                  >
-                    {(mod as any).shortTitle ?? mod.title.split(" ")[0]}
-                  </Text>
-                </View>
-
-                {/* Estrada sinuosa para o próximo nó abaixo */}
+                {/* Estrada conectando o nó atual ao próximo (que está visualmente abaixo) */}
                 {!isLast && (
                   <RoadmapPath
                     filled={progress.completedModules.includes(mod.id)}
+                    isActive={state === "current"}
                     primaryColor={colors.primary}
                     mutedColor={colors.border}
-                    startSide={side}
-                    width={PATH_WIDTH}
+                    startX={xOffset}
+                    endX={prevXOffset}
+                    height={90}
                   />
                 )}
               </View>
@@ -681,16 +589,17 @@ const s = StyleSheet.create({
 
   nodeBlock: {
     alignItems: "center",
+    position: "relative",
   },
   nodeRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     width: "100%",
-    gap: 12,
+    position: "relative",
   },
   labelRow: {
-    flexDirection: "row",
-    width: "100%",
+    alignItems: "center",
     marginTop: 6,
     marginBottom: 4,
   },

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { CheckCircle, XCircle, BookOpen, AlertCircle, ChevronRight, Heart } from "lucide-react-native";
 import Reanimated, { Easing, FadeInDown, FadeIn } from "react-native-reanimated";
 
@@ -29,7 +29,7 @@ export function FeedbackPanel({
 }: FeedbackPanelProps) {
   const accent = feedback.correct ? colors.success : colors.error;
   const statusBg = feedback.correct ? "rgba(34,197,94,0.09)" : "rgba(239,68,68,0.09)";
-  const safeBottom = Math.max(insets.bottom, 16);
+  const safeBottom = Math.max(insets.bottom, Platform.OS === 'web' ? 24 : 16);
 
   return (
     <Reanimated.View 

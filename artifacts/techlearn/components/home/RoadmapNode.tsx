@@ -15,45 +15,49 @@ export type NodeShape = "circle" | "hexagon" | "shield" | "diamond" | "capsule";
 
 interface RoadmapNodeProps {
   state: NodeState;
-  shape: NodeShape;
   accentColor: string;
   icon: React.ReactNode;
   onPress: () => void;
   isSelected: boolean;
 }
 
-const NODE_CURRENT = 76;
-const NODE_COMPLETED = 66;
-const NODE_AVAILABLE = 62;
-const NODE_LOCKED = 56;
+const NODE_CURRENT = 84;
+const NODE_AVAILABLE = 72;
+const NODE_COMPLETED = 64;
+const NODE_LOCKED = 64;
 
 export function RoadmapNode({
   state,
-  shape,
   accentColor,
   icon,
   onPress,
   isSelected,
 }: RoadmapNodeProps) {
   const scale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.4);
 
   React.useEffect(() => {
     if (state === "current") {
-      scale.value = withRepeat(
+      scale.value = withSpring(1.05, { damping: 10, stiffness: 100 });
+      glowOpacity.value = withRepeat(
         withSequence(
-          withSpring(1.08, { damping: 6, stiffness: 80 }),
-          withSpring(1.0, { damping: 6, stiffness: 80 }),
+          withSpring(0.7, { damping: 15, stiffness: 40 }),
+          withSpring(0.2, { damping: 15, stiffness: 40 }),
         ),
         -1,
         true,
       );
     } else {
       scale.value = withSpring(1, { damping: 12 });
+      glowOpacity.value = 0;
     }
   }, [state]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+  }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
   }));
 
   const isCurrent = state === "current";
@@ -69,108 +73,71 @@ export function RoadmapNode({
         ? NODE_AVAILABLE
         : NODE_LOCKED;
 
-  // Cores intensificadas e elegantes
+  // Hybrid Hexagon Styles
   const bgColor = isCompleted
-    ? "#3F3F4640" // Cinza/Verde bem discreto
+    ? "#27272A" // Cinza escuro premium
     : isLocked
-      ? "#27272A90"
+      ? "transparent" // Dark outline
       : isCurrent
-        ? accentColor + "25"
-        : accentColor + "10";
+        ? "#09090B" // Muito escuro para dar contraste ao anel
+        : "#18181B";
 
   const borderColor = isCompleted
-    ? "#52525B" // Borda discreta de finalizado (não verde berrante)
+    ? "#52525B" // Borda fria elegante
     : isLocked
-      ? "#3F3F46"
+      ? "#27272A"
       : isCurrent
         ? accentColor
-        : accentColor + "50";
+        : accentColor + "60"; // Borda azul discreta
 
-  const baseBorderWidth = isCurrent ? 2.5 : isCompleted ? 2 : 1.5;
-  // Fator de escala do SVG (viewBox é 100x100)
+  const innerRingColor = isCurrent ? "rgba(255,255,255,0.25)" : "transparent";
+
+  const baseBorderWidth = isCurrent ? 3 : isCompleted ? 2 : 2;
   const strokeWidth = baseBorderWidth * (100 / nodeSize);
 
-  // Sombras e glow
+  // Sombras
   const shadow = isCurrent
     ? {
         shadowColor: accentColor,
-        shadowOpacity: 0.6,
-        shadowRadius: 30,
+        shadowOpacity: 0.5,
+        shadowRadius: 25,
         shadowOffset: { width: 0, height: 0 },
-        elevation: 15,
+        elevation: 12,
       }
     : isSelected && !isLocked
       ? {
-          shadowColor: isCompleted ? "#52525B" : accentColor,
-          shadowOpacity: 0.4,
+          shadowColor: accentColor,
+          shadowOpacity: 0.3,
           shadowRadius: 10,
           shadowOffset: { width: 0, height: 0 },
-          elevation: 8,
+          elevation: 6,
         }
       : {};
 
-  // Opacidade do locked mais visível que antes
-  const lockedOpacity = isLocked ? 0.65 : 1;
+  const lockedOpacity = isLocked ? 0.7 : 1;
 
-  // Renderiza a forma correta em SVG
+  // Apenas Hexágono (híbrido)
   const renderShape = () => {
-    switch (shape) {
-      case "hexagon":
-        return (
+    return (
+      <>
+        <Polygon
+          points="50,4 96,25 96,75 50,96 4,75 4,25"
+          fill={bgColor}
+          stroke={borderColor}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        {isCurrent && (
           <Polygon
-            points="50,4 96,25 96,75 50,96 4,75 4,25"
-            fill={bgColor}
-            stroke={borderColor}
-            strokeWidth={strokeWidth}
+            points="50,9 91,28 91,72 50,91 9,72 9,28"
+            fill="none"
+            stroke={innerRingColor}
+            strokeWidth={1.5}
             strokeLinejoin="round"
           />
-        );
-      case "diamond":
-        return (
-          <Polygon
-            points="50,4 96,50 50,96 4,50"
-            fill={bgColor}
-            stroke={borderColor}
-            strokeWidth={strokeWidth}
-            strokeLinejoin="round"
-          />
-        );
-      case "shield":
-        return (
-          <Path
-            d="M 10 12 Q 50 2 90 12 L 90 45 C 90 85, 50 96, 50 96 C 50 96, 10 85, 10 45 Z"
-            fill={bgColor}
-            stroke={borderColor}
-            strokeWidth={strokeWidth}
-            strokeLinejoin="round"
-          />
-        );
-      case "capsule":
-        return (
-          <Rect
-            x="15"
-            y="4"
-            width="70"
-            height="92"
-            rx="35"
-            fill={bgColor}
-            stroke={borderColor}
-            strokeWidth={strokeWidth}
-          />
-        );
-      case "circle":
-      default:
-        return (
-          <Circle
-            cx="50"
-            cy="50"
-            r="46"
-            fill={bgColor}
-            stroke={borderColor}
-            strokeWidth={strokeWidth}
-          />
-        );
-    }
+        )}
+      </>
+    );
   };
 
   return (
@@ -201,73 +168,28 @@ export function RoadmapNode({
         {/* Ícone no topo */}
         <View style={{ zIndex: 2 }}>
           {isCompleted ? (
-            <Check size={26} color="#10B981" strokeWidth={2.5} />
+            <Check size={20} color="#A1A1AA" strokeWidth={2.5} />
           ) : isLocked ? (
-            <Lock size={20} color="#A1A1AA" strokeWidth={2.5} />
+            <Lock size={20} color="#52525B" strokeWidth={2} />
           ) : (
             icon
           )}
         </View>
 
-        {/* Anel de seleção ou pulse */}
+        {/* Anel de seleção ou pulse externo */}
         {isCurrent && (
-          <View
-            style={[StyleSheet.absoluteFillObject, { margin: -6, zIndex: 0 }]}
+          <Reanimated.View
+            style={[StyleSheet.absoluteFillObject, { margin: -10, zIndex: 0 }, glowStyle]}
           >
             <Svg width="100%" height="100%" viewBox="0 0 100 100">
-              {shape === "hexagon" && (
-                <Polygon
-                  points="50,4 96,25 96,75 50,96 4,75 4,25"
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={2}
-                  strokeOpacity={0.4}
-                />
-              )}
-              {shape === "diamond" && (
-                <Polygon
-                  points="50,4 96,50 50,96 4,50"
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={2}
-                  strokeOpacity={0.4}
-                />
-              )}
-              {shape === "shield" && (
-                <Path
-                  d="M 10 12 Q 50 2 90 12 L 90 45 C 90 85, 50 96, 50 96 C 50 96, 10 85, 10 45 Z"
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={2}
-                  strokeOpacity={0.4}
-                />
-              )}
-              {shape === "capsule" && (
-                <Rect
-                  x="15"
-                  y="4"
-                  width="70"
-                  height="92"
-                  rx="35"
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={2}
-                  strokeOpacity={0.4}
-                />
-              )}
-              {shape === "circle" && (
-                <Circle
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={2}
-                  strokeOpacity={0.4}
-                />
-              )}
+              <Polygon
+                points="50,4 96,25 96,75 50,96 4,75 4,25"
+                fill="none"
+                stroke={accentColor}
+                strokeWidth={3}
+              />
             </Svg>
-          </View>
+          </Reanimated.View>
         )}
       </TouchableOpacity>
     </Reanimated.View>

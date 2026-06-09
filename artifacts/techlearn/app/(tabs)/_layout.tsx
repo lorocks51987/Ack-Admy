@@ -15,7 +15,7 @@ function TabLayoutContent() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
 
-  const safeBottom = Math.max(insets.bottom, 8);
+  const safeBottom = Math.max(insets.bottom, Platform.OS === 'web' ? 24 : 8);
   const tabHeight = 56 + safeBottom;
 
   return (

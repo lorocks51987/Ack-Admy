@@ -5,7 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -61,10 +61,14 @@ function AppCore() {
               <QueryClientProvider client={queryClient}>
                 <ExplanationProvider>
                   <GestureHandlerRootView style={{ flex: 1 }}>
-                    <Stack screenOptions={{ headerShown: false }}>
-                      <Stack.Screen name="(tabs)" />
-                      <Stack.Screen name="explanation" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-                    </Stack>
+                    <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: '#0A0E1A', alignItems: 'center' } : { flex: 1 }}>
+                      <View style={Platform.OS === 'web' ? { flex: 1, width: '100%', maxWidth: 480, backgroundColor: '#000', overflow: 'hidden' } : { flex: 1 }}>
+                        <Stack screenOptions={{ headerShown: false }}>
+                          <Stack.Screen name="(tabs)" />
+                          <Stack.Screen name="explanation" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+                        </Stack>
+                      </View>
+                    </View>
                   </GestureHandlerRootView>
                 </ExplanationProvider>
               </QueryClientProvider>
