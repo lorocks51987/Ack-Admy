@@ -1293,49 +1293,129 @@ function AdminDashboard() {
           </View>
         )}
 
-        {/* LISTAGEM DE GESTÃO DE TURMAS */}
-        {rawClasses.length === 0 ? (
-          <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 24 }]}>
-            <Presentation size={26} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
-            <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Nenhuma turma criada</Text>
-            <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>Use o botão "Nova turma" acima para cadastrar.</Text>
-          </View>
-        ) : (
-          <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {rawClasses.map((cls, idx) => (
-              <View
-                key={cls.id}
-                style={[
-                  styles.listItem,
-                  idx < rawClasses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                ]}
-              >
-                <View style={{ flex: 1, gap: 1, paddingRight: 12 }}>
-                  <Text style={[styles.className, { color: colors.foreground }]} numberOfLines={1}>{cls.name}</Text>
-                  <Text style={[styles.classSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-                    {[cls.course, cls.term].filter(Boolean).join(" · ") || "Sem detalhes"}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.editIconBtn, { borderColor: colors.border }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setIsCreatingClass(false);
-                    setEditingClassId(cls.id);
-                    setEditClassName(cls.name);
-                    setEditClassCourse(cls.course);
-                    setEditClassTerm(cls.term);
-                    setClassActionError(null);
-                    setClassActionSuccess(null);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit2 size={13} color={colors.mutedForeground} />
-                </TouchableOpacity>
+        {/* LISTAGEM DE GESTÃO DE TURMAS — agrupada por curso/termo */}
+        {(() => {
+          if (rawClasses.length === 0) {
+            return (
+              <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 24 }]}>
+                <Presentation size={26} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+                <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Nenhuma turma criada</Text>
+                <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>Use o botão "Nova turma" acima para cadastrar.</Text>
               </View>
-            ))}
-          </View>
-        )}
+            );
+          }
+
+          // ── Agrupar por (course + term) — apenas renderização, sem alterar dados ──
+          const groups: Array<{
+            key: string;
+            course: string;
+            term: string;
+            classes: typeof rawClasses;
+          }> = [];
+
+          rawClasses.forEach((cls) => {
+            const groupKey = `${cls.course || ""}||${cls.term || ""}`;
+            const existing = groups.find((g) => g.key === groupKey);
+            if (existing) {
+              existing.classes.push(cls);
+            } else {
+              groups.push({
+                key: groupKey,
+                course: cls.course || "",
+                term: cls.term || "",
+                classes: [cls],
+              });
+            }
+          });
+
+          // Extrair rótulo de sala: remove o prefixo curso/termo do nome, retorna o resto
+          const getRoomLabel = (cls: { name: string; course: string; term: string }): string => {
+            let label = cls.name || "";
+            // Remove o curso
+            if (cls.course && label.toLowerCase().startsWith(cls.course.toLowerCase())) {
+              label = label.slice(cls.course.length);
+            }
+            // Remove separadores e o termo
+            label = label.replace(/^[\s\-–·•]+/, "");
+            if (cls.term && label.toLowerCase().startsWith(cls.term.toLowerCase())) {
+              label = label.slice(cls.term.length);
+            }
+            label = label.replace(/^[\s\-–·•]+/, "").trim();
+            // Se sobrou algo, mostra; senão usa o nome curto
+            return label || cls.name;
+          };
+
+          return (
+            <View style={{ gap: 10, marginBottom: 24 }}>
+              {groups.map((group, gIdx) => (
+                <View
+                  key={group.key || String(gIdx)}
+                  style={[styles.classGroupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  {/* Header do grupo */}
+                  <View style={styles.classGroupHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.classGroupTitle, { color: colors.foreground }]} numberOfLines={2}>
+                        {group.course || "Sem curso"}
+                      </Text>
+                      <Text style={[styles.classGroupSub, { color: colors.mutedForeground }]}>
+                        {[group.term, `${group.classes.length} ${group.classes.length === 1 ? "sala" : "salas"}`]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Chips de sala */}
+                  <View style={styles.classChipRow}>
+                    {group.classes.map((cls) => {
+                      const roomLabel = getRoomLabel(cls);
+                      const isEditing = editingClassId === cls.id;
+                      return (
+                        <TouchableOpacity
+                          key={cls.id}
+                          style={[
+                            styles.classChip,
+                            {
+                              backgroundColor: isEditing ? colors.primary + "20" : colors.background,
+                              borderColor: isEditing ? colors.primary : colors.border,
+                            },
+                          ]}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setIsCreatingClass(false);
+                            setEditingClassId(cls.id);
+                            setEditClassName(cls.name);
+                            setEditClassCourse(cls.course);
+                            setEditClassTerm(cls.term);
+                            setClassActionError(null);
+                            setClassActionSuccess(null);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.classChipText,
+                              { color: isEditing ? colors.primary : colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {roomLabel}
+                          </Text>
+                          <Edit2
+                            size={10}
+                            color={isEditing ? colors.primary : colors.mutedForeground}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })()}
 
         {/* ROADMAP / RECURSOS FUTUROS */}
         <View style={{ paddingVertical: 24, alignItems: "center" }}>
@@ -1805,6 +1885,23 @@ const styles = StyleSheet.create({
 
   editIconBtn: { width: 36, height: 36, borderWidth: 1, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   editIconText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+
+  // Class management — grouped cards with chips
+  classGroupCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 0 },
+  classGroupHeader: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  classGroupTitle: { fontSize: 14, fontFamily: "Inter_700Bold", lineHeight: 20 },
+  classGroupSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  classChipRow: {
+    flexDirection: "row", flexWrap: "wrap", gap: 8,
+    paddingHorizontal: 16, paddingBottom: 14, paddingTop: 4,
+  },
+  classChip: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 9,
+    minWidth: 60,
+  },
+  classChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold", flexShrink: 1 },
 
   pillBadge: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2 },
   pillBadgeText: { fontSize: 9, fontFamily: "Inter_700Bold" },
