@@ -518,25 +518,34 @@ function AdminDashboard() {
     }
   };
 
+  const AdminHeader = ({ compact = false }: { compact?: boolean }) => (
+    <View
+      style={[
+        styles.adminHeaderCard,
+        { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border },
+      ]}
+    >
+      <View style={styles.headerTitleRow}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel do Professor</Text>
+          {!compact && (
+            <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
+              Turmas · Progresso · Feedbacks
+            </Text>
+          )}
+        </View>
+        <View style={[styles.gestionBadge, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "35", borderWidth: 1 }]}>
+          <Presentation size={11} color={colors.primary} />
+          <Text style={[styles.gestionBadgeText, { color: colors.primary }]}>Gestão</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   if (adminLoading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <View
-          style={[
-            styles.adminHeaderCard,
-            { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border },
-          ]}
-        >
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel Professor/Admin</Text>
-            <View style={[styles.gestionBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.gestionBadgeText}>Visão de gestão</Text>
-            </View>
-          </View>
-          <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
-            Acompanhe o desempenho das turmas na Trilha de Segurança da Informação
-          </Text>
-        </View>
+        <AdminHeader />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
@@ -547,36 +556,19 @@ function AdminDashboard() {
   if (adminError || !adminData) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <View
-          style={[
-            styles.adminHeaderCard,
-            { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border },
-          ]}
-        >
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel Professor/Admin</Text>
-            <View style={[styles.gestionBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.gestionBadgeText}>Visão de gestão</Text>
-            </View>
+        <AdminHeader />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <View style={[styles.emptyStateWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <AlertTriangle size={32} color={colors.error} style={{ marginBottom: 12 }} />
+            <Text style={[styles.emptyStateTitle, { color: colors.foreground }]}>Erro ao carregar métricas</Text>
+            <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>{adminError}</Text>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+              onPress={fetchAdminData}
+            >
+              <Text style={styles.primaryBtnText}>Tentar novamente</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
-            Acompanhe o desempenho das turmas na Trilha de Segurança da Informação
-          </Text>
-        </View>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <AlertTriangle size={36} color={colors.error} style={{ marginBottom: 12 }} />
-          <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", textAlign: "center", marginBottom: 8 }}>
-            Erro ao carregar métricas
-          </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center", marginBottom: 16 }}>
-            {adminError}
-          </Text>
-          <TouchableOpacity
-            style={{ paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.primary, borderRadius: 8 }}
-            onPress={fetchAdminData}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Tentar Novamente</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -808,141 +800,194 @@ function AdminDashboard() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* ── HEADER ─────────────────────────────────────────────── */}
       <View
         style={[
           styles.adminHeaderCard,
-          { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border },
+          { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border },
         ]}
       >
         <View style={styles.headerTitleRow}>
-          <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel do Professor</Text>
-          <View style={[styles.gestionBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.gestionBadgeText}>Visão de gestão</Text>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.adminHeaderTitle, { color: colors.foreground }]}>Painel do Professor</Text>
+            <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
+              Turmas · Progresso · Feedbacks
+            </Text>
+          </View>
+          <View style={[styles.gestionBadge, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "35", borderWidth: 1 }]}>
+            <Presentation size={11} color={colors.primary} />
+            <Text style={[styles.gestionBadgeText, { color: colors.primary }]}>Gestão</Text>
           </View>
         </View>
-        <Text style={[styles.adminHeaderSub, { color: colors.mutedForeground }]}>
-          Acompanhe turmas, progresso e feedbacks.
-        </Text>
       </View>
 
       <ScrollView
         key="admin-main-scroll"
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 180 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* INDICADORES PRINCIPAIS */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>INDICADORES PRINCIPAIS</Text>
+        {/* ── INDICADORES ────────────────────────────────────────── */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>INDICADORES</Text>
         <View style={styles.metricsGrid}>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.activeStudents}</Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Alunos ativos</Text>
+            <View style={[styles.metricIconWrap, { backgroundColor: colors.primary + "15" }]}>
+              <Users size={15} color={colors.primary} />
+            </View>
+            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+              {adminData.activeStudents}
+            </Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Alunos</Text>
           </View>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.classes.length}</Text>
+            <View style={[styles.metricIconWrap, { backgroundColor: "#8B5CF6" + "15" }]}>
+              <Presentation size={15} color="#8B5CF6" />
+            </View>
+            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+              {adminData.classes.length}
+            </Text>
             <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Turmas</Text>
           </View>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.averageXp}</Text>
-            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>XP médio</Text>
+            <View style={[styles.metricIconWrap, { backgroundColor: "#F59E0B" + "15" }]}>
+              <Zap size={15} color="#F59E0B" />
+            </View>
+            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+              {adminData.averageXp}
+            </Text>
+            <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>XP Médio</Text>
           </View>
           <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.metricValue, { color: colors.foreground }]}>{adminData.feedbackStats.total}</Text>
+            <View style={[styles.metricIconWrap, { backgroundColor: colors.success + "15" }]}>
+              <MessageSquare size={15} color={colors.success} />
+            </View>
+            <Text style={[styles.metricValue, { color: colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+              {adminData.feedbackStats.total}
+            </Text>
             <Text style={[styles.metricSubtext, { color: colors.mutedForeground }]}>Feedbacks</Text>
           </View>
         </View>
 
-        {/* INSIGHT CARD — turma destaque + alerta de engajamento baixo */}
-        <View style={[styles.insightCard, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "20" }]}>
-          <View style={styles.insightHeader}>
-            <Info size={16} color={colors.primary} />
-            <Text style={[styles.insightTitle, { color: colors.primary }]}>Destaque</Text>
-          </View>
-          <Text style={[styles.insightDesc, { color: colors.foreground }]}>
-            {adminData.classes.length === 0
-              ? "Nenhuma turma cadastrada ainda. Cadastre turmas em Gestão de Turmas."
-              : lowestClass
-              ? `🏆 Mais engajada: ${bestClass} (${bestScore} pts).\n⚠️ Menor engajamento: "${lowestClass.name}" (${lowestClass.averageXp} XP médio). Considere atenção especial.`
-              : `🏆 Turma destaque: ${bestClass} com ${bestScore} pts de engajamento.`
-            }
-          </Text>
-        </View>
-
-        {/* RESUMO DAS TURMAS */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>RESUMO DAS TURMAS</Text>
-        <View style={{ gap: 12, marginBottom: 24 }}>
-          {adminData.classes.length === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={{ color: colors.mutedForeground }}>Nenhuma turma cadastrada ainda.</Text>
+        {/* ── INSIGHT ────────────────────────────────────────────── */}
+        {adminData.classes.length === 0 ? (
+          <View style={[styles.insightCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.insightHeader}>
+              <Info size={14} color={colors.mutedForeground} />
+              <Text style={[styles.insightTitle, { color: colors.mutedForeground }]}>Nenhuma turma</Text>
             </View>
-          ) : (
-            adminData.classes.map((cls) => {
-              return (
-                <View
-                  key={cls.name}
-                  style={[styles.cohortVisualCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                >
-                  <View style={styles.cohortHeaderRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.cohortTitleText, { color: colors.foreground }]} numberOfLines={2} ellipsizeMode="tail">{cls.name}</Text>
-                      {cls.course ? (
-                        <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.primary, marginTop: 2 }}>
-                          {cls.course} {cls.term ? `• ${cls.term}` : ""}
-                        </Text>
-                      ) : null}
-                      <Text style={[styles.cohortSubtitleText, { color: colors.mutedForeground, marginTop: 2 }]}>
-                        {cls.studentCount} {cls.studentCount === 1 ? "aluno matriculado" : "alunos matriculados"}
-                      </Text>
-                    </View>
-                    <View style={[styles.engagePill, { backgroundColor: colors.primary + "15" }]}>
-                      <Text style={[styles.engagePillText, { color: colors.primary }]}>{cls.engagementScore} pts</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.cohortStatsGrid}>
-                    <View style={[styles.cohortStatGridCell, { backgroundColor: colors.primary + "08" }]}>
-                      <Text style={[styles.cohortGridVal, { color: colors.primary }]} numberOfLines={1} adjustsFontSizeToFit>
-                        {cls.studentCount > 0 ? `${cls.averageXp}` : "0"}
-                      </Text>
-                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>XP médio</Text>
-                    </View>
-                    <View style={[styles.cohortStatGridCell, { backgroundColor: colors.success + "08" }]}>
-                      <Text style={[styles.cohortGridVal, { color: colors.success }]} numberOfLines={1} adjustsFontSizeToFit>
-                        {cls.studentCount > 0 ? `${cls.averageCompleted}` : "0"}
-                      </Text>
-                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Módulos</Text>
-                    </View>
-                    <View style={[styles.cohortStatGridCell, { backgroundColor: "#F59E0B" + "08" }]}>
-                      <Text style={[styles.cohortGridVal, { color: "#F59E0B" }]} numberOfLines={1} adjustsFontSizeToFit>
-                        {cls.studentCount > 0 ? `${cls.averageAccuracy}%` : "—"}
-                      </Text>
-                      <Text style={[styles.cohortGridLbl, { color: colors.mutedForeground }]}>Precisão</Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.cohortActionBtn, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "20" }]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setSelectedClass(cls.name);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.cohortActionText, { color: colors.primary }]}>Ver alunos</Text>
-                    <ChevronRight size={14} color={colors.primary} />
-                  </TouchableOpacity>
+            <Text style={[styles.insightDesc, { color: colors.mutedForeground }]}>
+              Cadastre turmas na seção de Gestão de Turmas para acompanhar o progresso.
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 8, marginTop: 12, marginBottom: 4 }}>
+            <View style={[styles.insightCard, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "20", marginTop: 0, marginBottom: 0 }]}>
+              <View style={styles.insightHeader}>
+                <Award size={14} color={colors.primary} />
+                <Text style={[styles.insightTitle, { color: colors.primary }]}>Mais engajada</Text>
+              </View>
+              <Text style={[styles.insightDesc, { color: colors.foreground }]}>
+                {bestClass} · <Text style={{ fontFamily: "Inter_700Bold" }}>{bestScore} pts</Text>
+              </Text>
+            </View>
+            {lowestClass && (
+              <View style={[styles.insightCard, { backgroundColor: colors.warning + "08", borderColor: colors.warning + "25", marginTop: 0, marginBottom: 0 }]}>
+                <View style={styles.insightHeader}>
+                  <AlertTriangle size={13} color={colors.warning} />
+                  <Text style={[styles.insightTitle, { color: colors.warning }]}>Atenção</Text>
                 </View>
-              );
-            })
-          )}
-        </View>
+                <Text style={[styles.insightDesc, { color: colors.foreground }]}>
+                  {lowestClass.name} · <Text style={{ fontFamily: "Inter_700Bold" }}>{lowestClass.averageXp} XP médio</Text>
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ── RESUMO DAS TURMAS ──────────────────────────────────── */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>RESUMO DAS TURMAS</Text>
+        {adminData.classes.length === 0 ? (
+          <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Users size={28} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+            <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Nenhuma turma cadastrada</Text>
+            <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>Use "Nova turma" abaixo para começar.</Text>
+          </View>
+        ) : (
+          <View style={{ gap: 10, marginBottom: 24 }}>
+            {adminData.classes.map((cls) => (
+              <View
+                key={cls.name}
+                style={[styles.cohortVisualCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                {/* Cabeçalho do card */}
+                <View style={styles.cohortHeaderRow}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[styles.cohortTitleText, { color: colors.foreground }]} numberOfLines={1} ellipsizeMode="tail">
+                      {cls.name}
+                    </Text>
+                    {cls.course ? (
+                      <Text style={[styles.cohortCourseLine, { color: colors.mutedForeground }]} numberOfLines={1}>
+                        {cls.course}{cls.term ? ` · ${cls.term}` : ""}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 4 }}>
+                    <View style={[styles.engagePill, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "25", borderWidth: 1 }]}>
+                      <BarChart3 size={10} color={colors.primary} />
+                      <Text style={[styles.engagePillText, { color: colors.primary }]}>{cls.engagementScore}</Text>
+                    </View>
+                    <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
+                      {cls.studentCount} {cls.studentCount === 1 ? "aluno" : "alunos"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Estatísticas em linha */}
+                <View style={styles.cohortStatsRow}>
+                  <View style={styles.cohortStatInline}>
+                    <Zap size={11} color="#F59E0B" />
+                    <Text style={[styles.cohortStatInlineVal, { color: colors.foreground }]}>{cls.studentCount > 0 ? cls.averageXp : 0}</Text>
+                    <Text style={[styles.cohortStatInlineLbl, { color: colors.mutedForeground }]}>XP</Text>
+                  </View>
+                  <View style={[styles.cohortStatDivider, { backgroundColor: colors.border }]} />
+                  <View style={styles.cohortStatInline}>
+                    <BookOpen size={11} color={colors.success} />
+                    <Text style={[styles.cohortStatInlineVal, { color: colors.foreground }]}>{cls.studentCount > 0 ? cls.averageCompleted : 0}</Text>
+                    <Text style={[styles.cohortStatInlineLbl, { color: colors.mutedForeground }]}>módulos</Text>
+                  </View>
+                  <View style={[styles.cohortStatDivider, { backgroundColor: colors.border }]} />
+                  <View style={styles.cohortStatInline}>
+                    <Target size={11} color={colors.primary} />
+                    <Text style={[styles.cohortStatInlineVal, { color: colors.foreground }]}>{cls.studentCount > 0 ? `${cls.averageAccuracy}%` : "—"}</Text>
+                    <Text style={[styles.cohortStatInlineLbl, { color: colors.mutedForeground }]}>precisão</Text>
+                  </View>
+                </View>
+
+                {/* Botão Ver alunos — ghost / leve */}
+                <TouchableOpacity
+                  style={[styles.cohortActionBtn, { borderTopColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedClass(cls.name);
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={[styles.cohortActionText, { color: colors.primary }]}>Ver alunos</Text>
+                  <ChevronRight size={13} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* FEEDBACKS DOS ALUNOS */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 12 }]}>FEEDBACKS DOS ALUNOS</Text>
         <View style={{ marginBottom: 24, gap: 12 }}>
           {adminData.feedbackStats.total === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Os feedbacks aparecerão aqui após os alunos concluírem a primeira aula.
+            <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MessageSquare size={26} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+              <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Sem feedbacks ainda</Text>
+              <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>
+                Aparecerão aqui após os alunos concluírem a primeira aula.
               </Text>
             </View>
           ) : (
@@ -1047,10 +1092,10 @@ function AdminDashboard() {
         </Text>
         <View style={{ marginBottom: 24, gap: 12 }}>
           {(!adminData.reports || adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).length === 0) ? (
-            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Nenhuma contestação pendente.
-              </Text>
+            <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <CheckCircle2 size={26} color={colors.success} style={{ marginBottom: 8 }} />
+              <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Tudo resolvido</Text>
+              <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>Nenhuma contestação pendente.</Text>
             </View>
           ) : (
             adminData.reports.filter(r => !hiddenReportIds.includes(r.id)).slice(0, 5).map((report) => (
@@ -1249,42 +1294,48 @@ function AdminDashboard() {
         )}
 
         {/* LISTAGEM DE GESTÃO DE TURMAS */}
-        <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {rawClasses.map((cls, idx) => (
-            <View
-              key={cls.id}
-              style={[
-                styles.listItem,
-                idx < rawClasses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                { paddingVertical: 12 }
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.className, { color: colors.foreground }]}>{cls.name}</Text>
-                <Text style={[styles.classSub, { color: colors.mutedForeground }]}>
-                  {cls.course || "Sem curso definido"} • {cls.term || "Sem termo"}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.editIconBtn, { borderColor: colors.border }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsCreatingClass(false);
-                  setEditingClassId(cls.id);
-                  setEditClassName(cls.name);
-                  setEditClassCourse(cls.course);
-                  setEditClassTerm(cls.term);
-                  setClassActionError(null);
-                  setClassActionSuccess(null);
-                }}
-                activeOpacity={0.7}
+        {rawClasses.length === 0 ? (
+          <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 24 }]}>
+            <Presentation size={26} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
+            <Text style={[styles.emptyStateTitle, { color: colors.mutedForeground }]}>Nenhuma turma criada</Text>
+            <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>Use o botão "Nova turma" acima para cadastrar.</Text>
+          </View>
+        ) : (
+          <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {rawClasses.map((cls, idx) => (
+              <View
+                key={cls.id}
+                style={[
+                  styles.listItem,
+                  idx < rawClasses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
               >
-                <Edit2 size={13} color={colors.primary} />
-                <Text style={[styles.editIconText, { color: colors.primary }]}>Editar</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+                <View style={{ flex: 1, gap: 1, paddingRight: 12 }}>
+                  <Text style={[styles.className, { color: colors.foreground }]} numberOfLines={1}>{cls.name}</Text>
+                  <Text style={[styles.classSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {[cls.course, cls.term].filter(Boolean).join(" · ") || "Sem detalhes"}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editIconBtn, { borderColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsCreatingClass(false);
+                    setEditingClassId(cls.id);
+                    setEditClassName(cls.name);
+                    setEditClassCourse(cls.course);
+                    setEditClassTerm(cls.term);
+                    setClassActionError(null);
+                    setClassActionSuccess(null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit2 size={13} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ROADMAP / RECURSOS FUTUROS */}
         <View style={{ paddingVertical: 24, alignItems: "center" }}>
@@ -1625,37 +1676,49 @@ const styles = StyleSheet.create({
   diffText: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
   lessonCount: { fontSize: 10, fontFamily: "Inter_400Regular" },
 
-  // Admin Dashboard specific styles
-  adminHeader: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, gap: 6 },
-  adminHeaderCard: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, gap: 6 },
-  adminHeaderTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  adminHeaderSub: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  headerTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginTop: 8, gap: 8 },
-  
-  gestionBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" },
-  gestionBadgeText: { color: "#FFF", fontSize: 10, fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  // ── Admin Dashboard ──────────────────────────────────────────────────
+  adminHeader: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
+  adminHeaderCard: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
+  adminHeaderTitle: { fontSize: 19, fontFamily: "Inter_800ExtraBold", lineHeight: 24 },
+  adminHeaderSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  headerTitleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginTop: 6, gap: 10 },
 
-  metricsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 },
-  metricCard: { flex: 1, minWidth: "45%", borderRadius: 12, borderWidth: 1, padding: 14, gap: 8 },
-  metricIconWrap: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  metricValue: { fontSize: 26, fontFamily: "Inter_800ExtraBold" },
+  gestionBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, alignSelf: "flex-start" },
+  gestionBadgeText: { fontSize: 11, fontFamily: "Inter_700Bold" },
+
+  // Metric cards — bento-style 2×2
+  metricsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
+  metricCard: { flex: 1, minWidth: "44%", borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
+  metricIconWrap: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  metricValue: { fontSize: 28, fontFamily: "Inter_800ExtraBold", lineHeight: 32 },
   metricLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  metricSubtext: { fontSize: 10, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 0.5 },
+  metricSubtext: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 0.3 },
 
-  insightCard: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6, marginTop: 12, marginBottom: 16 },
-  insightHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  insightTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  insightDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  // Insight cards
+  insightCard: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 4, marginTop: 8, marginBottom: 8 },
+  insightHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+  insightTitle: { fontSize: 12, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
+  insightDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
 
-  cohortVisualCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 12, marginBottom: 4 },
-  cohortHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cohortTitleText: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  // Class summary cards — lean
+  cohortVisualCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 0 },
+  cohortHeaderRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: 14, paddingBottom: 10 },
+  cohortTitleText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  cohortCourseLine: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   cohortSubtitleText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  engagePill: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  engagePillText: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  engagePill: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  engagePillText: { fontSize: 11, fontFamily: "Inter_700Bold" },
 
+  // Inline stats row (replaces grid cells)
+  cohortStatsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 },
+  cohortStatInline: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
+  cohortStatInlineVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  cohortStatInlineLbl: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  cohortStatDivider: { width: 1, height: 14, opacity: 0.5 },
+
+  // Keep grid cells for class detail view
   cohortStatsGrid: { flexDirection: "row", gap: 8, marginVertical: 4 },
-  cohortStatGridCell: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8, backgroundColor: "rgba(0,0,0,0.02)" },
+  cohortStatGridCell: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8 },
   cohortGridVal: { fontSize: 14, fontFamily: "Inter_700Bold" },
   cohortGridLbl: { fontSize: 9, fontFamily: "Inter_500Medium" },
 
@@ -1664,51 +1727,61 @@ const styles = StyleSheet.create({
   engageBarValue: { fontSize: 10, fontFamily: "Inter_700Bold" },
   engageBarTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
   engageBarFill: { height: 6, borderRadius: 3 },
-  cohortActionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 8, borderWidth: 1, paddingVertical: 10, gap: 4, marginTop: 8 },
+  // Action button — ghost style with border-top divider
+  cohortActionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 12, borderTopWidth: 1 },
   cohortActionText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  titleDividerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
-  outlineBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  titleDividerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 20, marginBottom: 8 },
+  outlineBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
   outlineBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
 
-  alertBanner: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 },
+  alertBanner: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 12 },
   alertBannerText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
 
-  formContainer: { borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 16, gap: 12 },
-  formTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  formField: { gap: 4 },
-  formLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  formInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: "Inter_400Regular" },
+  formContainer: { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 16, gap: 12 },
+  formTitle: { fontSize: 15, fontFamily: "Inter_700Bold", marginBottom: 2 },
+  formField: { gap: 5 },
+  formLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.3 },
+  formInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: "Inter_400Regular" },
   formActionsRow: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 },
   formCancelBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 },
   formCancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   formSubmitBtn: { borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, minWidth: 100, alignItems: "center", justifyContent: "center" },
   formSubmitText: { color: "#FFF", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  lockWarningBanner: { flexDirection: "row", gap: 8, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: "center", marginBottom: 4 },
+  lockWarningBanner: { flexDirection: "row", gap: 8, borderWidth: 1, borderRadius: 8, padding: 10, alignItems: "flex-start", marginBottom: 4 },
   lockWarningText: { flex: 1, fontSize: 10, fontFamily: "Inter_500Medium", lineHeight: 14 },
 
-  listCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden", marginTop: 4, marginBottom: 24 },
-  listItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: 16 },
+  // Class management list — minimal
+  listCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginTop: 4, marginBottom: 24 },
+  listItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 13, paddingHorizontal: 16 },
   className: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   classEngage: { alignItems: "flex-end" },
   classEngageText: { fontSize: 15, fontFamily: "Inter_700Bold" },
   classEngageLabel: { fontSize: 10, fontFamily: "Inter_500Medium" },
+  classSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  classRight: { flexDirection: "row", alignItems: "center" },
 
   roadmapCard: { flexDirection: "row", alignItems: "center", borderRadius: 12, borderWidth: 1, padding: 16, gap: 16, marginBottom: 20 },
   roadmapInfo: { flex: 1, gap: 4 },
   roadmapTitle: { fontSize: 15, fontFamily: "Inter_700Bold" },
   roadmapDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
 
-  backButtonRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  backButtonRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
   backButtonText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  classSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
-  classRight: { flexDirection: "row", alignItems: "center" },
-  
-  emptyCard: { borderRadius: 12, borderWidth: 1, padding: 32, alignItems: "center", justifyContent: "center" },
+
+  // Empty states — centered, icon + title + desc
+  emptyStateWrap: { borderRadius: 14, borderWidth: 1, padding: 28, alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 8 },
+  emptyStateTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  emptyStateDesc: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 18, marginTop: 2 },
+  emptyCard: { borderRadius: 12, borderWidth: 1, padding: 28, alignItems: "center", justifyContent: "center" },
   emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
-  
-  studentDetailCard: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 12, gap: 12 },
+
+  // Primary action button
+  primaryBtn: { borderRadius: 10, paddingHorizontal: 20, paddingVertical: 11, alignItems: "center", justifyContent: "center" },
+  primaryBtnText: { color: "#FFF", fontSize: 13, fontFamily: "Inter_700Bold" },
+
+  studentDetailCard: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 10, gap: 12 },
   studentCardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   studentRankBadge: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
@@ -1718,19 +1791,19 @@ const styles = StyleSheet.create({
   studentCardTitle: { flex: 1, gap: 2 },
   studentName: { fontSize: 14, fontFamily: "Inter_700Bold" },
   studentEmail: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  
+
   studentStatsRow: { flexDirection: "row", borderTopWidth: 1, paddingTop: 12, gap: 8 },
   studentStatItem: { flex: 1, alignItems: "center", gap: 3 },
   studentStatVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
   studentStatLbl: { fontSize: 9, fontFamily: "Inter_500Medium" },
-  
+
   backBottomButton: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     borderRadius: 10, borderWidth: 1, paddingVertical: 12, marginTop: 12, gap: 6
   },
   backBottomText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  editIconBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  editIconBtn: { width: 36, height: 36, borderWidth: 1, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   editIconText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
 
   pillBadge: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2 },
