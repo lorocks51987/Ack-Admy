@@ -33,12 +33,12 @@ export function FeedbackPanel({
 
   return (
     <Reanimated.View 
-      entering={FadeInDown.duration(300).easing(Easing.out(Easing.quad))}
+      entering={FadeInDown.duration(200).easing(Easing.out(Easing.quad))}
       style={[fb.panel, { backgroundColor: colors.card, borderTopColor: accent, paddingBottom: safeBottom }]}
     >
       {/* Status row */}
       <View style={[fb.statusRow, { backgroundColor: statusBg, borderRadius: 12, padding: 14 }]}>
-        <Reanimated.View entering={FadeIn.duration(300).delay(100)}>
+        <Reanimated.View entering={FadeIn.duration(200).delay(50)}>
           {feedback.correct
             ? <CheckCircle size={26} color={colors.success} strokeWidth={2} />
             : <XCircle size={26} color={colors.error} strokeWidth={2} />
@@ -125,7 +125,7 @@ const fb = StyleSheet.create({
   livesCol: { flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center" },
   primaryBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    padding: 16, borderRadius: 12, gap: 8,
+    padding: 16, borderRadius: 12, gap: 8, minHeight: 52,
   },
   primaryBtnText: { color: "#FFF", fontSize: 16, fontFamily: "Inter_700Bold" },
   learnMoreBtn: {

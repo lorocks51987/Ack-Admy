@@ -66,6 +66,12 @@
         "projectId": "bc6976ba-4aed-40c3-9b36-7397b6523159"
       }
     },
-    "owner": "lorocks57321"
+    "owner": "lorocks57321",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bc6976ba-4aed-40c3-9b36-7397b6523159"
+    }
   }
 }

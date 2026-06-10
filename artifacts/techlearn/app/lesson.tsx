@@ -259,11 +259,11 @@ export function LessonScreenInternal() {
   // ── Animation ────────────────────────────────────────────────────────────────
   const animateNext = useCallback((cb: () => void) => {
     Animated.timing(slideAnim, {
-      toValue: -360, duration: 180, useNativeDriver: NATIVE,
+      toValue: -360, duration: 160, useNativeDriver: NATIVE,
     }).start(() => {
       cb();
       slideAnim.setValue(360);
-      Animated.spring(slideAnim, { toValue: 0, friction: 9, tension: 80, useNativeDriver: NATIVE }).start();
+      Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: NATIVE }).start();
     });
   }, [slideAnim]);
 

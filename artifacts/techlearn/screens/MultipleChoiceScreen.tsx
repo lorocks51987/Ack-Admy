@@ -182,6 +182,6 @@ const styles = StyleSheet.create({
   optLetterText: { fontSize: 13, fontFamily: "Inter_700Bold" },
   optionText: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", lineHeight: 22 },
   footer: { paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: 1 },
-  btn: { borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  btn: { borderRadius: 12, paddingVertical: 16, alignItems: "center", justifyContent: "center", minHeight: 52 },
   btnText: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
 });

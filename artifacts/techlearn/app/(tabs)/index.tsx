@@ -1575,12 +1575,14 @@ export default function HomeScreen() {
                   borderColor: isCompleted
                     ? colors.success + "40"
                     : isCurrentNext
-                    ? mod.accentColor + "50"
+                    ? mod.accentColor + "60"
                     : colors.border,
-                  opacity: isLocked ? 0.38 : 1,
-                  // Sutil destaque à esquerda no módulo atual
-                  borderLeftWidth: isCurrentNext ? 3 : 1,
+                  borderWidth: isCurrentNext ? 1.5 : 1,
+                  opacity: isLocked ? 0.5 : 1,
+                  borderLeftWidth: isCurrentNext ? 4 : 1,
                   borderLeftColor: isCurrentNext ? mod.accentColor : (isCompleted ? colors.success + "40" : colors.border),
+                  padding: 18,
+                  marginBottom: 8,
                 }]}
                 onPress={() => {
                   if (isLocked) return;
@@ -1739,10 +1741,10 @@ const styles = StyleSheet.create({
   badgeTextCompact: { fontSize: 11, fontFamily: "Inter_700Bold" },
   scroll: { padding: 16, gap: 0 },
   sectionLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 2, marginBottom: 12 },
-  connector: { width: 2, height: 12, marginBottom: 0 },
+  connector: { width: 2, height: 16, marginBottom: 0 },
   card: {
     flexDirection: "row", alignItems: "center", borderRadius: 12,
-    borderWidth: 1, padding: 14, gap: 12, marginBottom: 4,
+    borderWidth: 1, padding: 14, gap: 12, marginBottom: 0,
   },
   iconWrap: {
     width: 46, height: 46, borderRadius: 12, borderWidth: 1,
