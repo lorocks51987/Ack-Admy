@@ -1544,6 +1544,7 @@ export default function HomeScreen() {
         )}
 
 
+
         {MODULE_DEFINITIONS.map((mod, index) => {
           let { isCompleted, isLocked } = getModuleState(mod);
           const isNext = !isCompleted && !isLocked;
