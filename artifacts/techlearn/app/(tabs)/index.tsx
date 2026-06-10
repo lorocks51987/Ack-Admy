@@ -9,7 +9,7 @@ import {
   ChevronRight, Lock, Zap, Star, CheckCircle2,
   Users, BarChart3, Presentation, ChevronLeft,
   Award, Target, TrendingUp, BookOpen, Medal, Crown,
-  Plus, Edit2, Info, ChevronDown, ChevronUp, MessageSquare, ThumbsUp, Download, Lightbulb
+  Plus, Edit2, Info, ChevronDown, ChevronUp, MessageSquare, ThumbsUp, Download
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -1543,20 +1543,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-
-        {/* Card Como Funciona */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 20, padding: 16 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Lightbulb size={18} color={colors.primary} />
-            <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: colors.foreground }}>Como funciona</Text>
-          </View>
-          <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, lineHeight: 20 }}>
-            • Responda perguntas práticas para aprender segurança.{"\n"}
-            • Errou? O app explica o motivo na hora.{"\n"}
-            • Travou? Use uma dica (custa XP, mas ajuda muito).{"\n"}
-            • Conclua os módulos para ganhar XP e avançar!
-          </Text>
-        </View>
 
         {MODULE_DEFINITIONS.map((mod, index) => {
           let { isCompleted, isLocked } = getModuleState(mod);
