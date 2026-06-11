@@ -1476,9 +1476,9 @@ export default function HomeScreen() {
     ? Math.round((progress.correctAnswers / progress.totalExercises) * 100)
     : 0;
 
-  const getModuleState = (mod: typeof MODULE_DEFINITIONS[0]) => {
+  const getModuleState = (mod: typeof MODULE_DEFINITIONS[0], index: number) => {
     const isCompleted = progress.completedModules.includes(mod.id);
-    const prevDone = mod.id === 1 || progress.completedModules.includes(mod.id - 1);
+    const prevDone = index === 0 || progress.completedModules.includes(MODULE_DEFINITIONS[index - 1].id);
     return { isCompleted, isLocked: !prevDone && !isCompleted };
   };
 
@@ -1546,11 +1546,11 @@ export default function HomeScreen() {
 
 
         {MODULE_DEFINITIONS.map((mod, index) => {
-          let { isCompleted, isLocked } = getModuleState(mod);
+          let { isCompleted, isLocked } = getModuleState(mod, index);
           const isNext = !isCompleted && !isLocked;
           // "currentNext" = primeiro módulo disponível que não foi concluído
-          const isCurrentNext = isNext && !MODULE_DEFINITIONS.slice(0, index).some(m => {
-            const s = getModuleState(m);
+          const isCurrentNext = isNext && !MODULE_DEFINITIONS.slice(0, index).some((m, idx) => {
+            const s = getModuleState(m, idx);
             return !s.isCompleted && !s.isLocked;
           });
 
@@ -1565,7 +1565,7 @@ export default function HomeScreen() {
             <View key={mod.id}>
               {index > 0 && (
                 <View style={[styles.connector, {
-                  backgroundColor: progress.completedModules.includes(mod.id - 1) ? colors.primary + "50" : colors.border,
+                  backgroundColor: progress.completedModules.includes(MODULE_DEFINITIONS[index - 1].id) ? colors.primary + "50" : colors.border,
                   marginLeft: 37,
                 }]} />
               )}

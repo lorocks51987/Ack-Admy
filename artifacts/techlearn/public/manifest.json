@@ -1,0 +1,35 @@
+{
+  "name": "ACK-ADMY",
+  "short_name": "ACK-ADMY",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#05050A",
+  "background_color": "#05050A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

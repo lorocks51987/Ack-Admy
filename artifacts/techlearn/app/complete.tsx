@@ -34,7 +34,10 @@ export default function CompleteScreen() {
   const xpEarned = parseInt(xpParam || "0", 10);
   const moduleId = parseInt(moduleIdParam || "1", 10);
   const moduleDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
-  const nextModule = MODULE_DEFINITIONS.find((m) => m.id === moduleId + 1);
+  const currentIndex = MODULE_DEFINITIONS.findIndex((m) => m.id === moduleId);
+  const nextModule = currentIndex >= 0 && currentIndex < MODULE_DEFINITIONS.length - 1
+    ? MODULE_DEFINITIONS[currentIndex + 1]
+    : undefined;
   const isCourseFinished = !nextModule && moduleId !== -1;
 
   const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
