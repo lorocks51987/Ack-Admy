@@ -1515,30 +1515,44 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scroll, { padding: 20, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner de convidado — compacto, linha única */}
+        {/* Banner de convidado — premium e compacto */}
         {isGuest && (
           <View style={{
-            backgroundColor: colors.muted,
-            borderRadius: 10,
+            backgroundColor: colors.primary + "0A",
+            borderRadius: 12,
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: colors.primary + "20",
             paddingVertical: 10,
             paddingHorizontal: 14,
-            marginBottom: 20,
+            marginBottom: 16,
             flexDirection: "row",
             alignItems: "center",
-            gap: 10,
+            justifyContent: "space-between",
+            gap: 12,
           }}>
-            <Info size={14} color={colors.mutedForeground} strokeWidth={2} />
-            <Text style={{ flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
-              Modo visitante — progresso não salvo
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+              <Info size={16} color={colors.primary} strokeWidth={2} style={{ flexShrink: 0 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: colors.foreground }}>
+                  Modo visitante • <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.primary }}>progresso local</Text>
+                </Text>
+                <Text style={{ fontSize: 10.5, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 1 }}>
+                  Seu progresso fica salvo apenas neste aparelho.
+                </Text>
+              </View>
+            </View>
             <TouchableOpacity
-              style={{ paddingHorizontal: 10, paddingVertical: 5, backgroundColor: colors.primary, borderRadius: 6 }}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                backgroundColor: colors.primary,
+                borderRadius: 8,
+                flexShrink: 0,
+              }}
               onPress={() => router.push("/sign-up" as any)}
               activeOpacity={0.85}
             >
-              <Text style={{ color: "#FFF", fontSize: 11, fontFamily: "Inter_700Bold" }}>Criar conta</Text>
+              <Text style={{ color: "#FFF", fontSize: 11, fontFamily: "Inter_700Bold" }}>Salvar progresso</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1578,7 +1592,7 @@ export default function HomeScreen() {
                     ? mod.accentColor + "60"
                     : colors.border,
                   borderWidth: isCurrentNext ? 1.5 : 1,
-                  opacity: isLocked ? 0.5 : 1,
+                  opacity: isLocked ? 0.75 : 1,
                   borderLeftWidth: isCurrentNext ? 4 : 1,
                   borderLeftColor: isCurrentNext ? mod.accentColor : (isCompleted ? colors.success + "40" : colors.border),
                   padding: 18,

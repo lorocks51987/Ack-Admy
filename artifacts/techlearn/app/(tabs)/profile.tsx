@@ -265,24 +265,25 @@ export default function ProfileScreen() {
               <Text style={[styles.avatarText, { color: colors.primary }]}>?</Text>
             </View>
             <View style={styles.userCardInfo}>
-              <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>Visitante</Text>
-              <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>Modo teste sem login</Text>
-              
-              <Text style={[styles.userSubtitle, { color: colors.mutedForeground, marginTop: 4, marginBottom: 8 }]}>
-                Seu progresso atual é temporário e não será salvo na nuvem. Crie uma conta para salvar e liberar a trilha completa!
+              <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={2}>
+                Você está usando o ACK-ADMY como visitante.
+              </Text>
+              <Text style={[styles.userSubtitle, { color: colors.mutedForeground, marginTop: 4, marginBottom: 12 }]}>
+                Crie uma conta para salvar progresso, conquistas e ranking.
               </Text>
 
-              <View style={{ flexDirection: 'column', gap: 8 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity style={{ flex: 1, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={() => router.replace('/sign-up' as any)}>
-                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>Criar conta</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={() => router.replace('/sign-in' as any)}>
-                    <Text style={{ color: colors.primary, fontSize: 13, fontWeight: 'bold' }}>Entrar</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center' }} onPress={async () => { await signOut(); }}>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 13, fontWeight: 'bold' }}>Sair do modo teste</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => router.replace('/sign-up' as any)}
+                >
+                  <Text style={{ color: '#fff', fontSize: 13, fontFamily: 'Inter_700Bold' }}>Criar conta</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => router.replace('/sign-in' as any)}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 13, fontFamily: 'Inter_700Bold' }}>Entrar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -412,7 +413,16 @@ export default function ProfileScreen() {
             )}
 
             {/* RESUMO DE PROGRESSO */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>RESUMO DE PROGRESSO</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginBottom: 10, marginTop: 12 }}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>RESUMO DE PROGRESSO</Text>
+              {isGuest && (
+                <View style={{ backgroundColor: colors.primary + "10", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: colors.primary + "20" }}>
+                  <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: colors.primary }}>
+                    Progresso local • Salvo apenas neste dispositivo
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={styles.statsGrid}>
               <View style={[styles.statItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Star size={20} color="#F59E0B" />
@@ -611,7 +621,7 @@ export default function ProfileScreen() {
                         borderWidth: 1,
                         borderColor: unlocked ? badge.color + "40" : colors.border,
                         backgroundColor: unlocked ? badge.color + "08" : colors.background,
-                        opacity: unlocked ? 1 : 0.45,
+                        opacity: unlocked ? 1 : 0.7,
                       }}
                     >
                       <View
@@ -680,43 +690,65 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* DADOS ACADÊMICOS */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS ACADÊMICOS</Text>
-            <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                <Landmark size={15} color={colors.mutedForeground} />
-                <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Turma</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.class_name || "Sem Turma"}</Text>
-              </View>
-              {profile?.course && (
-                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Curso</Text>
-                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.course}</Text>
+            {/* DADOS ACADÊMICOS OU DE CONTA */}
+            {isGuest ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS DA CONTA</Text>
+                <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                    <Award size={15} color={colors.mutedForeground} />
+                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Status</Text>
+                    <Text style={[styles.academicValue, { color: colors.foreground }]}>Conta não vinculada</Text>
+                  </View>
+                  <View style={styles.academicRow}>
+                    <Info size={15} color={colors.mutedForeground} />
+                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Sincronização</Text>
+                    <Text style={[styles.academicValue, { color: colors.mutedForeground, flexShrink: 1 }]} numberOfLines={2}>
+                      Crie uma conta para sincronizar seus dados.
+                    </Text>
+                  </View>
                 </View>
-              )}
-              {profile?.term && (
-                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Termo</Text>
-                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.term}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS ACADÊMICOS</Text>
+                <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                    <Landmark size={15} color={colors.mutedForeground} />
+                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Turma</Text>
+                    <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.class_name || "Sem Turma"}</Text>
+                  </View>
+                  {profile?.course && (
+                    <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                      <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Curso</Text>
+                      <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.course}</Text>
+                    </View>
+                  )}
+                  {profile?.term && (
+                    <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                      <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Termo</Text>
+                      <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.term}</Text>
+                    </View>
+                  )}
+                  {profile?.room && (
+                    <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                      <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Sala</Text>
+                      <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.room}</Text>
+                    </View>
+                  )}
+                  <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
+                    <Award size={15} color={colors.mutedForeground} />
+                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Tipo de Conta</Text>
+                    <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.profile_type === 'external' ? "Visitante Externo" : "Aluno Unimar"}</Text>
+                  </View>
+                  <View style={styles.academicRow}>
+                    <Users size={15} color={colors.mutedForeground} />
+                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>E-mail</Text>
+                    <Text style={[styles.academicValue, { color: colors.foreground, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{email}</Text>
+                  </View>
                 </View>
-              )}
-              {profile?.room && (
-                <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                  <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Sala</Text>
-                  <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile.room}</Text>
-                </View>
-              )}
-              <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                <Award size={15} color={colors.mutedForeground} />
-                <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Tipo de Conta</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground }]}>{profile?.profile_type === 'external' ? "Visitante Externo" : "Aluno Unimar"}</Text>
-              </View>
-              <View style={styles.academicRow}>
-                <Users size={15} color={colors.mutedForeground} />
-                <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>E-mail</Text>
-                <Text style={[styles.academicValue, { color: colors.foreground, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{email}</Text>
-              </View>
-            </View>
+              </>
+            )}
           </>
         ) : (
           /* PERFIL PROFESSOR/ADMIN */
@@ -927,22 +959,24 @@ export default function ProfileScreen() {
             </View>
           ) : null}
 
-          <TouchableOpacity
-            style={styles.actionRowBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowLogoutModal(true);
-            }}
-            activeOpacity={0.75}
-          >
-            <LogOut size={16} color={colors.mutedForeground} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.actionTitle, { color: colors.foreground }]}>Sair da conta</Text>
-              <Text style={[styles.actionSub, { color: colors.mutedForeground }]}>
-                Encerra a sessão e retorna à tela de login
-              </Text>
-            </View>
-          </TouchableOpacity>
+          {!isGuest && (
+            <TouchableOpacity
+              style={styles.actionRowBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowLogoutModal(true);
+              }}
+              activeOpacity={0.75}
+            >
+              <LogOut size={16} color={colors.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.actionTitle, { color: colors.foreground }]}>Sair da conta</Text>
+                <Text style={[styles.actionSub, { color: colors.mutedForeground }]}>
+                  Encerra a sessão e retorna à tela de login
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 

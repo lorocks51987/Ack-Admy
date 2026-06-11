@@ -171,14 +171,14 @@ export default function CompleteScreen() {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.replace('/sign-up' as any); }}
               activeOpacity={0.85}
             >
-              <Text style={styles.primaryBtnText}>Criar conta e liberar acesso</Text>
+              <Text style={styles.primaryBtnText}>Criar conta e salvar progresso</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.secondaryBtn, { borderColor: colors.border }]}
               onPress={() => { Haptics.selectionAsync(); router.replace('/sign-in' as any); }}
               activeOpacity={0.85}
             >
-              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Já tenho conta (Entrar)</Text>
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Entrar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.tertiaryBtn}

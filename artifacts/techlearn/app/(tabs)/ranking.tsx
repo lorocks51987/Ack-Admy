@@ -620,14 +620,160 @@ export default function RankingScreen() {
       )}
 
       {isGuest && (
-        <View style={{ flex: 1, padding: 24, justifyContent: "center", alignItems: "center" }}>
-          <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border, width: "100%", padding: 24, gap: 16 }]}>
-            <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center" }}>
-              Crie uma conta para participar do ranking.
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Tag Central de Prévia */}
+          <View style={{
+            alignSelf: "center",
+            backgroundColor: colors.muted,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            marginBottom: 16,
+            marginTop: 8,
+          }}>
+            <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: colors.mutedForeground, letterSpacing: 0.5 }}>
+              PRÉVIA ILUSTRATIVA
             </Text>
-            <View style={{ flexDirection: "row", gap: 12 }}>
+          </View>
+
+          {/* Podium Mock / Ilustrativo (Baixa Opacidade) */}
+          <View style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "flex-end",
+            height: 140,
+            marginVertical: 12,
+            opacity: 0.2,
+            gap: 8,
+          }}>
+            {/* 2º lugar */}
+            <View style={{ alignItems: "center", width: 85 }}>
+              <Medal size={20} color="#94A3B8" />
+              <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: colors.foreground, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                Participante
+              </Text>
+              <Text style={{ fontSize: 9, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>
+                950 XP
+              </Text>
+              <View style={{
+                width: "100%",
+                height: 55,
+                backgroundColor: colors.muted,
+                borderTopLeftRadius: 6,
+                borderTopRightRadius: 6,
+                marginTop: 6,
+              }} />
+            </View>
+
+            {/* 1º lugar */}
+            <View style={{ alignItems: "center", width: 95 }}>
+              <Crown size={24} color="#F59E0B" />
+              <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: colors.foreground, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                Aluno da Turma
+              </Text>
+              <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: colors.primary }}>
+                1200 XP
+              </Text>
+              <View style={{
+                width: "100%",
+                height: 80,
+                backgroundColor: colors.primary + "30",
+                borderColor: colors.primary + "50",
+                borderWidth: 1,
+                borderBottomWidth: 0,
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 8,
+                marginTop: 6,
+              }} />
+            </View>
+
+            {/* 3º lugar */}
+            <View style={{ alignItems: "center", width: 85 }}>
+              <Medal size={20} color="#CD7C2F" />
+              <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: colors.foreground, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                Participante
+              </Text>
+              <Text style={{ fontSize: 9, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>
+                800 XP
+              </Text>
+              <View style={{
+                width: "100%",
+                height: 40,
+                backgroundColor: colors.muted,
+                borderTopLeftRadius: 6,
+                borderTopRightRadius: 6,
+                marginTop: 6,
+              }} />
+            </View>
+          </View>
+
+          {/* Card de Conversão Premium */}
+          <View style={{
+            backgroundColor: colors.card,
+            borderColor: colors.primary + "30",
+            borderWidth: 1,
+            borderRadius: 16,
+            padding: 22,
+            gap: 16,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 4,
+            marginTop: 16,
+          }}>
+            <View style={{ alignItems: "center", gap: 6 }}>
+              <Trophy size={36} color="#F59E0B" strokeWidth={1.5} style={{ marginBottom: 4 }} />
+              <Text style={{ color: colors.foreground, fontSize: 16, fontFamily: "Inter_700Bold", textAlign: "center" }}>
+                Entre no ranking
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12.5, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 18 }}>
+                Crie uma conta para salvar seu XP, comparar seu desempenho e disputar posições com sua turma.
+              </Text>
+            </View>
+
+            {/* Benefícios */}
+            <View style={{
+              backgroundColor: colors.background,
+              borderRadius: 10,
+              padding: 12,
+              gap: 8,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}>
+              {[
+                "💾 Salvar seu XP acumulado localmente",
+                "📊 Comparar seu desempenho acadêmico",
+                "👥 Participar ativamente do ranking da sua turma",
+                "🏆 Conquistar medalhas exclusivas"
+              ].map((benefit, i) => (
+                <Text key={i} style={{ fontSize: 11.5, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>
+                  {benefit}
+                </Text>
+              ))}
+            </View>
+
+            {/* CTAs */}
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
               <TouchableOpacity
-                style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                }}
                 onPress={() => {
                   Haptics.selectionAsync();
                   router.push("/sign-up" as any);
@@ -636,7 +782,16 @@ export default function RankingScreen() {
                 <Text style={{ color: "#FFF", fontSize: 13, fontFamily: "Inter_700Bold" }}>Criar conta</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
                 onPress={() => {
                   Haptics.selectionAsync();
                   router.push("/sign-in" as any);
@@ -646,7 +801,7 @@ export default function RankingScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
       )}
     </View>
   );
