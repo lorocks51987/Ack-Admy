@@ -463,95 +463,70 @@ export default function ProfileScreen() {
             </View>
 
             {/* PRÓXIMO OBJETIVO */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PRÓXIMO OBJETIVO</Text>
-            <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Compass size={20} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Sua próxima meta</Text>
-                <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
-                  {completedCount === 0
-                    ? "Comece pelo primeiro módulo da trilha."
-                    : completedCount < totalModules
-                    ? "Continue sua trilha para liberar novos módulos."
-                    : "Você concluiu a trilha de Segurança da Informação."}
-                </Text>
-              </View>
-            </View>
+            {!isGuest && (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PRÓXIMO OBJETIVO</Text>
+                <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Compass size={20} color={colors.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Sua próxima meta</Text>
+                    <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
+                      {completedCount === 0
+                        ? "Comece pelo primeiro módulo da trilha."
+                        : completedCount < totalModules
+                        ? "Continue sua trilha para liberar novos módulos."
+                        : "Você concluiu a trilha de Segurança da Informação."}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
 
             {/* CAIXA DE ERROS / MISTAKES INBOX */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REVISÃO E APRENDIZADO</Text>
-            <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AlertTriangle size={20} color={hasPendingReviews ? "#EF4444" : colors.mutedForeground} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Caixa de Erros Inteligente</Text>
-                <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
-                  {!hasPendingReviews
-                    ? "Nenhuma revisão programada para hoje. Ótimo trabalho!"
-                    : `${totalPendingReviews} ${totalPendingReviews === 1 ? "revisão agendada" : "revisões agendadas"} para hoje`}
-                </Text>
-              </View>
-              {hasPendingReviews && (
-                <TouchableOpacity
-                  style={{ backgroundColor: "#EF4444", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    router.push({ pathname: "/lesson", params: { moduleId: "mistakes" } } as any);
-                  }}
-                >
-                  <Text style={{ color: "#FFF", fontSize: 12, fontFamily: "Inter_700Bold" }}>Revisar</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* LOJA DO ALUNO */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LOJA DO ALUNO</Text>
-            <View style={[styles.trilhaCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 0, overflow: "hidden" }]}>
-              {/* Header da loja */}
-              <View style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}>
-                  <ShoppingBag size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: colors.foreground }}>Loja de Itens</Text>
-                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>Use XP para desbloquear vantagens</Text>
-                </View>
-                <View style={{ backgroundColor: "#F59E0B15", borderRadius: 6, borderWidth: 1, borderColor: "#F59E0B40", paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: "#F59E0B", letterSpacing: 0.5 }}>EM BREVE</Text>
-                </View>
-              </View>
-              {/* Items da loja */}
-              {[
-                { icon: Zap, color: "#F59E0B", name: "Protetor de Ofensiva", desc: "Proteja seu streak por 1 dia", cost: 100 },
-                { icon: Lightbulb, color: "#3B82F6", name: "Dica Extra", desc: "Uma dica gratuita em qualquer questão", cost: 50 },
-                { icon: CheckCircle2, color: "#10B981", name: "Segunda Chance", desc: "Continue o módulo com vidas cheias", cost: 75 },
-                { icon: Star, color: "#8B5CF6", name: "Cosméticos", desc: "Personalize seu perfil", cost: 0 },
-              ].map((item, idx, arr) => (
-                <View
-                  key={item.name}
-                  style={[
-                    { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-                    idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
-                  ]}
-                >
-                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: item.color + "15", alignItems: "center", justifyContent: "center" }}>
-                    <item.icon size={18} color={item.color} strokeWidth={2} />
-                  </View>
+            {!isGuest && (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REVISÃO E APRENDIZADO</Text>
+                <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <AlertTriangle size={20} color={hasPendingReviews ? "#EF4444" : colors.mutedForeground} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{item.name}</Text>
-                    <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>{item.desc}</Text>
-                    {item.cost > 0 && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 }}>
-                        <Zap size={10} color="#F59E0B" />
-                        <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#F59E0B" }}>{item.cost} XP</Text>
-                      </View>
-                    )}
+                    <Text style={[styles.objectiveLabel, { color: colors.mutedForeground }]}>Caixa de Erros Inteligente</Text>
+                    <Text style={[styles.objectiveDesc, { color: colors.foreground }]}>
+                      {!hasPendingReviews
+                        ? "Nenhuma revisão programada para hoje. Ótimo trabalho!"
+                        : `${totalPendingReviews} ${totalPendingReviews === 1 ? "revisão agendada" : "revisões agendadas"} para hoje`}
+                    </Text>
                   </View>
-                  <View style={{ backgroundColor: colors.input, borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: colors.mutedForeground }}>Em breve</Text>
+                  {hasPendingReviews && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: "#EF4444", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        router.push({ pathname: "/lesson", params: { moduleId: "mistakes" } } as any);
+                      }}
+                    >
+                      <Text style={{ color: "#FFF", fontSize: 12, fontFamily: "Inter_700Bold" }}>Revisar</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+
+            {/* LOJA DO ALUNO — condensada (em breve) */}
+            {!isGuest && (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LOJA DO ALUNO</Text>
+                <View style={[styles.objectiveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <ShoppingBag size={18} color={colors.mutedForeground} strokeWidth={2} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Loja de Itens</Text>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>Use XP para desbloquear vantagens — em breve.</Text>
+                  </View>
+                  <View style={{ backgroundColor: "#F59E0B15", borderRadius: 6, borderWidth: 1, borderColor: "#F59E0B40", paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: "#F59E0B", letterSpacing: 0.5 }}>EM BREVE</Text>
                   </View>
                 </View>
-              ))}
-            </View>
+              </>
+            )}
 
             {/* CONQUISTAS E EMBLEMAS */}
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONQUISTAS E EMBLEMAS</Text>
@@ -690,26 +665,8 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* DADOS ACADÊMICOS OU DE CONTA */}
-            {isGuest ? (
-              <>
-                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS DA CONTA</Text>
-                <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                    <Award size={15} color={colors.mutedForeground} />
-                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Status</Text>
-                    <Text style={[styles.academicValue, { color: colors.foreground }]}>Conta não vinculada</Text>
-                  </View>
-                  <View style={styles.academicRow}>
-                    <Info size={15} color={colors.mutedForeground} />
-                    <Text style={[styles.academicLabel, { color: colors.mutedForeground }]}>Sincronização</Text>
-                    <Text style={[styles.academicValue, { color: colors.mutedForeground, flexShrink: 1 }]} numberOfLines={2}>
-                      Crie uma conta para sincronizar seus dados.
-                    </Text>
-                  </View>
-                </View>
-              </>
-            ) : (
+            {/* DADOS ACADÊMICOS */}
+            {!isGuest && (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DADOS ACADÊMICOS</Text>
                 <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -852,47 +809,18 @@ export default function ProfileScreen() {
 
               <TouchableOpacity
                 style={[styles.quickAccessBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push("/(tabs)" as any)}
+                onPress={() => router.push({ pathname: "/(tabs)", params: { manage: "true" } } as any)}
                 activeOpacity={0.75}
               >
                 <Landmark size={18} color="#8B5CF6" />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.quickAccessTitle, { color: colors.foreground }]}>Gestão de turmas</Text>
-                  <Text style={[styles.quickAccessSub, { color: colors.mutedForeground }]}>Gerencie, cadastre ou edite novas turmas</Text>
+                  <Text style={[styles.quickAccessTitle, { color: colors.foreground }]}>Gerenciar turmas</Text>
+                  <Text style={[styles.quickAccessSub, { color: colors.mutedForeground }]}>Cadastre e edite salas no painel</Text>
                 </View>
                 <ChevronRight size={16} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
 
-            {/* RECURSOS ADMINISTRATIVOS */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>RECURSOS ADMINISTRATIVOS</Text>
-            <View style={[styles.academicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                <CheckCircle2 size={14} color="#10B981" />
-                <Text style={[styles.featureText, { color: colors.foreground }]}>Acompanhar turmas</Text>
-              </View>
-              <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                <CheckCircle2 size={14} color="#10B981" />
-                <Text style={[styles.featureText, { color: colors.foreground }]}>Visualizar desempenho dos alunos</Text>
-              </View>
-              <View style={[styles.academicRow, { borderBottomWidth: 1, borderBottomColor: colors.border + "50" }]}>
-                <CheckCircle2 size={14} color="#10B981" />
-                <Text style={[styles.featureText, { color: colors.foreground }]}>Gerenciar turmas</Text>
-              </View>
-              <View style={styles.academicRow}>
-                <CheckCircle2 size={14} color="#10B981" />
-                <Text style={[styles.featureText, { color: colors.foreground }]}>Consultar ranking geral</Text>
-              </View>
-            </View>
-
-            {/* ROADMAP CURTO */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ROADMAP DO SISTEMA</Text>
-            <View style={[styles.roadmapCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Briefcase size={16} color={colors.primary} />
-              <Text style={[styles.roadmapText, { color: colors.mutedForeground }]}>
-                Em breve: relatórios analíticos, exportações e criação dinâmica de trilhas.
-              </Text>
-            </View>
           </>
         )}
 

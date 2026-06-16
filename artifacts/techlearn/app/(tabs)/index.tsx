@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator, TextInput,
   Modal, Pressable,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   Shield, Key, AlertTriangle, FileText, Mail,
   ChevronRight, Lock, Zap, Star, CheckCircle2,
@@ -83,11 +83,23 @@ function AdminDashboard() {
   const insets = useSafeAreaInsets();
   const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
 
+  const params = useLocalSearchParams<{ manage?: string }>();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+
   const [adminData, setAdminData] = React.useState<AdminDashboardData | null>(null);
   const [adminLoading, setAdminLoading] = React.useState(true);
   const [adminError, setAdminError] = React.useState<string | null>(null);
   const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
   const [hiddenReportIds, setHiddenReportIds] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (params.manage === "true" && !adminLoading) {
+      setIsCreatingClass(true);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 500);
+    }
+  }, [params.manage, adminLoading]);
 
   // Estados de Gestão de Turmas
   const [rawClasses, setRawClasses] = React.useState<{ id: string; name: string; course: string; term: string }[]>([]);
@@ -822,6 +834,7 @@ function AdminDashboard() {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         key="admin-main-scroll"
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 180 }]}
         showsVerticalScrollIndicator={false}
@@ -904,7 +917,7 @@ function AdminDashboard() {
         )}
 
         {/* ── RESUMO DAS TURMAS ──────────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>RESUMO DAS TURMAS</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>DESEMPENHO DAS TURMAS</Text>
         {adminData.classes.length === 0 ? (
           <View style={[styles.emptyStateWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Users size={28} color={colors.mutedForeground} style={{ marginBottom: 8 }} />
@@ -1130,9 +1143,12 @@ function AdminDashboard() {
           )}
         </View>
 
+        {/* DIVIDER E SEÇÃO DE GESTÃO */}
+        <View style={{ height: 1, backgroundColor: colors.border, marginTop: 8, marginBottom: 24 }} />
+
         {/* GESTÃO DE TURMAS */}
-        <View style={styles.titleDividerRow}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>GESTÃO DE TURMAS</Text>
+        <View style={[styles.titleDividerRow, { marginTop: 0 }]}>
+          <Text style={[styles.sectionLabel, { color: colors.foreground, fontSize: 11, fontFamily: "Inter_700Bold" }]}>GESTÃO DE TURMAS</Text>
           <TouchableOpacity
             style={[styles.outlineBtn, { borderColor: colors.primary }]}
             onPress={() => {
@@ -1379,6 +1395,8 @@ function AdminDashboard() {
                             {
                               backgroundColor: isEditing ? colors.primary + "20" : colors.background,
                               borderColor: isEditing ? colors.primary : colors.border,
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
                             },
                           ]}
                           onPress={() => {
@@ -1403,7 +1421,7 @@ function AdminDashboard() {
                             {roomLabel}
                           </Text>
                           <Edit2
-                            size={10}
+                            size={12}
                             color={isEditing ? colors.primary : colors.mutedForeground}
                             strokeWidth={2}
                           />
@@ -1417,12 +1435,7 @@ function AdminDashboard() {
           );
         })()}
 
-        {/* ROADMAP / RECURSOS FUTUROS */}
-        <View style={{ paddingVertical: 24, alignItems: "center" }}>
-          <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: "center" }}>
-            Em breve: relatórios analíticos, exportações completas e criação dinâmica de trilhas.
-          </Text>
-        </View>
+
       </ScrollView>
     </View>
   );
@@ -1430,44 +1443,21 @@ function AdminDashboard() {
 
 // ── HOME SCREEN ───────────────────────────────────────────────────────
 
-export default function HomeScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
-  const { progress } = useProgress();
-  const { profile, loading, profileLoading, isGuest } = useAuth();
+interface StudentHomeContentProps {
+  profile: any;
+  progress: any;
+  colors: any;
+  insets: any;
+  topPad: number;
+  isGuest: boolean;
+}
 
-  if (loading || profileLoading) {
-    return (
-      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
-
-  // Se não existir profile e não for guest, mostra aviso amigável
-  if (!profile && !isGuest) {
-    return (
-      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 20 }]}>
-        <AlertTriangle size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />
-        <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", textAlign: "center", marginBottom: 8 }}>
-          Perfil não encontrado.
-        </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center", marginBottom: 24 }}>
-          Faça login novamente ou contate o suporte.
-        </Text>
-      </View>
-    );
-  }
-
-  // Se for admin, exibe o painel. Se não, exibe a jornada normal de aluno.
-  if (profile?.role === "admin") {
-    return <AdminDashboard />;
-  }
-
+function StudentHomeContent({ profile, progress, colors, insets, topPad, isGuest }: StudentHomeContentProps) {
   // Estados para modal de revisar aula
   const [reviewModalVisible, setReviewModalVisible] = React.useState(false);
   const [selectedModuleToReview, setSelectedModuleToReview] = React.useState<typeof MODULE_DEFINITIONS[0] | null>(null);
+  // Estado para feedback discreto de módulo bloqueado
+  const [lockedFeedbackId, setLockedFeedbackId] = React.useState<number | null>(null);
 
   const completedCount = progress.completedModules.length;
   const totalModules = MODULE_DEFINITIONS.length;
@@ -1502,10 +1492,6 @@ export default function HomeScreen() {
             <View style={[styles.badgeCompact, { backgroundColor: colors.primary + "10" }]}>
               <Star size={13} color={colors.primary} strokeWidth={2.5} />
               <Text style={[styles.badgeTextCompact, { color: colors.primary }]}>{progress.xp} XP</Text>
-            </View>
-            <View style={[styles.badgeCompact, { backgroundColor: colors.success + "10" }]}>
-              <Target size={13} color={colors.success} strokeWidth={2.5} />
-              <Text style={[styles.badgeTextCompact, { color: colors.success }]}>{accuracy}%</Text>
             </View>
           </View>
         </View>
@@ -1557,8 +1543,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-
-
         {MODULE_DEFINITIONS.map((mod, index) => {
           let { isCompleted, isLocked } = getModuleState(mod, index);
           const isNext = !isCompleted && !isLocked;
@@ -1599,7 +1583,12 @@ export default function HomeScreen() {
                   marginBottom: 8,
                 }]}
                 onPress={() => {
-                  if (isLocked) return;
+                  if (isLocked) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setLockedFeedbackId(mod.id);
+                    setTimeout(() => setLockedFeedbackId(null), 2500);
+                    return;
+                  }
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   if (isCompleted) {
                     setSelectedModuleToReview(mod);
@@ -1608,7 +1597,7 @@ export default function HomeScreen() {
                     router.push({ pathname: "/lesson", params: { moduleId: mod.id } });
                   }
                 }}
-                activeOpacity={isLocked ? 1 : 0.8}
+                activeOpacity={isLocked ? 0.85 : 0.8}
               >
                 <View style={[styles.iconWrap, {
                   backgroundColor: accentColor + "12",
@@ -1619,31 +1608,26 @@ export default function HomeScreen() {
                 <View style={[styles.cardInfo, { flexShrink: 1 }]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
                     <Text 
-                      style={[styles.cardTitle, { color: isLocked ? colors.mutedForeground : colors.foreground, flexShrink: 1 }]} 
-                      numberOfLines={1} 
-                      ellipsizeMode="tail"
+                       style={[styles.cardTitle, { color: isLocked ? colors.mutedForeground : colors.foreground, flexShrink: 1 }]} 
+                       numberOfLines={1} 
+                       ellipsizeMode="tail"
                     >
                       {mod.title}
                     </Text>
-                    {isCurrentNext && (
-                      <View style={{
-                        backgroundColor: mod.accentColor + "18",
-                        borderRadius: 4,
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderWidth: 1,
-                        borderColor: mod.accentColor + "35",
-                        flexShrink: 0,
-                      }}>
-                        <Text style={{ fontSize: 9, fontFamily: "Inter_700Bold", color: mod.accentColor, letterSpacing: 0.3 }}>
-                          CONTINUAR
-                        </Text>
-                      </View>
-                    )}
                   </View>
                   <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>
                     {mod.subtitle}
                   </Text>
+                  {isCurrentNext && (
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: mod.accentColor, marginTop: 6 }}>
+                      Continuar aqui
+                    </Text>
+                  )}
+                  {lockedFeedbackId === mod.id && (
+                    <Text style={{ fontSize: 10, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginTop: 3 }}>
+                      Complete o módulo anterior para desbloquear.
+                    </Text>
+                  )}
                 </View>
                 {isCompleted
                   ? <CheckCircle2 size={18} color={colors.success} strokeWidth={2} />
@@ -1737,6 +1721,53 @@ export default function HomeScreen() {
         </Pressable>
       </Modal>
     </View>
+  );
+}
+
+export default function HomeScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
+  const { progress } = useProgress();
+  const { profile, loading, profileLoading, isGuest } = useAuth();
+
+  if (loading || profileLoading) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  // Se não existir profile e não for guest, mostra aviso amigável
+  if (!profile && !isGuest) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 20 }]}>
+        <AlertTriangle size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />
+        <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", textAlign: "center", marginBottom: 8 }}>
+          Perfil não encontrado.
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center", marginBottom: 24 }}>
+          Faça login novamente ou contate o suporte.
+        </Text>
+      </View>
+    );
+  }
+
+  // Se for admin, exibe o painel. Se não, exibe a jornada normal de aluno.
+  if (profile?.role === "admin") {
+    return <AdminDashboard />;
+  }
+
+  return (
+    <StudentHomeContent
+      profile={profile}
+      progress={progress}
+      colors={colors}
+      insets={insets}
+      topPad={topPad}
+      isGuest={isGuest}
+    />
   );
 }
 

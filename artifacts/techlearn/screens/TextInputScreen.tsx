@@ -175,7 +175,17 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     gap: 14,
   },
-  input: { flex: 1, fontSize: 16, fontFamily: "Inter_500Medium" },
+  input: { 
+    flex: 1, 
+    fontSize: 16, 
+    fontFamily: "Inter_500Medium",
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+      default: {},
+    }),
+  },
   helpText: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 8 },
   footer: { paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: 1 },
   btn: { borderRadius: 12, paddingVertical: 16, alignItems: "center" },

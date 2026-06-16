@@ -20,6 +20,12 @@ export default function HTML({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#05050A" />
 
         <ScrollViewStyleReset />
+        <style dangerouslySetInnerHTML={{ __html: `
+          input, textarea, select, [role="textbox"] {
+            outline: none !important;
+            box-shadow: none !important;
+          }
+        ` }} />
       </head>
       <body>{children}</body>
     </html>

@@ -1016,6 +1016,12 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     height: 100,
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+      default: {},
+    }),
   },
   modalActionsRow: {
     flexDirection: "row",

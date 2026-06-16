@@ -361,11 +361,6 @@ export default function RankingScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {isAdmin ? "Ranking das Turmas" : "Ranking Unimar"}
         </Text>
-        <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-          {isAdmin 
-            ? "Acompanhe o desempenho das turmas e seus alunos" 
-            : "Acompanhe sua posição e o desempenho das turmas"}
-        </Text>
 
         {/* Abas (Somente se for Aluno logado) */}
         {!isAdmin && !isGuest && (
@@ -562,9 +557,13 @@ export default function RankingScreen() {
         ) : (
           /* ABA MINHA TURMA (PARA ESTUDANTES) */
           <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {studentsList.length === 0 ? (
+            {!profile?.class_name || studentsList.length === 0 ? (
               <View style={{ padding: 24, alignItems: "center" }}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>Nenhum aluno nesta turma.</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center" }}>
+                  {!profile?.class_name
+                    ? "Você não está vinculado a nenhuma turma ainda."
+                    : "Nenhum aluno nesta turma."}
+                </Text>
               </View>
             ) : (
               studentsList.map((student, index) => {
@@ -648,7 +647,7 @@ export default function RankingScreen() {
             alignItems: "flex-end",
             height: 140,
             marginVertical: 12,
-            opacity: 0.2,
+            opacity: 0.4,
             gap: 8,
           }}>
             {/* 2º lugar */}
@@ -737,25 +736,21 @@ export default function RankingScreen() {
               </Text>
             </View>
 
-            {/* Benefícios */}
+            {/* Benefícios — condensados */}
             <View style={{
               backgroundColor: colors.background,
               borderRadius: 10,
               padding: 12,
-              gap: 8,
+              gap: 6,
               borderWidth: 1,
               borderColor: colors.border,
             }}>
-              {[
-                "💾 Salvar seu XP acumulado localmente",
-                "📊 Comparar seu desempenho acadêmico",
-                "👥 Participar ativamente do ranking da sua turma",
-                "🏆 Conquistar medalhas exclusivas"
-              ].map((benefit, i) => (
-                <Text key={i} style={{ fontSize: 11.5, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>
-                  {benefit}
-                </Text>
-              ))}
+              <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, lineHeight: 18 }}>
+                Salve seu XP, participe do ranking da turma e conquiste medalhas exclusivas.
+              </Text>
+              <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, lineHeight: 18 }}>
+                Seu progresso fica na nuvem — acessível em qualquer dispositivo.
+              </Text>
             </View>
 
             {/* CTAs */}

@@ -104,9 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    setIsGuest(false);
     await supabase.auth.signOut();
-    // Volta para modo convidado após sair — não redireciona para login
-    setIsGuest(true);
   };
 
   return (

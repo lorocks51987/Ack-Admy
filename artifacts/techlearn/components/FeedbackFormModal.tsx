@@ -321,6 +321,12 @@ const s = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     minHeight: 74,
     textAlignVertical: "top",
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+      default: {},
+    }),
   },
 
   // Actions
