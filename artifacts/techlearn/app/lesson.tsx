@@ -32,6 +32,7 @@ import { formatAnswerForDisplay } from "@/utils/formatAnswer";
 import type { ExerciseType } from "@/constants/lessons";
 import { supabase } from "@/services/supabaseClient";
 import { audioService } from "@/services/audioService";
+import { analyticsService } from "@/services/analyticsService";
 
 const NATIVE = Platform.OS !== "web";
 const MAX_LIVES = 3;
@@ -166,6 +167,11 @@ export function LessonScreenInternal() {
     return LESSONS.slice(moduleDef?.startIdx ?? 0, (moduleDef?.startIdx ?? 0) + (moduleDef?.length ?? 0));
   }, [isMistakesReview, moduleId, moduleDef, frozenReviewQuestions]);
 
+  React.useEffect(() => {
+    analyticsService.track("screen_view", { screen_name: "lesson", module_id: moduleId });
+    analyticsService.track("module_started", { module_id: moduleId, module_title: moduleDef?.title });
+  }, [moduleId, moduleDef?.title]);
+
   // Revisão ainda carregando = lista congelada ainda não foi populada
   const isReviewAndLoading = isMistakesReview && frozenReviewQuestions === null;
 
@@ -277,6 +283,15 @@ export function LessonScreenInternal() {
   // Show hint icon when there's a non-briefing exercise and no feedback visible and not game over
   const showHintIcon = !isBriefing && !feedback.visible && !gameOver;
 
+  React.useEffect(() => {
+    if (exercise) {
+      analyticsService.track("lesson_started", { 
+        module_id: moduleId, 
+        lesson_id: currentIdx.toString()
+      });
+    }
+  }, [currentIdx, moduleId, exercise]);
+
   // ── Advance to next question ──────────────────────────────────────────────────
   const advance = useCallback((currentLives: number, currentXp: number) => {
     if (queue.length <= 1) {
@@ -306,6 +321,13 @@ export function LessonScreenInternal() {
 
     // Captura achievements antes para detectar novos desbloqueios
     const prevAchievements = prevAchievementsRef.current;
+
+    analyticsService.track("lesson_completed", { 
+      module_id: moduleId, 
+      lesson_id: currentIdx.toString(),
+      correct,
+      user_answer: formattedUserAnswer
+    });
 
     if (correct) {
       recordAnswer(true);
@@ -375,6 +397,7 @@ export function LessonScreenInternal() {
         setLives(remaining);
         if (remaining <= 0) {
           setGameOver(true);
+          analyticsService.track("game_over", { module_id: moduleId, lesson_id: currentIdx.toString() });
           setFeedback({ visible: false, correct: false, message: "", showLearnMore: false });
         } else {
           const randIdx = Math.floor(Math.random() * WRONG_INCENTIVES.length);

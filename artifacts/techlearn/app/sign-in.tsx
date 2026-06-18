@@ -11,6 +11,7 @@ import { Shield, Eye, EyeOff } from "lucide-react-native";
 import { useColors } from "@/hooks/useColors";
 import { supabase } from "@/services/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
+import { analyticsService } from "@/services/analyticsService";
 
 export default function SignInScreen() {
   const colors = useColors();
@@ -59,6 +60,7 @@ export default function SignInScreen() {
 
       if (data.session) {
         await refreshProfile(data.session.user.id);
+        analyticsService.track("login");
         router.replace("/(tabs)" as any);
       }
     } catch (err: any) {

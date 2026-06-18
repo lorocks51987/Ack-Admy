@@ -11,6 +11,7 @@ import { Shield, Eye, EyeOff, CheckCircle2, ChevronDown, Check } from "lucide-re
 import { useColors } from "@/hooks/useColors";
 import { supabase } from "@/services/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
+import { analyticsService } from "@/services/analyticsService";
 
 const COURSES = [
   "Análise e Desenvolvimento de Sistemas",
@@ -98,7 +99,7 @@ export default function SignUpScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { session, loading, profileLoading, refreshProfile } = useAuth();
+  const { session, loading, profileLoading, refreshProfile, isGuest } = useAuth();
 
   const [step, setStep] = useState<"form" | "verify">("form");
   const [name, setName] = useState("");
@@ -149,6 +150,7 @@ export default function SignUpScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsLoading(true);
     setError(null);
+    analyticsService.track("signup_started");
 
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -202,6 +204,10 @@ export default function SignUpScreen() {
         }
 
         await refreshProfile(user.id);
+        analyticsService.track("signup_completed");
+        if (isGuest) {
+          analyticsService.track("account_conversion");
+        }
       }
 
       if (user && !authData.session) {

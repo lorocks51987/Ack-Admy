@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
 import { ConfettiEmitter } from "@/components/ConfettiEmitter";
 import { audioService } from "@/services/audioService";
+import { analyticsService } from "@/services/analyticsService";
 
 export default function CompleteScreen() {
   const colors = useColors();
@@ -62,6 +63,16 @@ export default function CompleteScreen() {
   const accuracy = progress.totalExercises > 0
     ? Math.round((progress.correctAnswers / progress.totalExercises) * 100)
     : 0;
+
+  useEffect(() => {
+    analyticsService.track("screen_view", { screen_name: "complete", module_id: moduleId });
+    analyticsService.track("module_completed", { 
+      module_id: moduleId, 
+      module_title: moduleDef?.title,
+      xp_earned: xpEarned,
+      accuracy: accuracy
+    });
+  }, [moduleId, moduleDef?.title, xpEarned, accuracy]);
 
   return (
     <View style={[styles.root, {

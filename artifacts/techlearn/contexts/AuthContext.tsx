@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/services/supabaseClient";
+import { analyticsService } from "@/services/analyticsService";
 
 export type UserProfile = {
   id: string;
@@ -38,7 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Será definido como false assim que uma sessão autenticada for detectada.
   const [isGuest, setIsGuest] = useState(true);
   
-  const loginAsGuest = () => setIsGuest(true);
+  const loginAsGuest = () => {
+    setIsGuest(true);
+    analyticsService.track("guest_started");
+  };
   const lastUserRef = useRef<string | null>(null);
 
   const refreshProfile = async (userId: string) => {
@@ -71,9 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         setIsGuest(false);
+        analyticsService.setSessionUser(session.user.id, false);
         lastUserRef.current = session.user.id;
         refreshProfile(session.user.id).finally(() => setLoading(false));
       } else {
+        analyticsService.setSessionUser(null, true);
         lastUserRef.current = null;
         setProfile(null);
         setProfileLoading(false);
@@ -87,11 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         setIsGuest(false);
+        analyticsService.setSessionUser(session.user.id, false);
         if (lastUserRef.current !== session.user.id) {
           lastUserRef.current = session.user.id;
           refreshProfile(session.user.id);
         }
       } else {
+        analyticsService.setSessionUser(null, true);
         lastUserRef.current = null;
         setProfile(null);
         setProfileLoading(false);
@@ -104,8 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    setIsGuest(false);
-    await supabase.auth.signOut();
+    try {
+      setIsGuest(false);
+      analyticsService.track("logout");
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Supabase AuthContext - Exception during signOut:", err);
+    }
   };
 
   return (

@@ -3,7 +3,8 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator, TextInput,
   Modal, Pressable,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { analyticsService } from "@/services/analyticsService";
 import {
   Shield, Key, AlertTriangle, FileText, Mail,
   ChevronRight, Lock, Zap, Star, CheckCircle2,
@@ -1729,7 +1730,13 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const { progress } = useProgress();
-  const { profile, loading, profileLoading, isGuest } = useAuth();
+  const { session, profile, loading, profileLoading, isGuest } = useAuth();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      analyticsService.track("screen_view", { screen_name: profile?.role === "admin" ? "admin_dashboard" : "home" });
+    }, [profile?.role])
+  );
 
   if (loading || profileLoading) {
     return (
@@ -1739,8 +1746,17 @@ export default function HomeScreen() {
     );
   }
 
-  // Se não existir profile e não for guest, mostra aviso amigável
-  if (!profile && !isGuest) {
+  // Se não houver sessão ativa e não for visitante, a navegação está redirecionando para login
+  if (!session && !isGuest) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  // Se existir sessão ativa mas não carregar perfil (erro de DB), mostra aviso amigável
+  if (session && !profile && !isGuest) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 20 }]}>
         <AlertTriangle size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />

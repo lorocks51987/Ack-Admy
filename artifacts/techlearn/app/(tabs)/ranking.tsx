@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/services/supabaseClient";
 import { useProgress } from "@/contexts/ProgressContext";
 import { progressService } from "@/services/progressService";
+import { analyticsService } from "@/services/analyticsService";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -226,6 +227,7 @@ export default function RankingScreen() {
       } else {
         fetchRankingData();
       }
+      analyticsService.track("screen_view", { screen_name: "ranking" });
     }, [profile, isGuest, progress, fetchRankingData])
   );
 

@@ -10,8 +10,9 @@ import {
   Volume2, VolumeX, Lightbulb, Flame, Crown
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { useRouter, router } from "expo-router";
+import { useRouter, router, useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
+import { analyticsService } from "@/services/analyticsService";
 import { useProgress } from "@/contexts/ProgressContext";
 import { MODULE_DEFINITIONS } from "@/constants/lessons";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Math.max(insets.top, Platform.OS === "web" ? 16 : 0);
   const { progress, resetProgress, buyStreakFreeze } = useProgress();
-  const { profile, loading, profileLoading, refreshProfile, signOut, isGuest } = useAuth();
+  const { session, profile, loading, profileLoading, refreshProfile, signOut, isGuest } = useAuth();
   const router = useRouter();
 
   // Edit Profile States
@@ -133,6 +134,12 @@ export default function ProfileScreen() {
     }
   }, [profile]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      analyticsService.track("screen_view", { screen_name: "profile" });
+    }, [])
+  );
+
   if (loading || profileLoading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
@@ -142,7 +149,16 @@ export default function ProfileScreen() {
     );
   }
 
-  if (!profile && !isGuest) {
+  // Se não houver sessão ativa e não for visitante, a navegação está redirecionando para login
+  if (!session && !isGuest) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (session && !profile && !isGuest) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 20 }]}>
         <Users size={48} color={colors.mutedForeground} style={{ marginBottom: 16 }} />
@@ -933,7 +949,7 @@ export default function ProfileScreen() {
                 onPress={() => {
                   setShowLogoutModal(false);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                  signOut().then(() => router.replace("/sign-in" as any));
+                  signOut();
                 }}
               >
                 <Text style={styles.modalBtnDestructiveText}>Sair</Text>

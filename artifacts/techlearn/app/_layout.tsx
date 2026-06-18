@@ -20,6 +20,7 @@ import { ExplanationProvider } from "@/contexts/ExplanationContext";
 
 import { AppState, AppStateStatus } from "react-native";
 import { notificationService } from "@/services/notificationService";
+import { analyticsService } from "@/services/analyticsService";
 import Constants from "expo-constants";
 
 SplashScreen.preventAutoHideAsync();
@@ -37,12 +38,17 @@ function AppCore() {
     notificationService.requestPermissionsAsync().catch(() => {});
     notificationService.cancelAllReminders().catch(() => {});
 
+    // Inicializa Analytics V1
+    analyticsService.initialize();
+
     // Escuta mudanças de estado do App (fundo/ativo)
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === "active") {
         notificationService.cancelAllReminders().catch(() => {});
+        analyticsService.track("session_resumed");
       } else if (nextAppState === "background" || nextAppState === "inactive") {
         notificationService.scheduleDailyStreakReminder().catch(() => {});
+        analyticsService.track("session_paused");
       }
     };
 
